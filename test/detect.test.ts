@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  athleteIdFromPlay,
   classifyMiss,
   collectPlays,
   detectMissedKicks,
@@ -142,6 +143,40 @@ describe("Extra Point Missed (pointAfterAttempt.id 62)", () => {
     }
     const misses = detectMissedKicks(summary, gameFromSummary(summary, "TB @ CIN"));
     expect(misses).toEqual([]);
+  });
+});
+
+describe("athleteIdFromPlay", () => {
+  it("reads a kicker athlete id from a core-API $ref", () => {
+    expect(
+      athleteIdFromPlay({
+        id: "4018729234815",
+        type: { id: "60", text: "Field Goal Missed" },
+        text: "D.Carlson 62 yard field goal is No Good, Wide Right.",
+        participants: [
+          {
+            type: "kicker",
+            athlete: {
+              $ref: "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/3051909?lang=en&region=us",
+            },
+          },
+        ],
+      }),
+    ).toBe("3051909");
+  });
+
+  it("ignores non-kicker participants on a PAT-on-TD play", () => {
+    expect(
+      athleteIdFromPlay({
+        id: "401872659257",
+        type: { id: "68", text: "Rushing Touchdown" },
+        text: "J.Taylor right end for 1 yard, TOUCHDOWN. S.Shrader extra point is No Good, Wide Right.",
+        participants: [
+          { type: "rusher", athlete: { id: "4242335" } },
+          { type: "kicker", athlete: { id: 4360236 } },
+        ],
+      }),
+    ).toBe("4360236");
   });
 });
 

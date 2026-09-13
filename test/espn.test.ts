@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   EspnClient,
+  hasGameStarted,
   isWatchableGame,
   mergeSummaries,
   normalizeGamePayload,
   normalizeScoreboard,
   summaryHasPlays,
+  withScoreboardQuery,
 } from "../src/espn.js";
 import type { ScoreboardEvent } from "../src/types.js";
 
@@ -85,6 +87,38 @@ describe("normalizeScoreboard", () => {
     ).toEqual([{ id: "b" }]);
     expect(normalizeScoreboard(null).events).toEqual([]);
   });
+
+  it("keeps season type/year and week from the top-level scoreboard", () => {
+    const board = normalizeScoreboard({
+      season: { type: 2, year: 2026 },
+      week: { number: 1 },
+      events: [{ id: "401872923" }],
+    });
+    expect(board.season).toEqual({ type: 2, year: 2026 });
+    expect(board.week).toEqual({ number: 1 });
+  });
+});
+
+describe("withScoreboardQuery", () => {
+  it("adds seasontype, week, and dates for regular-season week scans", () => {
+    expect(
+      withScoreboardQuery("https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard", {
+        seasonType: 2,
+        week: 1,
+        dates: "2026",
+      }),
+    ).toBe(
+      "https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week=1&dates=2026",
+    );
+  });
+});
+
+describe("hasGameStarted", () => {
+  it("includes in-progress and finished games, not scheduled ones", () => {
+    expect(hasGameStarted(event({ id: "in", status: { type: { state: "in" } } }))).toBe(true);
+    expect(hasGameStarted(event({ id: "post", status: { type: { state: "post" } } }))).toBe(true);
+    expect(hasGameStarted(event({ id: "pre", status: { type: { state: "pre" } } }))).toBe(false);
+  });
 });
 
 describe("alternate play feeds", () => {
@@ -153,5 +187,27 @@ describe("alternate play feeds", () => {
     const summary = await client.getSummary("401872923");
     expect(summaryHasPlays(summary)).toBe(true);
     expect(urls.some((u) => u.includes("cdn.espn.com/core/nfl/playbyplay"))).toBe(true);
+  });
+});
+
+describe("getScoreboard week query", () => {
+  it("requests seasontype=2&week=N when scanning a prior week", async () => {
+    const weekUrls: string[] = [];
+    const weekFetch: typeof fetch = async (url) => {
+      weekUrls.push(String(url));
+      return new Response(
+        JSON.stringify({ season: { type: 2, year: 2026 }, week: { number: 1 }, events: [] }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    };
+    const weekClient = new EspnClient({
+      userAgent: "test",
+      fetchImpl: weekFetch as unknown as typeof fetch,
+    });
+    const weekBoard = await weekClient.getScoreboard({ seasonType: 2, week: 1, dates: "2026" });
+    expect(weekBoard.week?.number).toBe(1);
+    expect(weekUrls[0]).toContain("seasontype=2");
+    expect(weekUrls[0]).toContain("week=1");
+    expect(weekUrls[0]).toContain("dates=2026");
   });
 });

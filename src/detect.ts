@@ -1,4 +1,5 @@
 import type {
+  AthleteRef,
   Competitor,
   GameContext,
   GameSummary,
@@ -185,6 +186,34 @@ export function matchupLabel(competitors: Competitor[], shortName?: string): str
   return competitors.map(competitorAbbr).join(" vs ");
 }
 
+const ATHLETE_REF_RE = /\/athletes\/(\d+)/i;
+
+export function athleteIdFromRef(athlete?: AthleteRef): string | undefined {
+  if (!athlete) return undefined;
+  if (athlete.id !== undefined && athlete.id !== null && String(athlete.id).length > 0) {
+    return String(athlete.id);
+  }
+  const match = athlete.$ref?.match(ATHLETE_REF_RE);
+  return match?.[1];
+}
+
+/** Prefer a participant marked as the kicker; ignore rushers/receivers on PAT-on-TD plays. */
+export function athleteIdFromPlay(play: Play): string | undefined {
+  const participants = play.participants;
+  if (Array.isArray(participants)) {
+    const kicker = participants.find((p) => (p.type ?? "").toLowerCase() === "kicker");
+    const fromKicker = athleteIdFromRef(kicker?.athlete);
+    if (fromKicker) return fromKicker;
+  }
+  if (Array.isArray(play.athletesInvolved)) {
+    for (const athlete of play.athletesInvolved) {
+      const id = athleteIdFromRef(athlete);
+      if (id) return id;
+    }
+  }
+  return athleteIdFromRef(play.athlete);
+}
+
 export function toMissedKick(play: Play, game: GameContext): MissedKick | null {
   const kickType = classifyMiss(play);
   if (!kickType || !play.id) return null;
@@ -193,11 +222,13 @@ export function toMissedKick(play: Play, game: GameContext): MissedKick | null {
   const team = teamFromPlay(play, game.competitors);
   const home = game.competitors.find((c) => c.homeAway === "home");
   const away = game.competitors.find((c) => c.homeAway === "away");
+  const athleteId = athleteIdFromPlay(play);
 
   return {
     playId: String(play.id),
     kickType,
     kicker: parseKicker(text, kickType),
+    ...(athleteId ? { athleteId } : {}),
     teamAbbr: team ? competitorAbbr(team) : "UNK",
     teamName: team ? competitorName(team) : "Unknown team",
     distance: parseDistance(play, kickType),
