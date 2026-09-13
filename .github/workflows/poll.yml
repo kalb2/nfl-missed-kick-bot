@@ -1,0 +1,85 @@
+name: Poll ESPN and tweet misses
+
+# GitHub cron is UTC and 5 minutes is the practical minimum.
+# Sunday covers the early/late/SNF slates. Thu/Fri and Mon/Tue
+# windows cover TNF, leftover SNF, and MNF without running 24/7.
+on:
+  schedule:
+    - cron: "*/5 * * * 0"
+    - cron: "*/5 23 * * 1"
+    - cron: "*/5 0-5 * * 2"
+    - cron: "*/5 23 * * 4"
+    - cron: "*/5 0-5 * * 5"
+    - cron: "*/5 16-23 * * 4"
+    - cron: "*/5 0-4 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Log tweets instead of posting"
+        type: boolean
+        default: true
+      seed:
+        description: "Seed seen play IDs without tweeting"
+        type: boolean
+        default: false
+      all_today:
+        description: "Include all of today's finished games (useful for a dry-run demo)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: missed-kick-poll
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Restore seen-play cache
+        uses: actions/cache@v4
+        with:
+          path: .state
+          key: missed-kicks-${{ github.run_id }}
+          restore-keys: |
+            missed-kicks-
+
+      - name: Resolve dry-run / seed flags
+        id: flags
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "dry_run=${{ github.event.inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+            echo "seed=${{ github.event.inputs.seed }}" >> "$GITHUB_OUTPUT"
+            echo "all_today=${{ github.event.inputs.all_today }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "dry_run=${{ vars.DRY_RUN || 'true' }}" >> "$GITHUB_OUTPUT"
+            echo "seed=${{ vars.SEED_SEEN || 'false' }}" >> "$GITHUB_OUTPUT"
+            echo "all_today=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Poll scoreboard and post new misses
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_KEY_SECRET: ${{ secrets.X_API_KEY_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          DRY_RUN: ${{ steps.flags.outputs.dry_run }}
+          SEED_SEEN: ${{ steps.flags.outputs.seed }}
+          STATE_PATH: .state/seen.json
+        run: |
+          EXTRA=""
+          if [ "${{ steps.flags.outputs.all_today }}" = "true" ]; then
+            EXTRA="--all-today"
+          fi
+          npx tsx src/index.ts once $EXTRA

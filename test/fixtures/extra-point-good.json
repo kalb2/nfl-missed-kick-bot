@@ -1,0 +1,58 @@
+{
+  "header": {
+    "id": "401872925",
+    "competitions": [
+      {
+        "competitors": [
+          {
+            "id": "4",
+            "homeAway": "home",
+            "team": { "id": "4", "abbreviation": "CIN", "displayName": "Cincinnati Bengals" }
+          },
+          {
+            "id": "27",
+            "homeAway": "away",
+            "team": { "id": "27", "abbreviation": "TB", "displayName": "Tampa Bay Buccaneers" }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "401872925861",
+            "type": { "id": "67", "text": "Passing Touchdown", "abbreviation": "TD" },
+            "text": "J.Burrow pass short left to M.Gesicki for 2 yards, TOUCHDOWN. E.McPherson extra point is GOOD, Center-W.Wagner, Holder-R.Rehkow.",
+            "awayScore": 0,
+            "homeScore": 14,
+            "period": { "number": 1 },
+            "clock": { "displayValue": "4:12" },
+            "teamParticipants": [
+              { "id": "4", "type": "offense" },
+              { "id": "27", "type": "defense" }
+            ],
+            "pointAfterAttempt": {
+              "id": 61,
+              "text": "Extra Point Good",
+              "abbreviation": "Extra Point Good",
+              "value": 1
+            }
+          },
+          {
+            "id": "4018729251543-fg-good",
+            "type": { "id": "59", "text": "Field Goal Good", "abbreviation": "FG" },
+            "text": "E.McPherson 20 yard field goal is GOOD, Center-W.Wagner, Holder-R.Rehkow.",
+            "awayScore": 7,
+            "homeScore": 17,
+            "period": { "number": 2 },
+            "clock": { "displayValue": "8:01" },
+            "teamParticipants": [{ "id": "4", "type": "offense" }]
+          }
+        ]
+      }
+    ]
+  }
+}

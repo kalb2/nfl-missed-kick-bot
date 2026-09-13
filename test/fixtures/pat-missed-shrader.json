@@ -1,0 +1,68 @@
+{
+  "header": {
+    "id": "401872659",
+    "competitions": [
+      {
+        "competitors": [
+          {
+            "id": "11",
+            "homeAway": "home",
+            "score": "23",
+            "team": {
+              "id": "11",
+              "abbreviation": "IND",
+              "displayName": "Indianapolis Colts",
+              "name": "Colts",
+              "location": "Indianapolis"
+            }
+          },
+          {
+            "id": "33",
+            "homeAway": "away",
+            "score": "41",
+            "team": {
+              "id": "33",
+              "abbreviation": "BAL",
+              "displayName": "Baltimore Ravens",
+              "name": "Ravens",
+              "location": "Baltimore"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "401872659257",
+            "type": {
+              "id": "68",
+              "text": "Rushing Touchdown",
+              "abbreviation": "TD"
+            },
+            "text": "J.Taylor right end for 1 yard, TOUCHDOWN. S.Shrader extra point is No Good, Wide Right, Center-L.Rhodes, Holder-R.Sanchez.",
+            "awayScore": 0,
+            "homeScore": 6,
+            "period": { "number": 1 },
+            "clock": { "displayValue": "10:33" },
+            "scoringPlay": true,
+            "teamParticipants": [
+              { "id": "11", "order": 1, "type": "offense" },
+              { "id": "33", "order": 2, "type": "defense" }
+            ],
+            "statYardage": 1,
+            "pointAfterAttempt": {
+              "id": 62,
+              "text": "Extra Point Missed",
+              "abbreviation": "Extra Point Missed",
+              "value": 0
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

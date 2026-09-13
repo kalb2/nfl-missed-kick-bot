@@ -1,0 +1,61 @@
+{
+  "header": {
+    "id": "401872924",
+    "competitions": [
+      {
+        "competitors": [
+          {
+            "id": "10",
+            "homeAway": "home",
+            "score": "10",
+            "team": {
+              "id": "10",
+              "abbreviation": "TEN",
+              "displayName": "Tennessee Titans",
+              "name": "Titans",
+              "location": "Tennessee"
+            }
+          },
+          {
+            "id": "20",
+            "homeAway": "away",
+            "score": "23",
+            "team": {
+              "id": "20",
+              "abbreviation": "NYJ",
+              "displayName": "New York Jets",
+              "name": "Jets",
+              "location": "New York"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729241674",
+            "type": {
+              "id": "60",
+              "text": "Field Goal Missed",
+              "abbreviation": "FGM"
+            },
+            "text": "J.Sanders 54 yard field goal is No Good, Wide Left, Center-T.Hennessy, Holder-A.McNamara.",
+            "awayScore": 10,
+            "homeScore": 3,
+            "period": { "number": 2 },
+            "clock": { "displayValue": "2:44" },
+            "teamParticipants": [
+              { "id": "10", "order": 1, "type": "defense" },
+              { "id": "20", "order": 2, "type": "offense" }
+            ],
+            "statYardage": 54
+          }
+        ]
+      }
+    ]
+  }
+}
