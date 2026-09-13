@@ -56,7 +56,7 @@ const shrader: MissedKick = {
 };
 
 describe("composeTweet", () => {
-  it("formats Carlson missed FG with labels and nickname hashtags", () => {
+  it("formats Carlson missed FG with labels and official season hashtags", () => {
     const tweet = composeTweet(carlson);
     expect(tweet).toBe(
       [
@@ -66,7 +66,7 @@ describe("composeTweet", () => {
         "Result: Wide Right",
         "When: Q4 0:02",
         "Score: NO 24-24 DET",
-        "#Saints #Lions",
+        "#Saints #OnePride",
       ].join("\n"),
     );
     expect(isTweetLengthOk(tweet)).toBe(true);
@@ -82,7 +82,7 @@ describe("composeTweet", () => {
         "Result: Wide Left",
         "When: Q2 2:44",
         "Score: NYJ 10-3 TEN",
-        "#Jets #Titans",
+        "#TakeFlight #Titans",
       ].join("\n"),
     );
     expect(tweet.length).toBeLessThanOrEqual(280);
@@ -97,7 +97,7 @@ describe("composeTweet", () => {
         "Result: Wide Right",
         "When: Q1 10:33",
         "Score: BAL 0-6 IND",
-        "#Colts #Ravens",
+        "#ForTheShoe #RavensFlock",
       ].join("\n"),
     );
     expect(tweet.length).toBeLessThanOrEqual(280);
@@ -111,14 +111,15 @@ describe("composeTweet", () => {
       homeScore: undefined,
     });
     expect(tweet).toContain("Score: NO @ DET");
-    expect(tweet).toContain("#Saints #Lions");
+    expect(tweet).toContain("#Saints #OnePride");
   });
 
-  it("uses nickname hashtags, never abbreviation tags", () => {
+  it("uses official season hashtags, never abbreviation tags", () => {
     const tweet = composeTweet(carlson);
-    expect(tweet).toMatch(/#Saints #Lions/);
+    expect(tweet).toMatch(/#Saints #OnePride/);
     expect(tweet).not.toMatch(/#NO\b/);
     expect(tweet).not.toMatch(/#DET\b/);
+    expect(tweet).not.toMatch(/#Lions\b/);
   });
 
   it("never includes URLs (X charges more for posts with links)", () => {
@@ -134,7 +135,7 @@ describe("composeTweet", () => {
     expect(stripUrls("plain text")).toBe("plain text");
   });
 
-  it("drops nickname hashtags before Score or When when slightly over length", () => {
+  it("drops season hashtags before Score or When when slightly over length", () => {
     const tweet = composeTweet({
       ...carlson,
       result: "Wide Right " + "x".repeat(168),
@@ -142,7 +143,7 @@ describe("composeTweet", () => {
     expect(tweet.length).toBeLessThanOrEqual(280);
     expect(tweet).toContain("Score: NO 24-24 DET");
     expect(tweet).toContain("When: Q4 0:02");
-    expect(tweet).not.toMatch(/#Saints|#Lions|#NO\b|#DET\b/);
+    expect(tweet).not.toMatch(/#Saints|#OnePride|#NO\b|#DET\b/);
   });
 
   it("drops Score then When, and never exceeds 280", () => {
@@ -153,47 +154,50 @@ describe("composeTweet", () => {
     });
     expect(tweet.length).toBeLessThanOrEqual(280);
     expect(tweet.startsWith("❌ Missed FG")).toBe(true);
-    expect(tweet).not.toMatch(/#Saints|#Lions/);
+    expect(tweet).not.toMatch(/#Saints|#OnePride/);
   });
 });
 
 describe("teamHashtag", () => {
-  it("maps all 32 teams and common ESPN abbreviations to nickname tags", () => {
+  it("maps all 32 teams and common ESPN abbreviations to official season tags", () => {
     const expected: Record<string, string> = {
-      ARI: "#Cardinals",
-      ATL: "#Falcons",
-      BAL: "#Ravens",
-      BUF: "#Bills",
-      CAR: "#Panthers",
-      CHI: "#Bears",
-      CIN: "#Bengals",
-      CLE: "#Browns",
-      DAL: "#Cowboys",
-      DEN: "#Broncos",
-      DET: "#Lions",
-      GB: "#Packers",
-      HOU: "#Texans",
-      IND: "#Colts",
-      JAX: "#Jaguars",
-      JAC: "#Jaguars",
-      KC: "#Chiefs",
-      LAC: "#Chargers",
-      LAR: "#Rams",
-      LV: "#Raiders",
-      MIA: "#Dolphins",
-      MIN: "#Vikings",
-      NE: "#Patriots",
+      ARI: "#BirdGang",
+      ATL: "#DirtyBirds",
+      BAL: "#RavensFlock",
+      BUF: "#BillsMafia",
+      CAR: "#KeepPounding",
+      CHI: "#DaBears",
+      CIN: "#RuleTheJungle",
+      CLE: "#DawgPound",
+      DAL: "#DallasCowboys",
+      DEN: "#BroncosCountry",
+      DET: "#OnePride",
+      GB: "#GoPackGo",
+      HOU: "#WeAreTexans",
+      IND: "#ForTheShoe",
+      JAX: "#DUUUVAL",
+      JAC: "#DUUUVAL",
+      KC: "#ChiefsKingdom",
+      LAC: "#BoltUp",
+      SD: "#BoltUp",
+      LAR: "#RamsHouse",
+      LA: "#RamsHouse",
+      LV: "#RaiderNation",
+      OAK: "#RaiderNation",
+      MIA: "#FinsUp",
+      MIN: "#SKOL",
+      NE: "#ForeverNE",
       NO: "#Saints",
-      NYG: "#Giants",
-      NYJ: "#Jets",
-      PHI: "#Eagles",
-      PIT: "#Steelers",
+      NYG: "#NYGiants",
+      NYJ: "#TakeFlight",
+      PHI: "#FlyEaglesFly",
+      PIT: "#HereWeGo",
       SEA: "#Seahawks",
-      SF: "#49ers",
-      TB: "#Buccaneers",
+      SF: "#FTTB",
+      TB: "#GoBucs",
       TEN: "#Titans",
-      WSH: "#Commanders",
-      WAS: "#Commanders",
+      WSH: "#RaiseHail",
+      WAS: "#RaiseHail",
     };
 
     for (const [abbr, tag] of Object.entries(expected)) {

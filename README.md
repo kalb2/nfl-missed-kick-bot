@@ -13,7 +13,7 @@ Kick: 62 yards
 Result: Wide Right
 When: Q4 0:02
 Score: NO 24-24 DET
-#Saints #Lions
+#Saints #OnePride
 ```
 
 ```
@@ -23,7 +23,7 @@ Kick: 54 yards
 Result: Wide Left
 When: Q2 2:44
 Score: NYJ 10-3 TEN
-#Jets #Titans
+#TakeFlight #Titans
 ```
 
 ```
@@ -32,10 +32,10 @@ Kicker: S.Shrader (IND)
 Result: Wide Right
 When: Q1 10:33
 Score: BAL 0-6 IND
-#Colts #Ravens
+#ForTheShoe #RavensFlock
 ```
 
-Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. Each alert is labeled line-by-line (PAT omits the Kick/distance line) and ends with official nickname hashtags for both teams — kicking team first, never raw abbreviations like `#NO`. Tweets stay under 280 characters and are **plain text with no URLs** — X pay-per-use charges more for posts that include links.
+Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. Each alert is labeled line-by-line (PAT omits the Kick/distance line) and ends with official primary season hashtags for both teams — kicking team first, never raw abbreviations like `#NO`. Those tags trigger custom team emojis on X. Tweets stay under 280 characters and are **plain text with no URLs** — X pay-per-use charges more for posts that include links.
 
 ## How detection works
 
@@ -118,7 +118,7 @@ The bot posts with **OAuth 1.0a user context** for a dedicated bot account. It n
 
 If any secret is missing, the bot logs tweets instead of posting.
 
-**Cost tip:** keep tweets as plain-text alerts (kicker, distance, result, clock, score, team nickname hashtags). Do not add ESPN or highlight URLs — X pay-per-use bills more for posts that contain links.
+**Cost tip:** keep tweets as plain-text alerts (kicker, distance, result, clock, score, official team season hashtags). Do not add ESPN or highlight URLs — X pay-per-use bills more for posts that contain links.
 
 ## GitHub Actions
 

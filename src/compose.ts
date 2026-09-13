@@ -3,61 +3,61 @@ import type { MissedKick } from "./types.js";
 const MAX_TWEET = 280;
 
 /**
- * Official nickname hashtags (Title Case) for ESPN / common NFL abbreviations.
+ * Official primary season hashtags that trigger custom team emojis on X.
  * Never emit raw abbreviation tags like #NO or #DET.
  */
-const NFL_NICKNAMES: Record<string, string> = {
-  ARI: "Cardinals",
-  ARZ: "Cardinals",
-  ATL: "Falcons",
-  BAL: "Ravens",
-  BLT: "Ravens",
-  BUF: "Bills",
-  CAR: "Panthers",
-  CHI: "Bears",
-  CIN: "Bengals",
-  CLE: "Browns",
-  CLV: "Browns",
-  DAL: "Cowboys",
-  DEN: "Broncos",
-  DET: "Lions",
-  GB: "Packers",
-  GNB: "Packers",
-  HOU: "Texans",
-  HST: "Texans",
-  IND: "Colts",
-  JAC: "Jaguars",
-  JAX: "Jaguars",
-  KC: "Chiefs",
-  KAN: "Chiefs",
-  LA: "Rams",
-  LAR: "Rams",
-  STL: "Rams",
-  LAC: "Chargers",
-  SD: "Chargers",
-  SDG: "Chargers",
-  LV: "Raiders",
-  LVR: "Raiders",
-  OAK: "Raiders",
-  MIA: "Dolphins",
-  MIN: "Vikings",
-  NE: "Patriots",
-  NWE: "Patriots",
+const NFL_SEASON_HASHTAGS: Record<string, string> = {
+  ARI: "BirdGang",
+  ARZ: "BirdGang",
+  ATL: "DirtyBirds",
+  BAL: "RavensFlock",
+  BLT: "RavensFlock",
+  BUF: "BillsMafia",
+  CAR: "KeepPounding",
+  CHI: "DaBears",
+  CIN: "RuleTheJungle",
+  CLE: "DawgPound",
+  CLV: "DawgPound",
+  DAL: "DallasCowboys",
+  DEN: "BroncosCountry",
+  DET: "OnePride",
+  GB: "GoPackGo",
+  GNB: "GoPackGo",
+  HOU: "WeAreTexans",
+  HST: "WeAreTexans",
+  IND: "ForTheShoe",
+  JAC: "DUUUVAL",
+  JAX: "DUUUVAL",
+  KC: "ChiefsKingdom",
+  KAN: "ChiefsKingdom",
+  LA: "RamsHouse",
+  LAR: "RamsHouse",
+  STL: "RamsHouse",
+  LAC: "BoltUp",
+  SD: "BoltUp",
+  SDG: "BoltUp",
+  LV: "RaiderNation",
+  LVR: "RaiderNation",
+  OAK: "RaiderNation",
+  MIA: "FinsUp",
+  MIN: "SKOL",
+  NE: "ForeverNE",
+  NWE: "ForeverNE",
   NO: "Saints",
   NOR: "Saints",
-  NYG: "Giants",
-  NYJ: "Jets",
-  PHI: "Eagles",
-  PIT: "Steelers",
+  NYG: "NYGiants",
+  NYJ: "TakeFlight",
+  PHI: "FlyEaglesFly",
+  PIT: "HereWeGo",
   SEA: "Seahawks",
-  SF: "49ers",
-  SFO: "49ers",
-  TB: "Buccaneers",
-  TAM: "Buccaneers",
+  SF: "FTTB",
+  SFO: "FTTB",
+  TB: "GoBucs",
+  TAM: "GoBucs",
   TEN: "Titans",
-  WAS: "Commanders",
-  WSH: "Commanders",
-  WFT: "Commanders",
+  WAS: "RaiseHail",
+  WSH: "RaiseHail",
+  WFT: "RaiseHail",
 };
 
 export function composeTweet(miss: MissedKick): string {
@@ -89,8 +89,8 @@ export function composeTweet(miss: MissedKick): string {
 }
 
 export function teamHashtag(abbr: string): string | undefined {
-  const nick = NFL_NICKNAMES[abbr.trim().toUpperCase()];
-  return nick ? `#${nick}` : undefined;
+  const tag = NFL_SEASON_HASHTAGS[abbr.trim().toUpperCase()];
+  return tag ? `#${tag}` : undefined;
 }
 
 function scoreLine(miss: MissedKick): string | undefined {
@@ -107,7 +107,7 @@ function whenLine(miss: MissedKick): string | undefined {
 }
 
 function hashtagLine(miss: MissedKick): string | undefined {
-  const kicking = teamHashtag(miss.teamAbbr) ?? nicknameFromTeamName(miss.teamName);
+  const kicking = teamHashtag(miss.teamAbbr);
   const opponentAbbr = otherTeamAbbr(miss);
   const opponent = opponentAbbr ? teamHashtag(opponentAbbr) : undefined;
 
@@ -148,14 +148,6 @@ function matchupAbbrs(matchup: string | undefined): string[] {
     .split(/\s+(?:@|vs\.?|v)\s+|\s+/i)
     .map((part) => part.replace(/[^A-Za-z]/g, ""))
     .filter((part) => part.length >= 2 && part.length <= 3);
-}
-
-function nicknameFromTeamName(teamName: string | undefined): string | undefined {
-  if (!teamName) return undefined;
-  const words = teamName.trim().split(/\s+/);
-  const last = words[words.length - 1];
-  if (!last || last.toLowerCase() === "unknown") return undefined;
-  return `#${last.replace(/[^A-Za-z0-9]/g, "")}`;
 }
 
 /** X pay-per-use charges more for posts that include links — keep alerts plain text. */
