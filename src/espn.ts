@@ -1,4 +1,4 @@
-import type { GameSummary, Scoreboard, ScoreboardEvent } from "./types.js";
+import type { GameSummary, Play, Scoreboard, ScoreboardEvent } from "./types.js";
 
 const SCOREBOARD_URLS = [
   "https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
@@ -9,6 +9,14 @@ const SUMMARY_URLS = [
   "https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={eventId}",
   "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={eventId}",
 ];
+
+function playFeedUrls(eventId: string): string[] {
+  const id = encodeURIComponent(eventId);
+  return [
+    `https://cdn.espn.com/core/nfl/playbyplay?xhr=1&gameId=${id}`,
+    `https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/${id}/competitions/${id}/plays?limit=400`,
+  ];
+}
 
 const DEFAULT_TTL_MS = 20_000;
 const FETCH_TIMEOUT_MS = 15_000;
@@ -44,10 +52,42 @@ export class EspnClient {
       const hit = this.summaryCache.get(eventId);
       if (hit && Date.now() - hit.at < this.summaryTtlMs) return hit.data;
     }
-    const urls = SUMMARY_URLS.map((u) => u.replace("{eventId}", encodeURIComponent(eventId)));
-    const json = (await this.getFirstJson(urls)) as GameSummary;
-    this.summaryCache.set(eventId, { at: Date.now(), data: json });
-    return json;
+
+    const summaryUrls = SUMMARY_URLS.map((u) => u.replace("{eventId}", encodeURIComponent(eventId)));
+    let primary: GameSummary | undefined;
+    let lastErr: unknown;
+    for (const url of summaryUrls) {
+      try {
+        primary = normalizeGamePayload(await this.getJson(url));
+        break;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+
+    if (primary && summaryHasPlays(primary)) {
+      this.summaryCache.set(eventId, { at: Date.now(), data: primary });
+      return primary;
+    }
+
+    for (const url of playFeedUrls(eventId)) {
+      try {
+        const alt = normalizeGamePayload(await this.getJson(url));
+        const merged = mergeSummaries(primary, alt);
+        if (summaryHasPlays(merged) || primary) {
+          this.summaryCache.set(eventId, { at: Date.now(), data: merged });
+          return merged;
+        }
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+
+    if (primary) {
+      this.summaryCache.set(eventId, { at: Date.now(), data: primary });
+      return primary;
+    }
+    throw lastErr instanceof Error ? lastErr : new Error(`No ESPN play feed for event ${eventId}`);
   }
 
   private async getFirstJson(urls: string[]): Promise<unknown> {
@@ -82,6 +122,40 @@ export class EspnClient {
       clearTimeout(timer);
     }
   }
+}
+
+/** CDN play-by-play wraps the package; core /plays is a flat `items` list. */
+export function normalizeGamePayload(raw: unknown): GameSummary {
+  if (!raw || typeof raw !== "object") return {};
+  const obj = raw as Record<string, unknown>;
+  if (obj.gamepackageJSON && typeof obj.gamepackageJSON === "object") {
+    return obj.gamepackageJSON as GameSummary;
+  }
+  if (Array.isArray(obj.items) && !obj.drives) {
+    return { drives: { previous: [{ plays: obj.items as Play[] }] } };
+  }
+  return obj as GameSummary;
+}
+
+export function summaryHasPlays(summary: GameSummary): boolean {
+  const drives = summary.drives;
+  if (!drives) return false;
+  const lists: Array<{ plays?: Play[] } | undefined> = [];
+  if (Array.isArray(drives.previous)) lists.push(...drives.previous);
+  if (Array.isArray(drives.current)) lists.push(...drives.current);
+  else if (drives.current) lists.push(drives.current);
+  return lists.some((drive) => Array.isArray(drive?.plays) && drive.plays.length > 0);
+}
+
+export function mergeSummaries(primary: GameSummary | undefined, alt: GameSummary | undefined): GameSummary {
+  const primaryHas = primary ? summaryHasPlays(primary) : false;
+  const altHas = alt ? summaryHasPlays(alt) : false;
+  return {
+    ...(alt ?? {}),
+    ...(primary ?? {}),
+    drives: primaryHas ? primary!.drives : altHas ? alt!.drives : primary?.drives ?? alt?.drives,
+    header: primary?.header ?? alt?.header,
+  };
 }
 
 export function normalizeScoreboard(raw: unknown): Scoreboard {

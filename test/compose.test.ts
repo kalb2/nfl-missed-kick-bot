@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { composeTweet, isTweetLengthOk } from "../src/compose.js";
+import { composeTweet, isTweetLengthOk, stripUrls } from "../src/compose.js";
 import type { MissedKick } from "../src/types.js";
 
 const carlson: MissedKick = {
@@ -76,6 +76,18 @@ describe("composeTweet", () => {
     const tweet = composeTweet(shrader);
     expect(tweet).toBe("❌ S.Shrader (IND) missed a PAT — Wide Right\nQ1 10:33 | BAL 0-6 IND");
     expect(tweet.length).toBeLessThanOrEqual(280);
+  });
+
+  it("never includes URLs (X charges more for posts with links)", () => {
+    for (const miss of [carlson, sanders, shrader]) {
+      expect(composeTweet(miss)).not.toMatch(/https?:\/\//i);
+    }
+    const sneaky = composeTweet({
+      ...carlson,
+      kicker: "D.Carlson https://espn.com/play/1",
+    });
+    expect(sneaky).not.toMatch(/https?:\/\//i);
+    expect(stripUrls("plain text")).toBe("plain text");
   });
 
   it("truncates pathological input to 280 characters", () => {

@@ -105,6 +105,16 @@ describe("Extra Point Missed (pointAfterAttempt.id 62)", () => {
     expect(miss.homeScore).toBe(6);
   });
 
+  it("falls back to play text when pointAfterAttempt is missing", () => {
+    const play = {
+      id: "text-only-pat",
+      type: { id: "67", text: "Passing Touchdown" },
+      text: "J.Love pass deep middle to C.Watson for 81 yards, TOUCHDOWN. T.Smack extra point is No Good, Wide Right.",
+    };
+    expect(isExtraPointMiss(play)).toBe(true);
+    expect(classifyMiss(play)).toBe("PAT");
+  });
+
   it("treats Extra Point Missed even when ESPN sets pointAfterAttempt.value to 1", () => {
     const play = {
       id: "401872927531",

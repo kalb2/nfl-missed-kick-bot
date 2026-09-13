@@ -21,7 +21,7 @@ Q2 2:44 | NYJ 10-3 TEN
 Q1 10:33 | BAL 0-6 IND
 ```
 
-Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. Tweets stay under 280 characters.
+Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. Tweets stay under 280 characters and are **plain text with no URLs** — X pay-per-use charges more for posts that include links.
 
 ## How detection works
 
@@ -29,7 +29,7 @@ Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. T
 2. **Game summary** — fetch drives/plays for each watched game.
 3. **Missed FG** — a play whose `type.text === "Field Goal Missed"` (type id `"60"`), e.g.  
    `D.Carlson 62 yard field goal is No Good, Wide Right, Center-Z.Wood, Holder-R.Wright.`
-4. **Missed PAT** — often *on the touchdown play*, where `pointAfterAttempt.text === "Extra Point Missed"` (id `62`) and the text includes `S.Shrader extra point is No Good, Wide Right, ...`.  
+4. **Missed PAT** — prefer structured `pointAfterAttempt.id === 62` / text `Extra Point Missed` when present (often *on the touchdown play*). Also treat play text matching `extra point is No Good` as a backup when ESPN omits `pointAfterAttempt`.  
    **Extra Point Good (`id` 61) is never treated as a miss.** Key off `id` / `text`, not `value` — ESPN sometimes sets `value: 1` on a miss.
 5. Plays are collected from `drives.previous`, `drives.current`, and any other `plays[]` arrays in the payload.
 6. Each miss is keyed by ESPN play `id` and persisted so the same kick is never tweeted twice.
@@ -43,11 +43,13 @@ These endpoints are **undocumented public JSON**. ESPN can change or rate-limit 
 | Purpose | URL |
 | --- | --- |
 | Scoreboard | `GET https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard` |
-| Game summary | `GET https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={eventId}` |
+| Game summary (primary) | `GET https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={eventId}` |
+| CDN play-by-play (fallback) | `GET https://cdn.espn.com/core/nfl/playbyplay?xhr=1&gameId={eventId}` |
+| Core plays list (fallback) | `GET https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/{eventId}/competitions/{eventId}/plays?limit=400` |
 
-`site.api.espn.com` is the same path ESPN publishes more often, but Akamai frequently returns **403** from datacenter IPs. The bot tries `site.web.api.espn.com` first and falls back to `site.api.espn.com`.
+`site.api.espn.com` is the same summary/scoreboard path ESPN publishes more often, but Akamai frequently returns **403** from datacenter IPs. The bot tries `site.web.api.espn.com` first and falls back to `site.api.espn.com`.
 
-The core plays feed (`sports.core.api.espn.com/.../plays`) works but is heavier and $ref-heavy; the site summary already has `drives.*.plays[]` with `type` and `pointAfterAttempt`, so we use that.
+If `summary.drives` is empty or the site summary fails, it unwraps `gamepackageJSON` from the CDN feed, then the core `/plays` list (same play objects, `$ref`-heavy). Alternate feeds are skipped when the summary already has drives — one extra request per game only when needed.
 
 ## Setup
 
@@ -101,6 +103,8 @@ The bot posts with **OAuth 1.0a user context** for a dedicated bot account. It n
 6. Set `DRY_RUN=false` (or the `DRY_RUN` repository variable to `false`) only after the secrets are in place.
 
 If any secret is missing, the bot logs tweets instead of posting.
+
+**Cost tip:** keep tweets as plain-text alerts (kicker, distance, result, clock, score). Do not add ESPN or highlight URLs — X pay-per-use bills more for posts that contain links.
 
 ## GitHub Actions
 

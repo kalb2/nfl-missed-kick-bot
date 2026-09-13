@@ -18,13 +18,20 @@ export function composeTweet(miss: MissedKick): string {
     `${miss.quarter} ${miss.clock} | ${score}`,
   ];
 
-  let tweet = lines.join("\n");
+  let tweet = stripUrls(lines.join("\n"));
   if (tweet.length <= MAX_TWEET) return tweet;
 
-  tweet = `❌ ${miss.kicker} (${miss.teamAbbr}) missed ${kick} — ${miss.result}\n${miss.quarter} ${miss.clock}`;
+  tweet = stripUrls(
+    `❌ ${miss.kicker} (${miss.teamAbbr}) missed ${kick} — ${miss.result}\n${miss.quarter} ${miss.clock}`,
+  );
   if (tweet.length <= MAX_TWEET) return tweet;
 
   return tweet.slice(0, MAX_TWEET);
+}
+
+/** X pay-per-use charges more for posts that include links — keep alerts plain text. */
+export function stripUrls(text: string): string {
+  return text.replace(/https?:\/\/\S+/gi, "").replace(/[ \t]{2,}/g, " ").trim();
 }
 
 export function isTweetLengthOk(text: string): boolean {

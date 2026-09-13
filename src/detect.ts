@@ -16,6 +16,7 @@ const FG_KICKER_RE =
 const PAT_KICKER_RE = /([A-Z]\.[\p{L}'’.\-]+)\s+extra point/iu;
 const RESULT_RE =
   /(?:is\s+)?No Good(?:,\s*)?([^.,]+)?|field goal is BLOCKED|extra point is BLOCKED|BLOCKED/i;
+const PAT_NO_GOOD_RE = /extra point is No Good/i;
 
 /**
  * Walk a summary (or any ESPN JSON blob) and collect play-like objects.
@@ -82,6 +83,9 @@ export function isExtraPointMiss(play: Play): boolean {
   const typeId = String(play.type?.id ?? "");
   const typeText = play.type?.text ?? "";
   if (typeId === PAT_MISS_TYPE_ID || typeText === "Extra Point Missed") return true;
+  // Structured PAA is preferred; text is a backup when ESPN omits pointAfterAttempt.
+  const text = `${play.text ?? ""} ${play.shortText ?? ""}`;
+  if (PAT_NO_GOOD_RE.test(text)) return true;
   return false;
 }
 
