@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { composeTweet, isTweetLengthOk, stripUrls } from "../src/compose.js";
+import { composeTweet, isTweetLengthOk, stripUrls, teamHashtag } from "../src/compose.js";
 import type { MissedKick } from "../src/types.js";
 
 const carlson: MissedKick = {
@@ -56,10 +56,18 @@ const shrader: MissedKick = {
 };
 
 describe("composeTweet", () => {
-  it("includes kicker, team, kick type, distance, result, clock, score, matchup for Carlson", () => {
+  it("formats Carlson missed FG with labels and nickname hashtags", () => {
     const tweet = composeTweet(carlson);
     expect(tweet).toBe(
-      "❌ D.Carlson (NO) missed a 62-yard FG — Wide Right\nQ4 0:02 | NO 24-24 DET",
+      [
+        "❌ Missed FG",
+        "Kicker: D.Carlson (NO)",
+        "Kick: 62 yards",
+        "Result: Wide Right",
+        "When: Q4 0:02",
+        "Score: NO 24-24 DET",
+        "#Saints #Lions",
+      ].join("\n"),
     );
     expect(isTweetLengthOk(tweet)).toBe(true);
   });
@@ -67,15 +75,50 @@ describe("composeTweet", () => {
   it("formats Sanders 54 WL", () => {
     const tweet = composeTweet(sanders);
     expect(tweet).toBe(
-      "❌ J.Sanders (NYJ) missed a 54-yard FG — Wide Left\nQ2 2:44 | NYJ 10-3 TEN",
+      [
+        "❌ Missed FG",
+        "Kicker: J.Sanders (NYJ)",
+        "Kick: 54 yards",
+        "Result: Wide Left",
+        "When: Q2 2:44",
+        "Score: NYJ 10-3 TEN",
+        "#Jets #Titans",
+      ].join("\n"),
     );
     expect(tweet.length).toBeLessThanOrEqual(280);
   });
 
-  it("formats Shrader PAT without a distance", () => {
+  it("formats Shrader PAT without a distance line", () => {
     const tweet = composeTweet(shrader);
-    expect(tweet).toBe("❌ S.Shrader (IND) missed a PAT — Wide Right\nQ1 10:33 | BAL 0-6 IND");
+    expect(tweet).toBe(
+      [
+        "❌ Missed PAT",
+        "Kicker: S.Shrader (IND)",
+        "Result: Wide Right",
+        "When: Q1 10:33",
+        "Score: BAL 0-6 IND",
+        "#Colts #Ravens",
+      ].join("\n"),
+    );
     expect(tweet.length).toBeLessThanOrEqual(280);
+    expect(tweet).not.toMatch(/^Kick:/m);
+  });
+
+  it("falls back to matchup on the Score line when scores are missing", () => {
+    const tweet = composeTweet({
+      ...carlson,
+      awayScore: undefined,
+      homeScore: undefined,
+    });
+    expect(tweet).toContain("Score: NO @ DET");
+    expect(tweet).toContain("#Saints #Lions");
+  });
+
+  it("uses nickname hashtags, never abbreviation tags", () => {
+    const tweet = composeTweet(carlson);
+    expect(tweet).toMatch(/#Saints #Lions/);
+    expect(tweet).not.toMatch(/#NO\b/);
+    expect(tweet).not.toMatch(/#DET\b/);
   });
 
   it("never includes URLs (X charges more for posts with links)", () => {
@@ -87,15 +130,79 @@ describe("composeTweet", () => {
       kicker: "D.Carlson https://espn.com/play/1",
     });
     expect(sneaky).not.toMatch(/https?:\/\//i);
+    expect(sneaky).toContain("Kicker: D.Carlson (NO)");
     expect(stripUrls("plain text")).toBe("plain text");
   });
 
-  it("truncates pathological input to 280 characters", () => {
+  it("drops nickname hashtags before Score or When when slightly over length", () => {
+    const tweet = composeTweet({
+      ...carlson,
+      result: "Wide Right " + "x".repeat(168),
+    });
+    expect(tweet.length).toBeLessThanOrEqual(280);
+    expect(tweet).toContain("Score: NO 24-24 DET");
+    expect(tweet).toContain("When: Q4 0:02");
+    expect(tweet).not.toMatch(/#Saints|#Lions|#NO\b|#DET\b/);
+  });
+
+  it("drops Score then When, and never exceeds 280", () => {
     const tweet = composeTweet({
       ...carlson,
       kicker: "A".repeat(300),
       result: "Wide Right and then some extra commentary",
     });
     expect(tweet.length).toBeLessThanOrEqual(280);
+    expect(tweet.startsWith("❌ Missed FG")).toBe(true);
+    expect(tweet).not.toMatch(/#Saints|#Lions/);
+  });
+});
+
+describe("teamHashtag", () => {
+  it("maps all 32 teams and common ESPN abbreviations to nickname tags", () => {
+    const expected: Record<string, string> = {
+      ARI: "#Cardinals",
+      ATL: "#Falcons",
+      BAL: "#Ravens",
+      BUF: "#Bills",
+      CAR: "#Panthers",
+      CHI: "#Bears",
+      CIN: "#Bengals",
+      CLE: "#Browns",
+      DAL: "#Cowboys",
+      DEN: "#Broncos",
+      DET: "#Lions",
+      GB: "#Packers",
+      HOU: "#Texans",
+      IND: "#Colts",
+      JAX: "#Jaguars",
+      JAC: "#Jaguars",
+      KC: "#Chiefs",
+      LAC: "#Chargers",
+      LAR: "#Rams",
+      LV: "#Raiders",
+      MIA: "#Dolphins",
+      MIN: "#Vikings",
+      NE: "#Patriots",
+      NO: "#Saints",
+      NYG: "#Giants",
+      NYJ: "#Jets",
+      PHI: "#Eagles",
+      PIT: "#Steelers",
+      SEA: "#Seahawks",
+      SF: "#49ers",
+      TB: "#Buccaneers",
+      TEN: "#Titans",
+      WSH: "#Commanders",
+      WAS: "#Commanders",
+    };
+
+    for (const [abbr, tag] of Object.entries(expected)) {
+      expect(teamHashtag(abbr)).toBe(tag);
+    }
+  });
+
+  it("does not emit abbreviation-style tags for unknown codes", () => {
+    expect(teamHashtag("NO")).toBe("#Saints");
+    expect(teamHashtag("XYZ")).toBeUndefined();
   });
 });
