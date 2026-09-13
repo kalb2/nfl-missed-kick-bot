@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { composeTweet, isTweetLengthOk, stripUrls } from "../src/compose.js";
+import { composeTweet, isTweetLengthOk, stripUrls, teamHashtag } from "../src/compose.js";
 import type { MissedKick } from "../src/types.js";
 
 const carlson: MissedKick = {
@@ -56,10 +56,18 @@ const shrader: MissedKick = {
 };
 
 describe("composeTweet", () => {
-  it("includes kicker, team, kick type, distance, result, clock, score, matchup for Carlson", () => {
+  it("formats Carlson missed FG with labels and official season hashtags", () => {
     const tweet = composeTweet(carlson);
     expect(tweet).toBe(
-      "❌ D.Carlson (NO) missed a 62-yard FG — Wide Right\nQ4 0:02 | NO 24-24 DET",
+      [
+        "❌ Missed FG",
+        "Kicker: D.Carlson (NO)",
+        "Kick: 62 yards",
+        "Result: Wide Right",
+        "When: Q4 0:02",
+        "Score: NO 24-24 DET",
+        "#Saints #OnePride",
+      ].join("\n"),
     );
     expect(isTweetLengthOk(tweet)).toBe(true);
   });
@@ -67,15 +75,51 @@ describe("composeTweet", () => {
   it("formats Sanders 54 WL", () => {
     const tweet = composeTweet(sanders);
     expect(tweet).toBe(
-      "❌ J.Sanders (NYJ) missed a 54-yard FG — Wide Left\nQ2 2:44 | NYJ 10-3 TEN",
+      [
+        "❌ Missed FG",
+        "Kicker: J.Sanders (NYJ)",
+        "Kick: 54 yards",
+        "Result: Wide Left",
+        "When: Q2 2:44",
+        "Score: NYJ 10-3 TEN",
+        "#TakeFlight #Titans",
+      ].join("\n"),
     );
     expect(tweet.length).toBeLessThanOrEqual(280);
   });
 
-  it("formats Shrader PAT without a distance", () => {
+  it("formats Shrader PAT without a distance line", () => {
     const tweet = composeTweet(shrader);
-    expect(tweet).toBe("❌ S.Shrader (IND) missed a PAT — Wide Right\nQ1 10:33 | BAL 0-6 IND");
+    expect(tweet).toBe(
+      [
+        "❌ Missed PAT",
+        "Kicker: S.Shrader (IND)",
+        "Result: Wide Right",
+        "When: Q1 10:33",
+        "Score: BAL 0-6 IND",
+        "#ForTheShoe #RavensFlock",
+      ].join("\n"),
+    );
     expect(tweet.length).toBeLessThanOrEqual(280);
+    expect(tweet).not.toMatch(/^Kick:/m);
+  });
+
+  it("falls back to matchup on the Score line when scores are missing", () => {
+    const tweet = composeTweet({
+      ...carlson,
+      awayScore: undefined,
+      homeScore: undefined,
+    });
+    expect(tweet).toContain("Score: NO @ DET");
+    expect(tweet).toContain("#Saints #OnePride");
+  });
+
+  it("uses official season hashtags, never abbreviation tags", () => {
+    const tweet = composeTweet(carlson);
+    expect(tweet).toMatch(/#Saints #OnePride/);
+    expect(tweet).not.toMatch(/#NO\b/);
+    expect(tweet).not.toMatch(/#DET\b/);
+    expect(tweet).not.toMatch(/#Lions\b/);
   });
 
   it("never includes URLs (X charges more for posts with links)", () => {
@@ -87,15 +131,82 @@ describe("composeTweet", () => {
       kicker: "D.Carlson https://espn.com/play/1",
     });
     expect(sneaky).not.toMatch(/https?:\/\//i);
+    expect(sneaky).toContain("Kicker: D.Carlson (NO)");
     expect(stripUrls("plain text")).toBe("plain text");
   });
 
-  it("truncates pathological input to 280 characters", () => {
+  it("drops season hashtags before Score or When when slightly over length", () => {
+    const tweet = composeTweet({
+      ...carlson,
+      result: "Wide Right " + "x".repeat(168),
+    });
+    expect(tweet.length).toBeLessThanOrEqual(280);
+    expect(tweet).toContain("Score: NO 24-24 DET");
+    expect(tweet).toContain("When: Q4 0:02");
+    expect(tweet).not.toMatch(/#Saints|#OnePride|#NO\b|#DET\b/);
+  });
+
+  it("drops Score then When, and never exceeds 280", () => {
     const tweet = composeTweet({
       ...carlson,
       kicker: "A".repeat(300),
       result: "Wide Right and then some extra commentary",
     });
     expect(tweet.length).toBeLessThanOrEqual(280);
+    expect(tweet.startsWith("❌ Missed FG")).toBe(true);
+    expect(tweet).not.toMatch(/#Saints|#OnePride/);
+  });
+});
+
+describe("teamHashtag", () => {
+  it("maps all 32 teams and common ESPN abbreviations to official season tags", () => {
+    const expected: Record<string, string> = {
+      ARI: "#BirdGang",
+      ATL: "#DirtyBirds",
+      BAL: "#RavensFlock",
+      BUF: "#BillsMafia",
+      CAR: "#KeepPounding",
+      CHI: "#DaBears",
+      CIN: "#RuleTheJungle",
+      CLE: "#DawgPound",
+      DAL: "#DallasCowboys",
+      DEN: "#BroncosCountry",
+      DET: "#OnePride",
+      GB: "#GoPackGo",
+      HOU: "#WeAreTexans",
+      IND: "#ForTheShoe",
+      JAX: "#DUUUVAL",
+      JAC: "#DUUUVAL",
+      KC: "#ChiefsKingdom",
+      LAC: "#BoltUp",
+      SD: "#BoltUp",
+      LAR: "#RamsHouse",
+      LA: "#RamsHouse",
+      LV: "#RaiderNation",
+      OAK: "#RaiderNation",
+      MIA: "#FinsUp",
+      MIN: "#SKOL",
+      NE: "#ForeverNE",
+      NO: "#Saints",
+      NYG: "#NYGiants",
+      NYJ: "#TakeFlight",
+      PHI: "#FlyEaglesFly",
+      PIT: "#HereWeGo",
+      SEA: "#Seahawks",
+      SF: "#FTTB",
+      TB: "#GoBucs",
+      TEN: "#Titans",
+      WSH: "#RaiseHail",
+      WAS: "#RaiseHail",
+    };
+
+    for (const [abbr, tag] of Object.entries(expected)) {
+      expect(teamHashtag(abbr)).toBe(tag);
+    }
+  });
+
+  it("does not emit abbreviation-style tags for unknown codes", () => {
+    expect(teamHashtag("NO")).toBe("#Saints");
+    expect(teamHashtag("XYZ")).toBeUndefined();
   });
 });
