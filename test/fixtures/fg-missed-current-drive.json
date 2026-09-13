@@ -1,0 +1,42 @@
+{
+  "header": {
+    "id": "401872657",
+    "competitions": [
+      {
+        "competitors": [
+          {
+            "id": "14",
+            "homeAway": "home",
+            "team": { "id": "14", "abbreviation": "LAR", "displayName": "Los Angeles Rams" }
+          },
+          {
+            "id": "25",
+            "homeAway": "away",
+            "team": { "id": "25", "abbreviation": "SF", "displayName": "San Francisco 49ers" }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [],
+    "current": {
+      "plays": [
+        {
+          "id": "4018726573620",
+          "type": { "id": "60", "text": "Field Goal Missed", "abbreviation": "FGM" },
+          "text": "E.Pineiro 52 yard field goal is No Good, Hit Right Upright, Center-J.Weeks, Holder-C.Waitman.",
+          "awayScore": 27,
+          "homeScore": 7,
+          "period": { "number": 4 },
+          "clock": { "displayValue": "3:34" },
+          "teamParticipants": [
+            { "id": "14", "type": "defense" },
+            { "id": "25", "type": "offense" }
+          ],
+          "statYardage": 52
+        }
+      ]
+    }
+  }
+}

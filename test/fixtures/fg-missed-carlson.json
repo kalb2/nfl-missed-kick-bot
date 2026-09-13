@@ -1,0 +1,64 @@
+{
+  "header": {
+    "id": "401872923",
+    "competitions": [
+      {
+        "competitors": [
+          {
+            "id": "8",
+            "homeAway": "home",
+            "score": "31",
+            "team": {
+              "id": "8",
+              "abbreviation": "DET",
+              "displayName": "Detroit Lions",
+              "name": "Lions",
+              "location": "Detroit"
+            }
+          },
+          {
+            "id": "18",
+            "homeAway": "away",
+            "score": "30",
+            "team": {
+              "id": "18",
+              "abbreviation": "NO",
+              "displayName": "New Orleans Saints",
+              "name": "Saints",
+              "location": "New Orleans"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729234815",
+            "sequenceNumber": "481500",
+            "type": {
+              "id": "60",
+              "text": "Field Goal Missed",
+              "abbreviation": "FGM"
+            },
+            "text": "D.Carlson 62 yard field goal is No Good, Wide Right, Center-Z.Wood, Holder-R.Wright.",
+            "awayScore": 24,
+            "homeScore": 24,
+            "period": { "number": 4 },
+            "clock": { "displayValue": "0:02" },
+            "scoringPlay": false,
+            "wallclock": "2026-09-13T20:19:00Z",
+            "teamParticipants": [
+              { "id": "8", "order": 1, "type": "defense" },
+              { "id": "18", "order": 2, "type": "offense" }
+            ],
+            "statYardage": 62
+          }
+        ]
+      }
+    ]
+  }
+}
