@@ -13,6 +13,7 @@ Kick: 62 yards
 Result: Wide Right
 When: Q4 0:02
 Score: NO 24-24 DET
+Season: 2 missed FG · 0 missed PAT
 #Saints #OnePride
 ```
 
@@ -23,6 +24,7 @@ Kick: 54 yards
 Result: Wide Left
 When: Q2 2:44
 Score: NYJ 10-3 TEN
+Season: 1 missed FG · 0 missed PAT
 #TakeFlight #Titans
 ```
 
@@ -32,10 +34,11 @@ Kicker: S.Shrader (IND)
 Result: Wide Right
 When: Q1 10:33
 Score: BAL 0-6 IND
+Season: 0 missed FG · 1 missed PAT
 #ForTheShoe #RavensFlock
 ```
 
-Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. Each alert is labeled line-by-line (PAT omits the Kick/distance line) and ends with official primary season hashtags for both teams — kicking team first, never raw abbreviations like `#NO`. Those tags trigger custom team emojis on X. Tweets stay under 280 characters and are **plain text with no URLs** — X pay-per-use charges more for posts that include links.
+Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. Each alert is labeled line-by-line (PAT omits the Kick/distance line). A **Season** line shows that kicker’s regular-season miss totals (FG and PAT only, inclusive of the kick just posted). Tweets end with official primary season hashtags for both teams — kicking team first, never raw abbreviations like `#NO`. Those tags trigger custom team emojis on X. Tweets stay under 280 characters and are **plain text with no URLs** — X pay-per-use charges more for posts that include links. If a post would exceed 280 characters, hashtags are dropped first; the Season line is kept ahead of hashtags and is dropped only after Score / When.
 
 ## How detection works
 
@@ -47,6 +50,7 @@ Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. E
    **Extra Point Good (`id` 61) is never treated as a miss.** Key off `id` / `text`, not `value` — ESPN sometimes sets `value: 1` on a miss.
 5. Plays are collected from `drives.previous`, `drives.current`, and any other `plays[]` arrays in the payload.
 6. Each miss is keyed by ESPN play `id` and persisted so the same kick is never tweeted twice.
+7. **Season tallies** — each poll recomputes per-kicker miss counts from ESPN play-by-play for regular-season games (`seasontype=2`) that have already started this season (weeks 1…current, or all 18 once the postseason begins). The same miss detectors as above are used. Kickers are keyed by athlete id when the play has one (core `/plays` `participants[].athlete`), otherwise by a normalized name + team. Tallies are not incremented from a local counter; ESPN PBP is the source of truth. Completed games may be cached in `.state/tallies.json` so later polls skip them; if that file is missing the bot rebuilds from ESPN. In-progress games are always refetched. Within one process, a game is not parsed twice.
 
 Team comes from `teamParticipants` (`type === "offense"`) matched to the game’s competitors. Distance is parsed from the play text (FG only). Result detail (Wide Left / Right, Short, Blocked, Hit Right Upright, …) is parsed from the `No Good, …` clause.
 
@@ -78,7 +82,7 @@ cp .env.example .env
 
 ### Dry-run against live ESPN (no tweets)
 
-Prints today’s misses from the live scoreboard without posting. Uses `--fresh` so a leftover `.state` file does not hide them:
+Prints today’s misses from the live scoreboard without posting — including the Season tally line and a `[season]` leaderboard of kickers who have missed this regular season. Uses `--fresh` so a leftover `.state` file does not hide them:
 
 ```bash
 npm run dry-run -- --fresh
@@ -118,7 +122,7 @@ The bot posts with **OAuth 1.0a user context** for a dedicated bot account. It n
 
 If any secret is missing, the bot logs tweets instead of posting.
 
-**Cost tip:** keep tweets as plain-text alerts (kicker, distance, result, clock, score, official team season hashtags). Do not add ESPN or highlight URLs — X pay-per-use bills more for posts that contain links.
+**Cost tip:** keep tweets as plain-text alerts (kicker, distance, result, clock, score, season miss tallies, official team season hashtags). Do not add ESPN or highlight URLs — X pay-per-use bills more for posts that contain links.
 
 ## GitHub Actions
 
@@ -127,7 +131,7 @@ Two workflows:
 | Workflow | When | What |
 | --- | --- | --- |
 | `ci.yml` | push / PR | `npm test` + typecheck |
-| `poll.yml` | cron + manual | one poll, cache `.state/seen.json` |
+| `poll.yml` | cron + manual | one poll, cache `.state/seen.json` and `.state/tallies.json` |
 
 `poll.yml` runs about every **5 minutes** during NFL windows (Sunday all day UTC, plus Thu/Fri and Mon/Tue overnight for TNF / SNF / MNF). If the scoreboard has no in-progress or recently finished game, it exits after the scoreboard call.
 
@@ -161,7 +165,7 @@ See [`.env.example`](.env.example).
 | `X_API_KEY` / `X_API_KEY_SECRET` / `X_ACCESS_TOKEN` / `X_ACCESS_TOKEN_SECRET` | (none) | OAuth 1.0a |
 | `DRY_RUN` | `true` | Log instead of post |
 | `POLL_INTERVAL_MS` | `30000` | Loop mode only |
-| `STATE_PATH` | `.state/seen.json` | Seen play IDs |
+| `STATE_PATH` | `.state/seen.json` | Seen play IDs (season tallies live beside it as `tallies.json`) |
 | `RECENT_FINAL_WINDOW_MIN` | `45` | Extra time after a ~4h game |
 | `SEED_SEEN` | `false` | Record misses, do not tweet |
 | `ESPN_USER_AGENT` | bot UA | Override if ESPN blocks |

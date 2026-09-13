@@ -18,6 +18,8 @@ const carlson: MissedKick = {
   homeScore: 24,
   matchup: "NO @ DET",
   playText: "D.Carlson 62 yard field goal is No Good, Wide Right, Center-Z.Wood, Holder-R.Wright.",
+  seasonFgMisses: 2,
+  seasonPatMisses: 0,
 };
 
 const sanders: MissedKick = {
@@ -36,6 +38,8 @@ const sanders: MissedKick = {
   homeScore: 3,
   matchup: "NYJ @ TEN",
   playText: "J.Sanders 54 yard field goal is No Good, Wide Left, Center-T.Hennessy, Holder-A.McNamara.",
+  seasonFgMisses: 1,
+  seasonPatMisses: 0,
 };
 
 const shrader: MissedKick = {
@@ -53,6 +57,8 @@ const shrader: MissedKick = {
   homeScore: 6,
   matchup: "BAL @ IND",
   playText: "J.Taylor right end for 1 yard, TOUCHDOWN. S.Shrader extra point is No Good, Wide Right.",
+  seasonFgMisses: 0,
+  seasonPatMisses: 1,
 };
 
 describe("composeTweet", () => {
@@ -66,6 +72,7 @@ describe("composeTweet", () => {
         "Result: Wide Right",
         "When: Q4 0:02",
         "Score: NO 24-24 DET",
+        "Season: 2 missed FG · 0 missed PAT",
         "#Saints #OnePride",
       ].join("\n"),
     );
@@ -82,6 +89,7 @@ describe("composeTweet", () => {
         "Result: Wide Left",
         "When: Q2 2:44",
         "Score: NYJ 10-3 TEN",
+        "Season: 1 missed FG · 0 missed PAT",
         "#TakeFlight #Titans",
       ].join("\n"),
     );
@@ -97,6 +105,7 @@ describe("composeTweet", () => {
         "Result: Wide Right",
         "When: Q1 10:33",
         "Score: BAL 0-6 IND",
+        "Season: 0 missed FG · 1 missed PAT",
         "#ForTheShoe #RavensFlock",
       ].join("\n"),
     );
@@ -135,7 +144,29 @@ describe("composeTweet", () => {
     expect(stripUrls("plain text")).toBe("plain text");
   });
 
-  it("drops season hashtags before Score or When when slightly over length", () => {
+  it("omits the Season line when tallies are not attached", () => {
+    const tweet = composeTweet({
+      ...carlson,
+      seasonFgMisses: undefined,
+      seasonPatMisses: undefined,
+    });
+    expect(tweet).not.toMatch(/^Season:/m);
+    expect(tweet).toContain("#Saints #OnePride");
+  });
+
+  it("drops official hashtags before the Season line when slightly over length", () => {
+    const tweet = composeTweet({
+      ...carlson,
+      result: "Wide Right " + "x".repeat(130),
+    });
+    expect(tweet.length).toBeLessThanOrEqual(280);
+    expect(tweet).toContain("Season: 2 missed FG · 0 missed PAT");
+    expect(tweet).toContain("Score: NO 24-24 DET");
+    expect(tweet).toContain("When: Q4 0:02");
+    expect(tweet).not.toMatch(/#Saints|#OnePride|#NO\b|#DET\b/);
+  });
+
+  it("drops Season after Score/When when still over length", () => {
     const tweet = composeTweet({
       ...carlson,
       result: "Wide Right " + "x".repeat(168),
@@ -143,6 +174,7 @@ describe("composeTweet", () => {
     expect(tweet.length).toBeLessThanOrEqual(280);
     expect(tweet).toContain("Score: NO 24-24 DET");
     expect(tweet).toContain("When: Q4 0:02");
+    expect(tweet).not.toMatch(/^Season:/m);
     expect(tweet).not.toMatch(/#Saints|#OnePride|#NO\b|#DET\b/);
   });
 

@@ -1,4 +1,7 @@
-import type { GameSummary, Play, Scoreboard, ScoreboardEvent } from "./types.js";
+import type { GameContext, GameSummary, Play, Scoreboard, ScoreboardEvent, ScoreboardQuery, SeasonRef, WeekRef } from "./types.js";
+
+/** ESPN regular season. Preseason=1, regular=2, postseason=3. */
+export const REGULAR_SEASON_TYPE = 2;
 
 const SCOREBOARD_URLS = [
   "https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
@@ -42,8 +45,9 @@ export class EspnClient {
     this.fetchImpl = opts.fetchImpl ?? fetch;
   }
 
-  async getScoreboard(): Promise<Scoreboard> {
-    const json = await this.getFirstJson(SCOREBOARD_URLS);
+  async getScoreboard(query?: ScoreboardQuery): Promise<Scoreboard> {
+    const urls = SCOREBOARD_URLS.map((url) => withScoreboardQuery(url, query));
+    const json = await this.getFirstJson(urls);
     return normalizeScoreboard(json);
   }
 
@@ -158,14 +162,99 @@ export function mergeSummaries(primary: GameSummary | undefined, alt: GameSummar
   };
 }
 
+export function withScoreboardQuery(url: string, query?: ScoreboardQuery): string {
+  if (!query) return url;
+  const parsed = new URL(url);
+  if (query.seasonType !== undefined) parsed.searchParams.set("seasontype", String(query.seasonType));
+  if (query.week !== undefined) parsed.searchParams.set("week", String(query.week));
+  if (query.dates) parsed.searchParams.set("dates", query.dates);
+  return parsed.toString();
+}
+
 export function normalizeScoreboard(raw: unknown): Scoreboard {
   if (!raw || typeof raw !== "object") return { events: [] };
   const obj = raw as Record<string, unknown>;
-  if (Array.isArray(obj.events)) return { events: obj.events as ScoreboardEvent[] };
+  const events = scoreboardEvents(obj);
+  return {
+    events,
+    season: extractSeason(obj),
+    week: extractWeek(obj),
+  };
+}
+
+function scoreboardEvents(obj: Record<string, unknown>): ScoreboardEvent[] {
+  if (Array.isArray(obj.events)) return obj.events as ScoreboardEvent[];
   const content = obj.content as Record<string, unknown> | undefined;
   const sbData = content?.sbData as Record<string, unknown> | undefined;
-  if (Array.isArray(sbData?.events)) return { events: sbData.events as ScoreboardEvent[] };
-  return { events: [] };
+  if (Array.isArray(sbData?.events)) return sbData.events as ScoreboardEvent[];
+  return [];
+}
+
+export function extractSeason(obj: Record<string, unknown>): SeasonRef | undefined {
+  const direct = seasonFromUnknown(obj.season);
+  if (direct) return direct;
+  const leagues = obj.leagues;
+  if (Array.isArray(leagues) && leagues[0] && typeof leagues[0] === "object") {
+    return seasonFromUnknown((leagues[0] as Record<string, unknown>).season);
+  }
+  return undefined;
+}
+
+function seasonFromUnknown(raw: unknown): SeasonRef | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const obj = raw as Record<string, unknown>;
+  const year = typeof obj.year === "number" ? obj.year : undefined;
+  let type: number | undefined;
+  if (typeof obj.type === "number") type = obj.type;
+  else if (obj.type && typeof obj.type === "object") {
+    const nested = obj.type as Record<string, unknown>;
+    if (typeof nested.type === "number") type = nested.type;
+    else if (typeof nested.id === "string" || typeof nested.id === "number") {
+      const parsed = Number.parseInt(String(nested.id), 10);
+      if (Number.isFinite(parsed)) type = parsed;
+    }
+  }
+  const slug = typeof obj.slug === "string" ? obj.slug : undefined;
+  if (year === undefined && type === undefined && !slug) return undefined;
+  return { year, type, slug };
+}
+
+export function extractWeek(obj: Record<string, unknown>): WeekRef | undefined {
+  const raw = obj.week;
+  if (!raw || typeof raw !== "object") return undefined;
+  const number = (raw as { number?: unknown }).number;
+  return typeof number === "number" ? { number } : undefined;
+}
+
+export function eventStatusState(event: ScoreboardEvent): string | undefined {
+  return event.status?.type?.state || event.competitions?.[0]?.status?.type?.state;
+}
+
+/** Games that have kicked off or finished — used for season-wide tally scans. */
+export function hasGameStarted(event: ScoreboardEvent, now = Date.now()): boolean {
+  const state = eventStatusState(event);
+  if (state === "pre") return false;
+  if (state === "in" || state === "post") return true;
+  const start = Date.parse(event.date || event.competitions?.[0]?.date || "");
+  return Number.isFinite(start) && start <= now;
+}
+
+export function isCompletedGame(event: ScoreboardEvent): boolean {
+  const status = event.status?.type ?? event.competitions?.[0]?.status?.type;
+  return status?.state === "post" || Boolean(status?.completed);
+}
+
+export function contextFromEvent(event: ScoreboardEvent): GameContext {
+  const competition = event.competitions?.[0];
+  return {
+    eventId: event.id,
+    shortName: event.shortName || event.name || event.id,
+    date: event.date || competition?.date,
+    statusState: eventStatusState(event),
+    seasonType: event.season?.type,
+    seasonYear: event.season?.year,
+    competitors: competition?.competitors ?? [],
+  };
 }
 
 /** Typical NFL game length (~4h) plus a short post-game window. */

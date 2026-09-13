@@ -2,6 +2,7 @@ import { loadConfig } from "./config.js";
 import { EspnClient } from "./espn.js";
 import { pollOnce, summarizeResult } from "./poll.js";
 import { SeenStore } from "./store.js";
+import { SeasonTallyIndex, tallyPathFromStatePath } from "./tallies.js";
 import { createPoster } from "./twitter.js";
 import type { PollOptions } from "./types.js";
 
@@ -31,9 +32,14 @@ async function main(): Promise<void> {
   });
 
   const store = new SeenStore(config.statePath);
+  const tallies = new SeasonTallyIndex(tallyPathFromStatePath(config.statePath));
   if (!args.fresh) {
     await store.load();
+    await tallies.load();
     console.log("Loaded %d seen play id(s) from %s", store.size, config.statePath);
+    if (tallies.size) {
+      console.log("Loaded season tally cache for %d game(s)", tallies.size);
+    }
   } else {
     console.log("Starting with empty seen-play state (--fresh)");
   }
@@ -55,7 +61,7 @@ async function main(): Promise<void> {
   }
 
   const run = async (): Promise<void> => {
-    const result = await pollOnce({ espn, store, poster }, options);
+    const result = await pollOnce({ espn, store, poster, tallies }, options);
     summarizeResult(result, args.command);
     if (result.tweets.length) {
       for (const tweet of result.tweets) {

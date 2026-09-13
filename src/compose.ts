@@ -1,3 +1,4 @@
+import { formatSeasonLine } from "./tallies.js";
 import type { MissedKick } from "./types.js";
 
 const MAX_TWEET = 280;
@@ -68,10 +69,13 @@ export function composeTweet(miss: MissedKick): string {
   const result = `Result: ${miss.result}`;
   const when = whenLine(miss);
   const score = scoreLine(miss);
+  const season = seasonLine(miss);
   const hashtags = hashtagLine(miss);
 
+  // Drop hashtags first, then Season (after Score/When), then Score, then When.
   const variants: Array<Array<string | undefined>> = [
-    [header, kicker, kick, result, when, score, hashtags],
+    [header, kicker, kick, result, when, score, season, hashtags],
+    [header, kicker, kick, result, when, score, season],
     [header, kicker, kick, result, when, score],
     [header, kicker, kick, result, when],
     [header, kicker, kick, result],
@@ -91,6 +95,11 @@ export function composeTweet(miss: MissedKick): string {
 export function teamHashtag(abbr: string): string | undefined {
   const tag = NFL_SEASON_HASHTAGS[abbr.trim().toUpperCase()];
   return tag ? `#${tag}` : undefined;
+}
+
+function seasonLine(miss: MissedKick): string | undefined {
+  if (miss.seasonFgMisses === undefined || miss.seasonPatMisses === undefined) return undefined;
+  return formatSeasonLine(miss.seasonFgMisses, miss.seasonPatMisses);
 }
 
 function scoreLine(miss: MissedKick): string | undefined {

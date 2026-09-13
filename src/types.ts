@@ -19,6 +19,19 @@ export interface TeamParticipant {
   order?: number;
 }
 
+export interface AthleteRef {
+  id?: string | number;
+  $ref?: string;
+  displayName?: string;
+}
+
+export interface PlayParticipant {
+  type?: string;
+  order?: number;
+  athlete?: AthleteRef;
+  position?: { $ref?: string; abbreviation?: string };
+}
+
 export interface Play {
   id?: string;
   sequenceNumber?: string;
@@ -33,6 +46,9 @@ export interface Play {
   wallclock?: string;
   modified?: string;
   teamParticipants?: TeamParticipant[];
+  participants?: PlayParticipant[];
+  athletesInvolved?: AthleteRef[];
+  athlete?: AthleteRef;
   pointAfterAttempt?: PointAfterAttempt;
   statYardage?: number;
   start?: { team?: { id?: string }; yardsToEndzone?: number };
@@ -64,11 +80,23 @@ export interface GameStatus {
   };
 }
 
+export interface SeasonRef {
+  year?: number;
+  type?: number;
+  slug?: string;
+}
+
+export interface WeekRef {
+  number?: number;
+}
+
 export interface ScoreboardEvent {
   id: string;
   date?: string;
   shortName?: string;
   name?: string;
+  season?: SeasonRef;
+  week?: WeekRef;
   status?: GameStatus;
   competitions?: Array<{
     id?: string;
@@ -80,6 +108,14 @@ export interface ScoreboardEvent {
 
 export interface Scoreboard {
   events?: ScoreboardEvent[];
+  season?: SeasonRef;
+  week?: WeekRef;
+}
+
+export interface ScoreboardQuery {
+  week?: number;
+  seasonType?: number;
+  dates?: string;
 }
 
 export interface GameSummary {
@@ -104,6 +140,8 @@ export interface GameContext {
   shortName: string;
   date?: string;
   statusState?: string;
+  seasonType?: number;
+  seasonYear?: number;
   competitors: Competitor[];
 }
 
@@ -111,6 +149,7 @@ export interface MissedKick {
   playId: string;
   kickType: KickType;
   kicker: string;
+  athleteId?: string;
   teamAbbr: string;
   teamName: string;
   distance?: number;
@@ -123,6 +162,10 @@ export interface MissedKick {
   homeScore?: number;
   matchup: string;
   playText: string;
+  /** Regular-season FG misses for this kicker, inclusive of this play. */
+  seasonFgMisses?: number;
+  /** Regular-season PAT misses for this kicker, inclusive of this play. */
+  seasonPatMisses?: number;
 }
 
 export interface PollOptions {
@@ -133,6 +176,13 @@ export interface PollOptions {
   recentFinalWindowMin: number;
 }
 
+export interface SeasonTallyRow {
+  kicker: string;
+  teamAbbr: string;
+  fg: number;
+  pat: number;
+}
+
 export interface PollResult {
   gamesScanned: number;
   missesFound: number;
@@ -140,4 +190,6 @@ export interface PollResult {
   posted: number;
   skippedSeen: number;
   tweets: string[];
+  seasonGamesScanned?: number;
+  seasonTallies?: SeasonTallyRow[];
 }
