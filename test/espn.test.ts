@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   EspnClient,
+  athleteFromPayload,
   hasGameStarted,
   isWatchableGame,
   mergeSummaries,
@@ -187,6 +188,68 @@ describe("alternate play feeds", () => {
     const summary = await client.getSummary("401872923");
     expect(summaryHasPlays(summary)).toBe(true);
     expect(urls.some((u) => u.includes("cdn.espn.com/core/nfl/playbyplay"))).toBe(true);
+  });
+});
+
+describe("athlete profiles", () => {
+  it("reads displayName from core and site-v3 payloads", () => {
+    expect(
+      athleteFromPayload({
+        id: "2985659",
+        firstName: "Wil",
+        lastName: "Lutz",
+        fullName: "Wil Lutz",
+        displayName: "Wil Lutz",
+        shortName: "W. Lutz",
+      }),
+    ).toMatchObject({
+      id: "2985659",
+      firstName: "Wil",
+      lastName: "Lutz",
+      displayName: "Wil Lutz",
+      fullName: "Wil Lutz",
+    });
+    expect(
+      athleteFromPayload({
+        athlete: {
+          id: "3051909",
+          firstName: "Daniel",
+          lastName: "Carlson",
+          displayName: "Daniel Carlson",
+          fullName: "Daniel Carlson",
+        },
+      }),
+    ).toMatchObject({ id: "3051909", displayName: "Daniel Carlson" });
+  });
+
+  it("fetches and caches an athlete profile by id", async () => {
+    const urls: string[] = [];
+    let hits = 0;
+    const fetchImpl = async (url: string | URL | Request) => {
+      urls.push(String(url));
+      hits += 1;
+      return new Response(
+        JSON.stringify({
+          id: "2985659",
+          firstName: "Wil",
+          lastName: "Lutz",
+          fullName: "Wil Lutz",
+          displayName: "Wil Lutz",
+          shortName: "W. Lutz",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    };
+    const client = new EspnClient({
+      userAgent: "test",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    const first = await client.getAthlete("2985659");
+    const second = await client.getAthlete("2985659");
+    expect(first?.displayName).toBe("Wil Lutz");
+    expect(second?.displayName).toBe("Wil Lutz");
+    expect(hits).toBe(1);
+    expect(urls[0]).toContain("/athletes/2985659");
   });
 });
 

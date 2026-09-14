@@ -57,5 +57,28 @@
         ]
       }
     ]
+  },
+  "boxscore": {
+    "players": [
+      {
+        "team": { "abbreviation": "NYJ" },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "3124679",
+                  "firstName": "Jason",
+                  "lastName": "Sanders",
+                  "displayName": "Jason Sanders",
+                  "fullName": "Jason Sanders"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 }

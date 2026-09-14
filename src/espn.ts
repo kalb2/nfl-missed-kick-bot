@@ -1,4 +1,4 @@
-import type { GameContext, GameSummary, Play, Scoreboard, ScoreboardEvent, ScoreboardQuery, SeasonRef, WeekRef } from "./types.js";
+import type { AthleteRef, GameContext, GameSummary, Play, Scoreboard, ScoreboardEvent, ScoreboardQuery, SeasonRef, WeekRef } from "./types.js";
 
 /** ESPN regular season. Preseason=1, regular=2, postseason=3. */
 export const REGULAR_SEASON_TYPE = 2;
@@ -21,6 +21,15 @@ function playFeedUrls(eventId: string): string[] {
   ];
 }
 
+function athleteProfileUrls(athleteId: string): string[] {
+  const id = encodeURIComponent(athleteId);
+  return [
+    `https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/${id}`,
+    `https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/athletes/${id}`,
+    `https://site.api.espn.com/apis/common/v3/sports/football/nfl/athletes/${id}`,
+  ];
+}
+
 const DEFAULT_TTL_MS = 20_000;
 const FETCH_TIMEOUT_MS = 15_000;
 
@@ -33,6 +42,7 @@ export interface EspnClientOptions {
 
 export class EspnClient {
   private readonly summaryCache = new Map<string, { at: number; data: GameSummary }>();
+  private readonly athleteCache = new Map<string, AthleteRef>();
   private readonly userAgent: string;
   private readonly summaryTtlMs: number;
   readonly concurrency: number;
@@ -94,6 +104,29 @@ export class EspnClient {
     throw lastErr instanceof Error ? lastErr : new Error(`No ESPN play feed for event ${eventId}`);
   }
 
+  async getAthlete(athleteId: string): Promise<AthleteRef | undefined> {
+    const id = String(athleteId);
+    const cached = this.athleteCache.get(id);
+    if (cached) return cached;
+
+    let lastErr: unknown;
+    for (const url of athleteProfileUrls(id)) {
+      try {
+        const athlete = athleteFromPayload(await this.getJson(url));
+        if (athlete) {
+          this.athleteCache.set(id, athlete);
+          return athlete;
+        }
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    if (lastErr) {
+      console.warn("athlete profile failed for %s: %s", id, (lastErr as Error).message);
+    }
+    return undefined;
+  }
+
   private async getFirstJson(urls: string[]): Promise<unknown> {
     let lastErr: unknown;
     for (const url of urls) {
@@ -129,6 +162,42 @@ export class EspnClient {
 }
 
 /** CDN play-by-play wraps the package; core /plays is a flat `items` list. */
+export function athleteFromPayload(raw: unknown): AthleteRef | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const obj = raw as Record<string, unknown>;
+  const nested = obj.athlete;
+  const athlete = (
+    nested && typeof nested === "object" ? nested : obj
+  ) as Record<string, unknown>;
+
+  const rawId = athlete.id;
+  const id =
+    typeof rawId === "string" || typeof rawId === "number" ? rawId : undefined;
+  const displayName = typeof athlete.displayName === "string" ? athlete.displayName : undefined;
+  const fullName = typeof athlete.fullName === "string" ? athlete.fullName : undefined;
+  const firstName = typeof athlete.firstName === "string" ? athlete.firstName : undefined;
+  const lastName = typeof athlete.lastName === "string" ? athlete.lastName : undefined;
+  const shortName = typeof athlete.shortName === "string" ? athlete.shortName : undefined;
+  if (
+    (id === undefined || String(id).length === 0) &&
+    !displayName &&
+    !fullName &&
+    !firstName &&
+    !lastName
+  ) {
+    return undefined;
+  }
+
+  return {
+    ...(id !== undefined ? { id } : {}),
+    ...(displayName ? { displayName } : {}),
+    ...(fullName ? { fullName } : {}),
+    ...(firstName ? { firstName } : {}),
+    ...(lastName ? { lastName } : {}),
+    ...(shortName ? { shortName } : {}),
+  };
+}
+
 export function normalizeGamePayload(raw: unknown): GameSummary {
   if (!raw || typeof raw !== "object") return {};
   const obj = raw as Record<string, unknown>;

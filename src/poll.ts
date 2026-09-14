@@ -1,5 +1,5 @@
 import { composeTweet } from "./compose.js";
-import { buildGameContext, detectMissedKicks } from "./detect.js";
+import { buildGameContext, detectMissedKicks, enrichKickerNames } from "./detect.js";
 import { REGULAR_SEASON_TYPE, contextFromEvent, isWatchableGame, mapPool, type EspnClient } from "./espn.js";
 import type { SeenStore } from "./store.js";
 import { SeasonTallyIndex } from "./tallies.js";
@@ -42,6 +42,7 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
     }
     const ctx = buildGameContext(event.id, summary, game);
     const misses = detectMissedKicks(summary, ctx);
+    await enrichKickerNames(deps.espn, misses);
     for (const miss of misses) {
       if (shouldAttachSeason(ctx, board.season?.type)) {
         tallies.attachTo(miss);

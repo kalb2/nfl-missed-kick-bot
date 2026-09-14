@@ -60,5 +60,28 @@
         ]
       }
     ]
+  },
+  "boxscore": {
+    "players": [
+      {
+        "team": { "abbreviation": "NO" },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "3051909",
+                  "firstName": "Daniel",
+                  "lastName": "Carlson",
+                  "displayName": "Daniel Carlson",
+                  "fullName": "Daniel Carlson"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 }

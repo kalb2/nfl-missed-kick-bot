@@ -64,5 +64,28 @@
         ]
       }
     ]
+  },
+  "boxscore": {
+    "players": [
+      {
+        "team": { "abbreviation": "IND" },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4571557",
+                  "firstName": "Spencer",
+                  "lastName": "Shrader",
+                  "displayName": "Spencer Shrader",
+                  "fullName": "Spencer Shrader"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 }

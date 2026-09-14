@@ -38,5 +38,28 @@
         }
       ]
     }
+  },
+  "boxscore": {
+    "players": [
+      {
+        "team": { "abbreviation": "SF" },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4034949",
+                  "firstName": "Eddy",
+                  "lastName": "Pineiro",
+                  "displayName": "Eddy Pineiro",
+                  "fullName": "Eddy Pineiro"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 }

@@ -72,19 +72,19 @@ describe("pollOnce", () => {
     };
 
     const first = await pollOnce({ espn, store, poster }, options);
-    expect(first.newMisses.map((m) => m.kicker).sort()).toEqual(["D.Carlson", "S.Shrader"]);
+    expect(first.newMisses.map((m) => m.kicker).sort()).toEqual(["Daniel Carlson", "Spencer Shrader"]);
     expect(posted).toHaveLength(2);
-    expect(posted).toContain(composeTweet(first.newMisses.find((m) => m.kicker === "D.Carlson")!));
-    expect(first.newMisses.find((m) => m.kicker === "D.Carlson")?.seasonFgMisses).toBe(1);
-    expect(first.newMisses.find((m) => m.kicker === "D.Carlson")?.seasonPatMisses).toBe(0);
-    expect(first.newMisses.find((m) => m.kicker === "S.Shrader")?.seasonFgMisses).toBe(0);
-    expect(first.newMisses.find((m) => m.kicker === "S.Shrader")?.seasonPatMisses).toBe(1);
-    expect(posted.find((t) => t.includes("D.Carlson"))).toContain("Season: 1 missed FG · 0 missed PAT");
-    expect(posted.find((t) => t.includes("S.Shrader"))).toContain("Season: 0 missed FG · 1 missed PAT");
+    expect(posted).toContain(composeTweet(first.newMisses.find((m) => m.kicker === "Daniel Carlson")!));
+    expect(first.newMisses.find((m) => m.kicker === "Daniel Carlson")?.seasonFgMisses).toBe(1);
+    expect(first.newMisses.find((m) => m.kicker === "Daniel Carlson")?.seasonPatMisses).toBe(0);
+    expect(first.newMisses.find((m) => m.kicker === "Spencer Shrader")?.seasonFgMisses).toBe(0);
+    expect(first.newMisses.find((m) => m.kicker === "Spencer Shrader")?.seasonPatMisses).toBe(1);
+    expect(posted.find((t) => t.includes("Daniel Carlson"))).toContain("Season: 1 missed FG · 0 missed PAT");
+    expect(posted.find((t) => t.includes("Spencer Shrader"))).toContain("Season: 0 missed FG · 1 missed PAT");
     expect(first.seasonTallies).toEqual(
       expect.arrayContaining([
-        { kicker: "D.Carlson", teamAbbr: "NO", fg: 1, pat: 0 },
-        { kicker: "S.Shrader", teamAbbr: "IND", fg: 0, pat: 1 },
+        { kicker: "Daniel Carlson", teamAbbr: "NO", fg: 1, pat: 0 },
+        { kicker: "Spencer Shrader", teamAbbr: "IND", fg: 0, pat: 1 },
       ]),
     );
 

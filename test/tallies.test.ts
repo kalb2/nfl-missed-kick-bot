@@ -73,7 +73,8 @@ function mockEspn(
 const carlsonMiss = {
   playId: "4018729234815",
   kickType: "FG" as const,
-  kicker: "D.Carlson",
+  kicker: "Daniel Carlson",
+  athleteId: "3051909",
   teamAbbr: "NO",
 };
 
@@ -81,14 +82,24 @@ describe("kicker identity", () => {
   it("normalizes dotted initials so D.Carlson and D Carlson match", () => {
     expect(normalizeKickerName("D.Carlson")).toBe("dcarlson");
     expect(normalizeKickerName("D. Carlson")).toBe("dcarlson");
+    expect(normalizeKickerName("Daniel Carlson")).toBe("danielcarlson");
   });
 
   it("prefers athlete id and still aliases name+team", () => {
-    expect(kickerKeys({ ...carlsonMiss, athleteId: "3051909" })).toEqual([
+    expect(kickerKeys(carlsonMiss)).toEqual([
       "id:3051909",
+      "name:danielcarlson|NO",
       "name:dcarlson|NO",
     ]);
-    expect(kickerKeys(carlsonMiss)).toEqual(["name:dcarlson|NO"]);
+    expect(kickerKeys({ kicker: "D.Carlson", teamAbbr: "NO" })).toEqual(["name:dcarlson|NO"]);
+  });
+
+  it("aliases full first name and initial form so Wil Lutz and W. Lutz stay one kicker", () => {
+    expect(kickerKeys({ kicker: "Wil Lutz", teamAbbr: "DEN" })).toEqual([
+      "name:willutz|DEN",
+      "name:wlutz|DEN",
+    ]);
+    expect(kickerKeys({ kicker: "W. Lutz", teamAbbr: "DEN" })).toEqual(["name:wlutz|DEN"]);
   });
 });
 
@@ -145,7 +156,7 @@ describe("SeasonTallyIndex", () => {
     const shraderCounts = index.countsFor({
       playId: "401872659257",
       kickType: "PAT",
-      kicker: "S.Shrader",
+      kicker: "Spencer Shrader",
       teamAbbr: "IND",
     } as MissedKick);
     expect(shraderCounts).toEqual({ fg: 0, pat: 1 });
@@ -174,12 +185,48 @@ describe("SeasonTallyIndex", () => {
       index.countsFor({
         playId: "401872923-second",
         kickType: "FG",
-        kicker: "D.Carlson",
+        kicker: "Daniel Carlson",
         teamAbbr: "NO",
         athleteId: "3051909",
       } as MissedKick),
     ).toEqual({ fg: 2, pat: 0 });
     expect(index.countsFor({ ...carlsonMiss } as MissedKick)).toEqual({ fg: 2, pat: 0 });
+    expect(
+      index.countsFor({
+        playId: "other",
+        kickType: "FG",
+        kicker: "D.Carlson",
+        teamAbbr: "NO",
+      } as MissedKick),
+    ).toEqual({ fg: 3, pat: 0 });
+  });
+
+  it("does not split one kicker when one miss is initial-form and another is a full name", async () => {
+    const named = loadFixture("fg-missed-carlson.json");
+    const initialsOnly: GameSummary = JSON.parse(JSON.stringify(named));
+    delete initialsOnly.boxscore;
+    const play = initialsOnly.drives?.previous?.[0]?.plays?.[0];
+    if (play) play.id = "401872923-initials";
+    const { espn } = mockEspn(
+      { "401872923": named, "401872998": initialsOnly },
+      [liveEvent("401872923", "NO @ DET"), liveEvent("401872998", "NO @ ATL")],
+    );
+    const index = new SeasonTallyIndex();
+    await index.refresh(
+      espn,
+      board([liveEvent("401872923", "NO @ DET"), liveEvent("401872998", "NO @ ATL")]),
+    );
+
+    expect(
+      index.countsFor({
+        playId: "401872923-initials",
+        kickType: "FG",
+        kicker: "D.Carlson",
+        teamAbbr: "NO",
+      } as MissedKick),
+    ).toEqual({ fg: 2, pat: 0 });
+    expect(index.countsFor({ ...carlsonMiss } as MissedKick)).toEqual({ fg: 2, pat: 0 });
+    expect(index.leaderboard()).toEqual([{ kicker: "Daniel Carlson", teamAbbr: "NO", fg: 2, pat: 0 }]);
   });
 
   it("includes the current miss when that play is not yet in the index", () => {
@@ -229,7 +276,7 @@ describe("SeasonTallyIndex", () => {
     const first = new SeasonTallyIndex(file);
     await first.refresh(espn, board(events));
     await first.save();
-    expect(first.leaderboard()).toEqual([{ kicker: "D.Carlson", teamAbbr: "NO", fg: 1, pat: 0 }]);
+    expect(first.leaderboard()).toEqual([{ kicker: "Daniel Carlson", teamAbbr: "NO", fg: 1, pat: 0 }]);
 
     const second = new SeasonTallyIndex(file);
     await second.load();
@@ -253,7 +300,8 @@ describe("SeasonTallyIndex", () => {
     const miss: MissedKick = {
       playId: "4018729234815",
       kickType: "FG",
-      kicker: "D.Carlson",
+      kicker: "Daniel Carlson",
+      athleteId: "3051909",
       teamAbbr: "NO",
       teamName: "New Orleans Saints",
       distance: 62,

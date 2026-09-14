@@ -5,7 +5,8 @@ import type { MissedKick } from "../src/types.js";
 const carlson: MissedKick = {
   playId: "4018729234815",
   kickType: "FG",
-  kicker: "D.Carlson",
+  kicker: "Daniel Carlson",
+  athleteId: "3051909",
   teamAbbr: "NO",
   teamName: "New Orleans Saints",
   distance: 62,
@@ -25,7 +26,8 @@ const carlson: MissedKick = {
 const sanders: MissedKick = {
   playId: "4018729241674",
   kickType: "FG",
-  kicker: "J.Sanders",
+  kicker: "Jason Sanders",
+  athleteId: "3124679",
   teamAbbr: "NYJ",
   teamName: "New York Jets",
   distance: 54,
@@ -45,7 +47,8 @@ const sanders: MissedKick = {
 const shrader: MissedKick = {
   playId: "401872659257",
   kickType: "PAT",
-  kicker: "S.Shrader",
+  kicker: "Spencer Shrader",
+  athleteId: "4571557",
   teamAbbr: "IND",
   teamName: "Indianapolis Colts",
   result: "Wide Right",
@@ -67,7 +70,7 @@ describe("composeTweet", () => {
     expect(tweet).toBe(
       [
         "❌ Missed FG",
-        "Kicker: D.Carlson (NO)",
+        "Kicker: Daniel Carlson (NO)",
         "Kick: 62 yards",
         "Result: Wide Right",
         "When: Q4 0:02",
@@ -84,13 +87,13 @@ describe("composeTweet", () => {
     expect(tweet).toBe(
       [
         "❌ Missed FG",
-        "Kicker: J.Sanders (NYJ)",
+        "Kicker: Jason Sanders (NYJ)",
         "Kick: 54 yards",
         "Result: Wide Left",
         "When: Q2 2:44",
         "Score: NYJ 10-3 TEN",
         "Season: 1 missed FG · 0 missed PAT",
-        "#TakeFlight #Titans",
+        "#JetUp #TitanUp",
       ].join("\n"),
     );
     expect(tweet.length).toBeLessThanOrEqual(280);
@@ -101,7 +104,7 @@ describe("composeTweet", () => {
     expect(tweet).toBe(
       [
         "❌ Missed PAT",
-        "Kicker: S.Shrader (IND)",
+        "Kicker: Spencer Shrader (IND)",
         "Result: Wide Right",
         "When: Q1 10:33",
         "Score: BAL 0-6 IND",
@@ -137,10 +140,10 @@ describe("composeTweet", () => {
     }
     const sneaky = composeTweet({
       ...carlson,
-      kicker: "D.Carlson https://espn.com/play/1",
+      kicker: "Daniel Carlson https://espn.com/play/1",
     });
     expect(sneaky).not.toMatch(/https?:\/\//i);
-    expect(sneaky).toContain("Kicker: D.Carlson (NO)");
+    expect(sneaky).toContain("Kicker: Daniel Carlson (NO)");
     expect(stripUrls("plain text")).toBe("plain text");
   });
 
@@ -188,48 +191,98 @@ describe("composeTweet", () => {
     expect(tweet.startsWith("❌ Missed FG")).toBe(true);
     expect(tweet).not.toMatch(/#Saints|#OnePride/);
   });
+
+  it("prints a full first name for a known miss that has athleteId", () => {
+    const tweet = composeTweet({
+      playId: "lutz-miss",
+      kickType: "FG",
+      kicker: "Wil Lutz",
+      athleteId: "2985659",
+      teamAbbr: "DEN",
+      teamName: "Denver Broncos",
+      distance: 51,
+      result: "Wide Right",
+      quarter: "Q2",
+      clock: "4:12",
+      awayAbbr: "DEN",
+      homeAbbr: "KC",
+      awayScore: 10,
+      homeScore: 13,
+      matchup: "DEN @ KC",
+      playText: "W. Lutz 51 yard field goal is No Good, Wide Right.",
+      seasonFgMisses: 1,
+      seasonPatMisses: 0,
+    });
+    expect(tweet).toBe(
+      [
+        "❌ Missed FG",
+        "Kicker: Wil Lutz (DEN)",
+        "Kick: 51 yards",
+        "Result: Wide Right",
+        "When: Q2 4:12",
+        "Score: DEN 10-13 KC",
+        "Season: 1 missed FG · 0 missed PAT",
+        "#BroncosCountry #ChiefsKingdom",
+      ].join("\n"),
+    );
+    expect(tweet).not.toMatch(/W\.\s*Lutz/);
+  });
 });
 
 describe("teamHashtag", () => {
   it("maps all 32 teams and common ESPN abbreviations to official season tags", () => {
     const expected: Record<string, string> = {
-      ARI: "#BirdGang",
+      ARI: "#RiseUpRedSea",
+      ARZ: "#RiseUpRedSea",
       ATL: "#DirtyBirds",
       BAL: "#RavensFlock",
+      BLT: "#RavensFlock",
       BUF: "#BillsMafia",
       CAR: "#KeepPounding",
       CHI: "#DaBears",
-      CIN: "#RuleTheJungle",
+      CIN: "#WhoDey",
       CLE: "#DawgPound",
+      CLV: "#DawgPound",
       DAL: "#DallasCowboys",
       DEN: "#BroncosCountry",
       DET: "#OnePride",
       GB: "#GoPackGo",
-      HOU: "#WeAreTexans",
+      GNB: "#GoPackGo",
+      HOU: "#HTownMade",
+      HST: "#HTownMade",
       IND: "#ForTheShoe",
       JAX: "#DUUUVAL",
       JAC: "#DUUUVAL",
       KC: "#ChiefsKingdom",
+      KAN: "#ChiefsKingdom",
       LAC: "#BoltUp",
       SD: "#BoltUp",
+      SDG: "#BoltUp",
       LAR: "#RamsHouse",
       LA: "#RamsHouse",
+      STL: "#RamsHouse",
       LV: "#RaiderNation",
+      LVR: "#RaiderNation",
       OAK: "#RaiderNation",
-      MIA: "#FinsUp",
-      MIN: "#SKOL",
-      NE: "#ForeverNE",
+      MIA: "#PhinsUp",
+      MIN: "#Skol",
+      NE: "#NEPats",
+      NWE: "#NEPats",
       NO: "#Saints",
-      NYG: "#NYGiants",
-      NYJ: "#TakeFlight",
+      NOR: "#Saints",
+      NYG: "#BigBlue",
+      NYJ: "#JetUp",
       PHI: "#FlyEaglesFly",
       PIT: "#HereWeGo",
       SEA: "#Seahawks",
       SF: "#FTTB",
-      TB: "#GoBucs",
-      TEN: "#Titans",
+      SFO: "#FTTB",
+      TB: "#WeAreTheKrewe",
+      TAM: "#WeAreTheKrewe",
+      TEN: "#TitanUp",
       WSH: "#RaiseHail",
       WAS: "#RaiseHail",
+      WFT: "#RaiseHail",
     };
 
     for (const [abbr, tag] of Object.entries(expected)) {

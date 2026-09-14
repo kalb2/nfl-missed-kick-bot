@@ -1,5 +1,7 @@
+import type { EspnClient } from "./espn.js";
 import type {
   AthleteRef,
+  BoxscorePlayers,
   Competitor,
   GameContext,
   GameSummary,
@@ -12,9 +14,12 @@ const FG_MISS_TYPE_ID = "60";
 const PAT_MISS_TYPE_ID = "62";
 const PAT_GOOD_TYPE_ID = "61";
 
+/** ESPN PBP uses "W.Lutz" or "W. Lutz". Last name cannot include another "X." */
 const FG_KICKER_RE =
-  /([A-Z]\.[\p{L}'’.\-]+)\s+(\d+)\s+yard field goal/u;
-const PAT_KICKER_RE = /([A-Z]\.[\p{L}'’.\-]+)\s+extra point/iu;
+  /([A-Z]\.\s*[\p{L}'’-]+)\s+(\d+)\s+yard field goal/u;
+const PAT_KICKER_RE = /([A-Z]\.\s*[\p{L}'’-]+)\s+extra point/giu;
+const INITIAL_NAME_RE = /^[A-Za-z]\.\s*[\p{L}'’.\-]+$/u;
+const NAME_SUFFIXES = new Set(["jr", "sr", "ii", "iii", "iv", "v"]);
 const RESULT_RE =
   /(?:is\s+)?No Good(?:,\s*)?([^.,]+)?|field goal is BLOCKED|extra point is BLOCKED|BLOCKED/i;
 const PAT_NO_GOOD_RE = /extra point is No Good/i;
@@ -97,16 +102,221 @@ export function classifyMiss(play: Play): KickType | null {
   return null;
 }
 
+function lastCapture(text: string, re: RegExp): string | undefined {
+  const flags = re.flags.includes("g") ? re.flags : `${re.flags}g`;
+  const copy = new RegExp(re.source, flags);
+  let last: string | undefined;
+  for (const match of text.matchAll(copy)) last = match[1];
+  return last;
+}
+
 export function parseKicker(text: string, kickType: KickType): string {
   if (kickType === "FG") {
     const m = text.match(FG_KICKER_RE);
     if (m) return m[1];
   }
-  const pat = text.match(PAT_KICKER_RE);
-  if (pat) return pat[1];
+  const pat = lastCapture(text, PAT_KICKER_RE);
+  if (pat) return pat;
   const fg = text.match(FG_KICKER_RE);
   if (fg) return fg[1];
   return "Unknown kicker";
+}
+
+export function isInitialStyleName(name: string): boolean {
+  return INITIAL_NAME_RE.test(name.trim());
+}
+
+export function kickerNameTokens(name: string): string[] {
+  const tokens = name
+    .normalize("NFKD")
+    .replace(/['’]/g, "")
+    .replace(/[.]/g, " ")
+    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  while (tokens.length > 1 && NAME_SUFFIXES.has(tokens[tokens.length - 1].toLowerCase())) {
+    tokens.pop();
+  }
+  return tokens;
+}
+
+export function compactKickerName(name: string): string {
+  return kickerNameTokens(name).join("").toLowerCase();
+}
+
+/** First initial + last name, e.g. Wil Lutz / W. Lutz → wlutz. */
+export function initialLastCompact(name: string): string | undefined {
+  const tokens = kickerNameTokens(name);
+  if (tokens.length < 2) return undefined;
+  const first = tokens[0];
+  const last = tokens[tokens.length - 1];
+  if (!first || !last) return undefined;
+  return `${first[0]}${last}`.toLowerCase();
+}
+
+export function fullNameFromAthlete(athlete?: AthleteRef): string | undefined {
+  if (!athlete) return undefined;
+  const firstLast = [athlete.firstName, athlete.lastName]
+    .map((part) => (typeof part === "string" ? part.trim() : ""))
+    .filter(Boolean)
+    .join(" ");
+  const candidates = [athlete.displayName, athlete.fullName, firstLast].filter(
+    (part): part is string => Boolean(part && part.trim()),
+  );
+  for (const raw of candidates) {
+    const name = raw.replace(/\s+/g, " ").trim();
+    if (isInitialStyleName(name)) continue;
+    if (kickerNameTokens(name).length < 2) continue;
+    if (name.split(/\s+/)[0]?.replace(/[.]/g, "").length < 2) continue;
+    return name;
+  }
+  return undefined;
+}
+
+export function kickingAthletesFromSummary(summary: GameSummary): AthleteRef[] {
+  const out: AthleteRef[] = [];
+  const seen = new Set<string>();
+  const players = summary.boxscore?.players;
+  if (!Array.isArray(players)) return out;
+
+  const add = (athlete?: AthleteRef): void => {
+    if (!athlete) return;
+    const id = athleteIdFromRef(athlete);
+    const key = id || fullNameFromAthlete(athlete) || athlete.displayName;
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    out.push(athlete);
+  };
+
+  for (const team of players as BoxscorePlayers[]) {
+    for (const group of team.statistics ?? []) {
+      if ((group.name ?? "").toLowerCase() !== "kicking") continue;
+      for (const row of group.athletes ?? []) add(row.athlete);
+    }
+  }
+  return out;
+}
+
+export function kickerAthleteFromPlay(play: Play): AthleteRef | undefined {
+  const participants = play.participants;
+  if (Array.isArray(participants)) {
+    const kicker = participants.find((p) => (p.type ?? "").toLowerCase() === "kicker");
+    if (kicker?.athlete) return kicker.athlete;
+  }
+  if (Array.isArray(play.athletesInvolved) && play.athletesInvolved.length > 0) {
+    const text = play.text || play.shortText || "";
+    const parsed = parseKicker(text, classifyMiss(play) ?? "FG");
+    const parsedLast = initialLastCompact(parsed) ?? compactKickerName(parsed);
+    const named = play.athletesInvolved.find((athlete) => {
+      const full = fullNameFromAthlete(athlete);
+      if (!full || parsed === "Unknown kicker") return Boolean(full);
+      const key = initialLastCompact(full) ?? compactKickerName(full);
+      return Boolean(parsedLast && key && (key === parsedLast || compactKickerName(full) === compactKickerName(parsed)));
+    });
+    if (named) return named;
+    const anyNamed = play.athletesInvolved.find((athlete) => fullNameFromAthlete(athlete));
+    if (anyNamed && play.athletesInvolved.length === 1) return anyNamed;
+  }
+  if (play.athlete && fullNameFromAthlete(play.athlete)) return play.athlete;
+  return play.athlete;
+}
+
+function athleteNameMatches(parsed: string, athlete: AthleteRef): boolean {
+  if (parsed === "Unknown kicker") return false;
+  const parsedLast = lastToken(parsed);
+  const athleteLast = athlete.lastName
+    ? lastToken(athlete.lastName)
+    : lastToken(fullNameFromAthlete(athlete) || athlete.displayName || athlete.fullName || "");
+  if (!parsedLast || !athleteLast || parsedLast !== athleteLast) return false;
+  const parsedInitial = firstInitial(parsed);
+  const athleteInitial = firstInitial(
+    athlete.firstName || fullNameFromAthlete(athlete) || athlete.displayName || "",
+  );
+  if (parsedInitial && athleteInitial) return parsedInitial === athleteInitial;
+  return true;
+}
+
+function lastToken(name: string): string | undefined {
+  const tokens = kickerNameTokens(name);
+  return tokens[tokens.length - 1]?.toLowerCase();
+}
+
+function firstInitial(name: string): string | undefined {
+  const tokens = kickerNameTokens(name);
+  return tokens[0]?.[0]?.toLowerCase();
+}
+
+export function matchKickerAthlete(
+  parsed: string,
+  athleteId: string | undefined,
+  roster: AthleteRef[],
+): AthleteRef | undefined {
+  if (athleteId) {
+    const byId = roster.find((athlete) => athleteIdFromRef(athlete) === athleteId);
+    if (byId) return byId;
+  }
+  const matches = roster.filter((athlete) => athleteNameMatches(parsed, athlete));
+  if (matches.length === 1) return matches[0];
+  return undefined;
+}
+
+export function resolveKickerName(
+  play: Play,
+  kickType: KickType,
+  roster: AthleteRef[] = [],
+): { kicker: string; athleteId?: string } {
+  const text = play.text || play.shortText || "";
+  const parsed = parseKicker(text, kickType);
+  const playAthlete = kickerAthleteFromPlay(play);
+  const playId = athleteIdFromPlay(play) ?? athleteIdFromRef(playAthlete);
+  const fromPlay = fullNameFromAthlete(playAthlete);
+  if (fromPlay) {
+    return { kicker: fromPlay, ...(playId ? { athleteId: playId } : {}) };
+  }
+
+  const rosterMatch = matchKickerAthlete(parsed, playId, roster);
+  const fromRoster = fullNameFromAthlete(rosterMatch);
+  const rosterId = athleteIdFromRef(rosterMatch);
+  const athleteId = playId ?? rosterId;
+  if (fromRoster) {
+    return { kicker: fromRoster, ...(athleteId ? { athleteId } : {}) };
+  }
+
+  return { kicker: parsed, ...(athleteId ? { athleteId } : {}) };
+}
+
+export async function enrichKickerNames(
+  espn: Pick<EspnClient, "getAthlete"> | { getAthlete?: EspnClient["getAthlete"] },
+  misses: MissedKick[],
+): Promise<void> {
+  const getAthlete = espn.getAthlete?.bind(espn);
+  if (!getAthlete) return;
+
+  const needed = misses.filter(
+    (miss) =>
+      miss.athleteId && (isInitialStyleName(miss.kicker) || miss.kicker === "Unknown kicker"),
+  );
+  if (needed.length === 0) return;
+
+  const ids = [...new Set(needed.map((miss) => miss.athleteId!))];
+  const names = new Map<string, string>();
+  await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const athlete = await getAthlete(id);
+        const name = fullNameFromAthlete(athlete);
+        if (name) names.set(id, name);
+      } catch (err) {
+        console.warn("athlete profile failed for %s: %s", id, (err as Error).message);
+      }
+    }),
+  );
+
+  for (const miss of needed) {
+    const name = miss.athleteId ? names.get(miss.athleteId) : undefined;
+    if (name) miss.kicker = name;
+  }
 }
 
 export function parseDistance(play: Play, kickType: KickType): number | undefined {
@@ -214,7 +424,11 @@ export function athleteIdFromPlay(play: Play): string | undefined {
   return athleteIdFromRef(play.athlete);
 }
 
-export function toMissedKick(play: Play, game: GameContext): MissedKick | null {
+export function toMissedKick(
+  play: Play,
+  game: GameContext,
+  roster: AthleteRef[] = [],
+): MissedKick | null {
   const kickType = classifyMiss(play);
   if (!kickType || !play.id) return null;
 
@@ -222,13 +436,13 @@ export function toMissedKick(play: Play, game: GameContext): MissedKick | null {
   const team = teamFromPlay(play, game.competitors);
   const home = game.competitors.find((c) => c.homeAway === "home");
   const away = game.competitors.find((c) => c.homeAway === "away");
-  const athleteId = athleteIdFromPlay(play);
+  const resolved = resolveKickerName(play, kickType, roster);
 
   return {
     playId: String(play.id),
     kickType,
-    kicker: parseKicker(text, kickType),
-    ...(athleteId ? { athleteId } : {}),
+    kicker: resolved.kicker,
+    ...(resolved.athleteId ? { athleteId: resolved.athleteId } : {}),
     teamAbbr: team ? competitorAbbr(team) : "UNK",
     teamName: team ? competitorName(team) : "Unknown team",
     distance: parseDistance(play, kickType),
@@ -246,9 +460,10 @@ export function toMissedKick(play: Play, game: GameContext): MissedKick | null {
 
 export function detectMissedKicks(summary: GameSummary, game: GameContext): MissedKick[] {
   const plays = collectPlays(summary);
+  const roster = kickingAthletesFromSummary(summary);
   const misses: MissedKick[] = [];
   for (const play of plays) {
-    const miss = toMissedKick(play, game);
+    const miss = toMissedKick(play, game, roster);
     if (miss) misses.push(miss);
   }
   return misses;

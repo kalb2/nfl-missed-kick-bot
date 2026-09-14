@@ -8,7 +8,7 @@ It runs on its own — GitHub Actions cron and/or `npm start`. It does **not** u
 
 ```
 ❌ Missed FG
-Kicker: D.Carlson (NO)
+Kicker: Daniel Carlson (NO)
 Kick: 62 yards
 Result: Wide Right
 When: Q4 0:02
@@ -19,18 +19,18 @@ Season: 2 missed FG · 0 missed PAT
 
 ```
 ❌ Missed FG
-Kicker: J.Sanders (NYJ)
+Kicker: Jason Sanders (NYJ)
 Kick: 54 yards
 Result: Wide Left
 When: Q2 2:44
 Score: NYJ 10-3 TEN
 Season: 1 missed FG · 0 missed PAT
-#TakeFlight #Titans
+#JetUp #TitanUp
 ```
 
 ```
 ❌ Missed PAT
-Kicker: S.Shrader (IND)
+Kicker: Spencer Shrader (IND)
 Result: Wide Right
 When: Q1 10:33
 Score: BAL 0-6 IND
@@ -50,7 +50,8 @@ Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. E
    **Extra Point Good (`id` 61) is never treated as a miss.** Key off `id` / `text`, not `value` — ESPN sometimes sets `value: 1` on a miss.
 5. Plays are collected from `drives.previous`, `drives.current`, and any other `plays[]` arrays in the payload.
 6. Each miss is keyed by ESPN play `id` and persisted so the same kick is never tweeted twice.
-7. **Season tallies** — each poll recomputes per-kicker miss counts from ESPN play-by-play for regular-season games (`seasontype=2`) that have already started this season (weeks 1…current, or all 18 once the postseason begins). The same miss detectors as above are used. Kickers are keyed by athlete id when the play has one (core `/plays` `participants[].athlete`), otherwise by a normalized name + team. Tallies are not incremented from a local counter; ESPN PBP is the source of truth. Completed games may be cached in `.state/tallies.json` so later polls skip them; if that file is missing the bot rebuilds from ESPN. In-progress games are always refetched. Within one process, a game is not parsed twice.
+7. **Kicker name** — play text is `D.Carlson` / `W. Lutz`. Tweets prefer a full first + last name from the summary boxscore kicking athletes, a play participant athlete (`displayName` / `fullName` / first+last), or the ESPN athlete profile when `athleteId` is known. Initials remain the fallback.
+8. **Season tallies** — each poll recomputes per-kicker miss counts from ESPN play-by-play for regular-season games (`seasontype=2`) that have already started this season (weeks 1…current, or all 18 once the postseason begins). The same miss detectors as above are used. Kickers are keyed by athlete id when the play has one (core `/plays` `participants[].athlete`), otherwise by a normalized name + team. Full names and initial forms (`Wil Lutz` / `W. Lutz`) alias to the same kicker. Tallies are not incremented from a local counter; ESPN PBP is the source of truth. Completed games may be cached in `.state/tallies.json` so later polls skip them; if that file is missing the bot rebuilds from ESPN. In-progress games are always refetched. Within one process, a game is not parsed twice.
 
 Team comes from `teamParticipants` (`type === "offense"`) matched to the game’s competitors. Distance is parsed from the play text (FG only). Result detail (Wide Left / Right, Short, Blocked, Hit Right Upright, …) is parsed from the `No Good, …` clause.
 
@@ -64,6 +65,7 @@ These endpoints are **undocumented public JSON**. ESPN can change or rate-limit 
 | Game summary (primary) | `GET https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={eventId}` |
 | CDN play-by-play (fallback) | `GET https://cdn.espn.com/core/nfl/playbyplay?xhr=1&gameId={eventId}` |
 | Core plays list (fallback) | `GET https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/{eventId}/competitions/{eventId}/plays?limit=400` |
+| Athlete profile (name fallback) | `GET https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/{athleteId}` |
 
 `site.api.espn.com` is the same summary/scoreboard path ESPN publishes more often, but Akamai frequently returns **403** from datacenter IPs. The bot tries `site.web.api.espn.com` first and falls back to `site.api.espn.com`.
 

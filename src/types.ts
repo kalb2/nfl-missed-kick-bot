@@ -23,6 +23,24 @@ export interface AthleteRef {
   id?: string | number;
   $ref?: string;
   displayName?: string;
+  fullName?: string;
+  firstName?: string;
+  lastName?: string;
+  shortName?: string;
+}
+
+export interface BoxscoreAthleteRow {
+  athlete?: AthleteRef;
+}
+
+export interface BoxscoreStatGroup {
+  name?: string;
+  athletes?: BoxscoreAthleteRow[];
+}
+
+export interface BoxscorePlayers {
+  team?: { id?: string; abbreviation?: string };
+  statistics?: BoxscoreStatGroup[];
 }
 
 export interface PlayParticipant {
@@ -132,6 +150,10 @@ export interface GameSummary {
     }>;
   };
   scoringPlays?: Play[];
+  boxscore?: {
+    players?: BoxscorePlayers[];
+    teams?: unknown;
+  };
   [key: string]: unknown;
 }
 
