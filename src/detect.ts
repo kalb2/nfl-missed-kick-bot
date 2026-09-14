@@ -14,10 +14,10 @@ const FG_MISS_TYPE_ID = "60";
 const PAT_MISS_TYPE_ID = "62";
 const PAT_GOOD_TYPE_ID = "61";
 
-/** ESPN PBP uses "W.Lutz" or "W. Lutz". */
+/** ESPN PBP uses "W.Lutz" or "W. Lutz". Last name cannot include another "X." */
 const FG_KICKER_RE =
-  /([A-Z]\.\s*[\p{L}'’.\-]+)\s+(\d+)\s+yard field goal/u;
-const PAT_KICKER_RE = /([A-Z]\.\s*[\p{L}'’.\-]+)\s+extra point/iu;
+  /([A-Z]\.\s*[\p{L}'’-]+)\s+(\d+)\s+yard field goal/u;
+const PAT_KICKER_RE = /([A-Z]\.\s*[\p{L}'’-]+)\s+extra point/giu;
 const INITIAL_NAME_RE = /^[A-Za-z]\.\s*[\p{L}'’.\-]+$/u;
 const NAME_SUFFIXES = new Set(["jr", "sr", "ii", "iii", "iv", "v"]);
 const RESULT_RE =
@@ -102,13 +102,21 @@ export function classifyMiss(play: Play): KickType | null {
   return null;
 }
 
+function lastCapture(text: string, re: RegExp): string | undefined {
+  const flags = re.flags.includes("g") ? re.flags : `${re.flags}g`;
+  const copy = new RegExp(re.source, flags);
+  let last: string | undefined;
+  for (const match of text.matchAll(copy)) last = match[1];
+  return last;
+}
+
 export function parseKicker(text: string, kickType: KickType): string {
   if (kickType === "FG") {
     const m = text.match(FG_KICKER_RE);
     if (m) return m[1];
   }
-  const pat = text.match(PAT_KICKER_RE);
-  if (pat) return pat[1];
+  const pat = lastCapture(text, PAT_KICKER_RE);
+  if (pat) return pat;
   const fg = text.match(FG_KICKER_RE);
   if (fg) return fg[1];
   return "Unknown kicker";

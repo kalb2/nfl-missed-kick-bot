@@ -204,6 +204,7 @@ describe("parsers", () => {
   it("reads kicker from PAT text and ignores TD yardage", () => {
     const text = "J.Taylor right end for 1 yard, TOUCHDOWN. S.Shrader extra point is No Good, Wide Right.";
     expect(parseKicker(text, "PAT")).toBe("S.Shrader");
+    expect(parseKicker(text, "PAT")).not.toMatch(/TOUCHDOWN|N\.\s*S/);
     expect(parseDistance({ text, statYardage: 1, type: { id: "68" } }, "PAT")).toBeUndefined();
     expect(parseResult(text)).toBe("Wide Right");
   });

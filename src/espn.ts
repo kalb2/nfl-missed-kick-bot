@@ -170,14 +170,16 @@ export function athleteFromPayload(raw: unknown): AthleteRef | undefined {
     nested && typeof nested === "object" ? nested : obj
   ) as Record<string, unknown>;
 
-  const id = athlete.id;
+  const rawId = athlete.id;
+  const id =
+    typeof rawId === "string" || typeof rawId === "number" ? rawId : undefined;
   const displayName = typeof athlete.displayName === "string" ? athlete.displayName : undefined;
   const fullName = typeof athlete.fullName === "string" ? athlete.fullName : undefined;
   const firstName = typeof athlete.firstName === "string" ? athlete.firstName : undefined;
   const lastName = typeof athlete.lastName === "string" ? athlete.lastName : undefined;
   const shortName = typeof athlete.shortName === "string" ? athlete.shortName : undefined;
   if (
-    (id === undefined || id === null || String(id).length === 0) &&
+    (id === undefined || String(id).length === 0) &&
     !displayName &&
     !fullName &&
     !firstName &&
@@ -187,7 +189,7 @@ export function athleteFromPayload(raw: unknown): AthleteRef | undefined {
   }
 
   return {
-    ...(id !== undefined && id !== null ? { id } : {}),
+    ...(id !== undefined ? { id } : {}),
     ...(displayName ? { displayName } : {}),
     ...(fullName ? { fullName } : {}),
     ...(firstName ? { firstName } : {}),
