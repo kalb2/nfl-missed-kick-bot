@@ -25,7 +25,7 @@ Result: Wide Left
 When: Q2 2:44
 Score: NYJ 10-3 TEN
 Season: 1 missed FG · 0 missed PAT
-#TakeFlight #Titans
+#JetUp #TitanUp
 ```
 
 ```
