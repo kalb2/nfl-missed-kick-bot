@@ -1,6 +1,13 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { buildGameContext, detectMissedKicks } from "./detect.js";
+import {
+  buildGameContext,
+  compactKickerName,
+  detectMissedKicks,
+  enrichKickerNames,
+  initialLastCompact,
+  isInitialStyleName,
+} from "./detect.js";
 import {
   REGULAR_SEASON_TYPE,
   contextFromEvent,
@@ -59,19 +66,17 @@ export function tallyPathFromStatePath(statePath: string): string {
 }
 
 export function normalizeKickerName(name: string): string {
-  return name
-    .normalize("NFKD")
-    .replace(/['’.]/g, "")
-    .replace(/[^\p{L}\p{N}]+/gu, "")
-    .toLowerCase();
+  return compactKickerName(name);
 }
 
 export function kickerKeys(miss: Pick<MissedKick, "athleteId" | "kicker" | "teamAbbr">): string[] {
   const keys: string[] = [];
   if (miss.athleteId) keys.push(`id:${miss.athleteId}`);
-  const name = normalizeKickerName(miss.kicker);
   const team = (miss.teamAbbr || "UNK").trim().toUpperCase();
-  if (name) keys.push(`name:${name}|${team}`);
+  const full = normalizeKickerName(miss.kicker);
+  if (full) keys.push(`name:${full}|${team}`);
+  const initialLast = initialLastCompact(miss.kicker);
+  if (initialLast && initialLast !== full) keys.push(`name:${initialLast}|${team}`);
   return keys;
 }
 
@@ -206,6 +211,7 @@ export class SeasonTallyIndex {
         this.summaries.set(event.id, summary);
         const ctx = buildGameContext(event.id, summary, contextFromEvent(event));
         const misses = detectMissedKicks(summary, ctx);
+        await enrichKickerNames(espn, misses);
         this.games.set(event.id, {
           status: event.status?.type?.state ?? ctx.statusState ?? "unknown",
           misses: misses.map((miss) => ({
@@ -278,6 +284,8 @@ export class SeasonTallyIndex {
             kicker: miss.kicker,
             teamAbbr: miss.teamAbbr,
           };
+        } else if (isInitialStyleName(bucket.kicker) && !isInitialStyleName(miss.kicker)) {
+          bucket.kicker = miss.kicker;
         }
         if (!bucket.playIds.has(miss.playId)) {
           bucket.playIds.add(miss.playId);
