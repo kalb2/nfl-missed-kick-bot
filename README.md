@@ -134,16 +134,18 @@ ESPN scoreboard (slow)     Workers KV slate          poll.yml
         │                        │                       │
         ▼                        ▼                       ▼
  Cloudflare Worker ──if live──► repository_dispatch ──► TypeScript bot ──► X
-  cron every 2 min              event `nfl-poll`         (tweets)
-  reads KV only
+  dense tick Thu–Mon            event `nfl-poll`         (tweets)
+  (+ early Tue UTC for MNF)
+  midweek cron = refresh only
 ```
 
 1. The Worker in [`worker/`](worker/) refreshes ESPN’s NFL scoreboard/calendar only when the stored slate is empty, older than 7 days, or has no remaining kickoff. Kickoffs are written to Workers KV as UTC ISO times.
-2. Every 2 minutes it reads **that KV slate only**. No ESPN scoreboard or summary calls on idle ticks.
-3. If any kickoff is in the live window (30 minutes before through 4 hours + 45 minutes after), it wakes `poll.yml` via GitHub `repository_dispatch` (`nfl-poll`), at most once every 5 minutes.
-4. `poll.yml` runs the existing TypeScript bot. Tweets stay there. The Worker never talks to X.
+2. **Dense ticks** (every 2 minutes) run **Thursday–Monday UTC only**, plus **Tuesday 00:00–07:59 UTC** so late MNF that is still Monday evening in America/Denver stays covered. Those ticks read **KV only**. No ESPN scoreboard or summary calls on idle ticks.
+3. **Tuesday after 08:00 UTC and all Wednesday** have no 2-minute cron. A separate **Tue/Wed 15:00 UTC** cron refreshes the slate when needed and never dispatches.
+4. If any kickoff is in the live window (30 minutes before through 4 hours + 45 minutes after), a dense tick wakes `poll.yml` via GitHub `repository_dispatch` (`nfl-poll`), at most once every 5 minutes.
+5. `poll.yml` runs the existing TypeScript bot. Tweets stay there. The Worker never talks to X.
 
-Weekday GitHub crons are gone. Thanksgiving, Christmas, Saturday internationals, flex moves, TNF, and SNF/MNF are covered because ESPN’s week scoreboard already lists those kickoffs — not because we guessed a weekday.
+Weekday GitHub Actions crons are gone. Thanksgiving, Christmas (when it lands Thu–Mon), Saturday internationals, flex moves, TNF, and SNF/MNF are covered because those kickoffs live on the stored ESPN slate **and** they fall on the dense-tick days. Midweek is refresh-only so KV still updates without waking Actions every 2 minutes.
 
 ### How holidays are covered
 
@@ -157,7 +159,7 @@ ESPN’s site scoreboard includes `leagues[0].calendar` (preseason / regular / p
 | Christmas BUF @ DEN | `2026-12-25T21:30:00.000Z` | Fri 2:30 PM MT |
 | TNF / flex / London | whatever ESPN posts that week | derived from UTC |
 
-A Sunday-only Actions cron would miss all of those. The Worker does not care what weekday it is.
+A Sunday-only Actions cron would miss all of those. Dense Worker ticks still skip Tuesday afternoon / Wednesday because NFL kickoffs do not land then; the holiday examples above are Thursday or Friday and stay on the 2-minute schedule.
 
 ## Cloudflare Worker scheduler
 
@@ -172,11 +174,23 @@ Package: [`worker/`](worker/) (own `package.json`, `wrangler.jsonc`, TypeScript)
 
 `kickoff` is always UTC ISO. Docs and dry-run output also show America/Denver.
 
+### When the Worker runs (UTC crons)
+
+Cloudflare cron is UTC. Operator timezone for reading the table is America/Denver.
+
+| Cron | When (UTC) | Denver (approx.) | Job |
+| --- | --- | --- | --- |
+| `*/2 * * * THU,FRI,SAT,SUN,MON` | every 2 min Thu–Mon | Wed 5–6 PM through Mon evening | Read KV; dispatch if a kickoff is in the live window |
+| `*/2 0-7 * * TUE` | every 2 min Tue 00:00–07:59 | Mon ~5–6 PM through ~12–1 AM Tue | Same tick — late MNF / OT still Monday local |
+| `0 15 * * TUE,WED` | 15:00 Tue and Wed | ~8–9 AM | Refresh slate if empty / stale / next kickoff missing. **No dispatch.** |
+
+There is **no** `*/2 * * * *` all-week cron. Tuesday after 08:00 UTC and all of Wednesday are refresh-only (the 15:00 job), not dense ticks.
+
 ### When the Worker dispatches
 
-- **Yes:** at least one stored kickoff is inside `[kickoff − 30m, kickoff + 4h45m]` **and** it has not dispatched in the last 5 minutes.
-- **No:** empty window → return immediately (KV read only).
-- **Refresh ESPN** (not every tick): slate missing/empty, `refreshedAt` older than 168 hours, or every stored kickoff is past the post-window *and* the last refresh was at least 6 hours ago (backoff so offseason does not hammer ESPN).
+- **Yes (dense tick only):** at least one stored kickoff is inside `[kickoff − 30m, kickoff + 4h45m]` **and** it has not dispatched in the last 5 minutes.
+- **No:** empty window → return immediately (KV read only). Midweek refresh cron never dispatches.
+- **Refresh ESPN** (not every tick): slate missing/empty, `refreshedAt` older than 168 hours, or every stored kickoff is past the post-window *and* the last refresh was at least 6 hours ago (backoff so offseason does not hammer ESPN). The Tue/Wed 15:00 cron is what keeps KV current over the idle midweek.
 
 `poll.yml` concurrency group `missed-kick-poll` still serializes overlapping Actions runs.
 
@@ -200,7 +214,7 @@ npx wrangler secret put SCHEDULER_ADMIN_SECRET
 npx wrangler deploy
 ```
 
-Seed the slate immediately (otherwise the first cron tick does it):
+Seed the slate immediately (otherwise the first Thu–Mon tick or the Tue/Wed refresh cron does it):
 
 ```bash
 curl -X POST https://nfl-missed-kick-scheduler.<account>.workers.dev/refresh \
@@ -218,7 +232,8 @@ npm run dry-run -- --at 2026-11-26T18:05:00Z
 npx wrangler dev --test-scheduled
 curl http://localhost:8787/status
 curl -X POST http://localhost:8787/tick
-curl "http://localhost:8787/cdn-cgi/local/scheduled?format=json"
+curl "http://localhost:8787/cdn-cgi/local/scheduled?format=json&cron=*/2+*+*+*+THU,FRI,SAT,SUN,MON"
+curl "http://localhost:8787/cdn-cgi/local/scheduled?format=json&cron=0+15+*+*+TUE,WED"
 ```
 
 ### Cloudflare secrets and vars
@@ -250,7 +265,7 @@ GitHub token permissions:
 | `LOOKAHEAD_DAYS` | `16` | Extra ESPN weeks to prefetch on refresh |
 | `ESPN_USER_AGENT` | browser UA | Same idea as the bot; `site.api` often 403s from cloud IPs |
 
-Workers free tier is enough: one cron every 2 minutes (~720 invocations/day), one KV read per tick, ESPN only on refresh, KV writes only on refresh / dispatch.
+Workers free tier is enough: 2-minute ticks only Thu–Mon plus 8 hours Tuesday UTC (~3.8k invocations/week, not 7×720), one KV read per tick, ESPN on refresh / the Tue–Wed 15:00 cron, KV writes only on refresh / dispatch.
 
 ## GitHub Actions
 

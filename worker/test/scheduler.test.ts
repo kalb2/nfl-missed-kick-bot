@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { testConfig } from "../src/config.js";
-import { runTick } from "../src/scheduler.js";
+import { REFRESH_CRONS, TICK_CRONS } from "../src/cron.js";
+import { handleScheduled, runRefreshOnly, runTick } from "../src/scheduler.js";
 import type { Slate, SlateStore, StoredGame } from "../src/types.js";
 import { LAST_DISPATCH_KEY, SLATE_KEY } from "../src/types.js";
 import week2 from "./fixtures/scoreboard-week2.json";
@@ -134,5 +135,66 @@ describe("runTick", () => {
     expect(espnHits).toBeGreaterThan(0);
     expect(result.action).toBe("idle");
     expect(kv.map.get(SLATE_KEY)).toContain("DET @ BUF");
+  });
+});
+
+describe("refresh-only cron", () => {
+  it("refreshes a stale slate and never dispatches even if a game is live", async () => {
+    const kv = new MemoryKV();
+    seedSlate(
+      kv,
+      [storedGame({ id: "thx-det", kickoff: "2026-11-26T18:00:00.000Z", name: "CHI @ DET" })],
+      "2026-11-18T00:00:00.000Z",
+    );
+    let espnHits = 0;
+    let dispatches = 0;
+    const result = await runRefreshOnly(
+      {
+        kv,
+        config: testConfig(),
+        fetchImpl: async () => {
+          espnHits += 1;
+          return new Response(JSON.stringify(week2), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        },
+        github: {
+          dispatch: async () => {
+            dispatches += 1;
+          },
+        },
+      },
+      Date.parse("2026-11-26T18:05:00.000Z"),
+    );
+    expect(result.action).toBe("idle");
+    expect(result.reason.startsWith("refresh-cron;")).toBe(true);
+    expect(result.live).toEqual([]);
+    expect(result.refreshed).toBe(true);
+    expect(espnHits).toBeGreaterThan(0);
+    expect(dispatches).toBe(0);
+  });
+
+  it("routes handleScheduled by cron expression", async () => {
+    const kv = new MemoryKV();
+    seedSlate(
+      kv,
+      [storedGame({ id: "thx-det", kickoff: "2026-11-26T18:00:00.000Z", name: "CHI @ DET" })],
+      "2026-11-26T00:00:00.000Z",
+    );
+    const now = Date.parse("2026-11-26T18:05:00.000Z");
+    const deps = {
+      kv,
+      config: testConfig(),
+      github: {
+        dispatch: async () => undefined,
+      },
+    };
+    const refresh = await handleScheduled(REFRESH_CRONS[0], deps, now);
+    expect(refresh.action).toBe("idle");
+    expect(refresh.reason.startsWith("refresh-cron;")).toBe(true);
+
+    const tick = await handleScheduled(TICK_CRONS[0], deps, now);
+    expect(tick.action).toBe("dispatched");
   });
 });

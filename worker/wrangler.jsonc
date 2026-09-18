@@ -35,11 +35,15 @@
     "LOOKAHEAD_DAYS": "16",
     "ESPN_USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
   },
-  // One cron only: every 2 minutes, read KV. ESPN is contacted only when the
-  // stored slate is empty, older than SLATE_MAX_AGE_HOURS, or has no remaining kickoff.
-  // Tuesday 14:00 UTC (~8:00 AM America/Denver in MDT) is not a separate trigger —
-  // the same tick refreshes whenever the slate is stale.
+  // Dense ticks (read KV / maybe dispatch): Thursday–Monday UTC, plus Tuesday
+  // 00:00–07:59 UTC for late MNF that is still Monday evening in America/Denver.
+  // No */2 cron on Tuesday after 08:00 UTC or all Wednesday.
+  // Refresh cron: Tuesday and Wednesday 15:00 UTC (~8–9 AM Denver) — slate only.
   "triggers": {
-    "crons": ["*/2 * * * *"],
+    "crons": [
+      "*/2 * * * THU,FRI,SAT,SUN,MON",
+      "*/2 0-7 * * TUE",
+      "0 15 * * TUE,WED",
+    ],
   },
 }

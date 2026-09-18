@@ -1,3 +1,4 @@
+import { cronKind } from "./cron.js";
 import { fetchNflSlate } from "./espn.js";
 import type { GitHubDispatcher, SchedulerConfig, Slate, SlateStore, StoredGame, TickResult } from "./types.js";
 import { LAST_DISPATCH_KEY, SLATE_KEY } from "./types.js";
@@ -46,6 +47,48 @@ export async function refreshStoredSlate(
   });
   await saveSlate(deps.kv, slate);
   return { slate, espnCalls };
+}
+
+/** Midweek cron: refresh KV from ESPN when needed; never wake Actions. */
+export async function runRefreshOnly(deps: SchedulerDeps, nowMs: number): Promise<TickResult> {
+  const nowIso = new Date(nowMs).toISOString();
+  const slate = await loadSlate(deps.kv);
+  const lastDispatchAt = await loadLastDispatchAt(deps.kv);
+  const refresh = shouldRefreshSlate(slate, nowMs, deps.config);
+  let espnCalls = 0;
+  let refreshed = false;
+  let current = slate;
+
+  if (refresh.refresh) {
+    const result = await refreshStoredSlate(deps, nowMs);
+    current = result.slate;
+    espnCalls = result.espnCalls;
+    refreshed = true;
+  }
+
+  const games = current?.games ?? [];
+  const nextKickoff = nextKickoffIso(games, nowMs);
+  return {
+    action: "idle",
+    now: nowIso,
+    refreshed,
+    espnCalls,
+    live: [],
+    ...(nextKickoff ? { nextKickoff } : {}),
+    ...(lastDispatchAt ? { lastDispatchAt } : {}),
+    reason: `refresh-cron;${refresh.reason}`,
+  };
+}
+
+export async function handleScheduled(
+  cron: string,
+  deps: SchedulerDeps,
+  nowMs: number,
+): Promise<TickResult> {
+  if (cronKind(cron) === "refresh") {
+    return runRefreshOnly(deps, nowMs);
+  }
+  return runTick(deps, nowMs);
 }
 
 export async function runTick(

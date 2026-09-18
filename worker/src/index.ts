@@ -1,6 +1,6 @@
 import { configFromEnv } from "./config.js";
 import { dispatchRepositoryEvent } from "./github.js";
-import { loadLastDispatchAt, loadSlate, logTick, refreshStoredSlate, runTick } from "./scheduler.js";
+import { handleScheduled, loadLastDispatchAt, loadSlate, logTick, refreshStoredSlate, runTick } from "./scheduler.js";
 import type { SchedulerDeps } from "./scheduler.js";
 import { gamesInWindow, nextKickoffIso } from "./window.js";
 
@@ -51,6 +51,10 @@ async function statusPayload(env: Env, nowMs: number): Promise<Record<string, un
     lastDispatchAt: lastDispatchAt ?? null,
     github: `${config.githubOwner}/${config.githubRepo}`,
     eventType: config.githubEventType,
+    crons: {
+      denseTick: "Thu–Mon UTC every 2 min + Tue 00:00–07:59 UTC (late MNF / Monday Denver)",
+      refreshOnly: "Tue+Wed 15:00 UTC — slate refresh, no dispatch",
+    },
   };
 }
 
@@ -95,7 +99,7 @@ export default {
 
   async scheduled(controller: ScheduledController, env: Env): Promise<void> {
     const nowMs = controller.scheduledTime || Date.now();
-    const tick = await runTick(depsFromEnv(env), nowMs);
+    const tick = await handleScheduled(controller.cron, depsFromEnv(env), nowMs);
     logTick(tick);
   },
 } satisfies ExportedHandler<Env>;
