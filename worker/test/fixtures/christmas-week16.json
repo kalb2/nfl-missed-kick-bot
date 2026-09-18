@@ -1,0 +1,50 @@
+{
+  "season": {
+    "type": 2,
+    "year": 2026
+  },
+  "week": {
+    "number": 16
+  },
+  "events": [
+    {
+      "id": "xmas-phi",
+      "date": "2026-12-25T01:15:00.000Z",
+      "shortName": "HOU @ PHI",
+      "name": "Houston Texans at Philadelphia Eagles",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "week": {
+        "number": 16
+      }
+    },
+    {
+      "id": "xmas-chi",
+      "date": "2026-12-25T18:00:00.000Z",
+      "shortName": "GB @ CHI",
+      "name": "Green Bay Packers at Chicago Bears",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "week": {
+        "number": 16
+      }
+    },
+    {
+      "id": "xmas-den",
+      "date": "2026-12-25T21:30:00.000Z",
+      "shortName": "BUF @ DEN",
+      "name": "Buffalo Bills at Denver Broncos",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "week": {
+        "number": 16
+      }
+    }
+  ]
+}

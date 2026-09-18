@@ -2,7 +2,7 @@
 
 A small TypeScript bot that polls ESPN’s **public, keyless** NFL APIs and tweets whenever a kicker misses a field goal or a PAT / extra point.
 
-It runs on its own — GitHub Actions cron and/or `npm start`. It does **not** use Cursor/Grok routines or X MCP credits.
+It runs on its own — a Cloudflare Worker watches the ESPN slate and wakes GitHub Actions only when games are on, or you can use `npm start`. It does **not** use Cursor/Grok routines or X MCP credits. The Worker never tweets.
 
 ## What it tweets
 
@@ -61,7 +61,8 @@ These endpoints are **undocumented public JSON**. ESPN can change or rate-limit 
 
 | Purpose | URL |
 | --- | --- |
-| Scoreboard | `GET https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard` |
+| Scoreboard (today / current week) | `GET https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard` |
+| Scoreboard by week | same + `?seasontype=2&week=12` (Worker refresh; type 1=pre, 2=reg, 3=post) |
 | Game summary (primary) | `GET https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={eventId}` |
 | CDN play-by-play (fallback) | `GET https://cdn.espn.com/core/nfl/playbyplay?xhr=1&gameId={eventId}` |
 | Core plays list (fallback) | `GET https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/{eventId}/competitions/{eventId}/plays?limit=400` |
@@ -126,16 +127,143 @@ If any secret is missing, the bot logs tweets instead of posting.
 
 **Cost tip:** keep tweets as plain-text alerts (kicker, distance, result, clock, score, season miss tallies, official team season hashtags). Do not add ESPN or highlight URLs — X pay-per-use bills more for posts that contain links.
 
+## Architecture
+
+```
+ESPN scoreboard (slow)     Workers KV slate          poll.yml
+        │                        │                       │
+        ▼                        ▼                       ▼
+ Cloudflare Worker ──if live──► repository_dispatch ──► TypeScript bot ──► X
+  cron every 2 min              event `nfl-poll`         (tweets)
+  reads KV only
+```
+
+1. The Worker in [`worker/`](worker/) refreshes ESPN’s NFL scoreboard/calendar only when the stored slate is empty, older than 7 days, or has no remaining kickoff. Kickoffs are written to Workers KV as UTC ISO times.
+2. Every 2 minutes it reads **that KV slate only**. No ESPN scoreboard or summary calls on idle ticks.
+3. If any kickoff is in the live window (30 minutes before through 4 hours + 45 minutes after), it wakes `poll.yml` via GitHub `repository_dispatch` (`nfl-poll`), at most once every 5 minutes.
+4. `poll.yml` runs the existing TypeScript bot. Tweets stay there. The Worker never talks to X.
+
+Weekday GitHub crons are gone. Thanksgiving, Christmas, Saturday internationals, flex moves, TNF, and SNF/MNF are covered because ESPN’s week scoreboard already lists those kickoffs — not because we guessed a weekday.
+
+### How holidays are covered
+
+ESPN’s site scoreboard includes `leagues[0].calendar` (preseason / regular / postseason weeks) and per-week `events[].date` kickoffs. The Worker stores those dates, then opens the live window from the kickoff clock:
+
+| Example (2026, from ESPN) | Kickoff (UTC) | America/Denver |
+| --- | --- | --- |
+| Thanksgiving CHI @ DET | `2026-11-26T18:00:00.000Z` | Thu 11:00 AM MT |
+| Thanksgiving PHI @ DAL | `2026-11-26T21:30:00.000Z` | Thu 2:30 PM MT |
+| Christmas GB @ CHI | `2026-12-25T18:00:00.000Z` | Fri 11:00 AM MT |
+| Christmas BUF @ DEN | `2026-12-25T21:30:00.000Z` | Fri 2:30 PM MT |
+| TNF / flex / London | whatever ESPN posts that week | derived from UTC |
+
+A Sunday-only Actions cron would miss all of those. The Worker does not care what weekday it is.
+
+## Cloudflare Worker scheduler
+
+Package: [`worker/`](worker/) (own `package.json`, `wrangler.jsonc`, TypeScript). The root bot package is unchanged.
+
+### What is stored in KV
+
+| Key | Value |
+| --- | --- |
+| `slate` | `{ refreshedAt, source, seasonYear?, games: [{ id, kickoff, name, week, seasonType }] }` |
+| `lastDispatchAt` | UTC ISO of the last GitHub `repository_dispatch` |
+
+`kickoff` is always UTC ISO. Docs and dry-run output also show America/Denver.
+
+### When the Worker dispatches
+
+- **Yes:** at least one stored kickoff is inside `[kickoff − 30m, kickoff + 4h45m]` **and** it has not dispatched in the last 5 minutes.
+- **No:** empty window → return immediately (KV read only).
+- **Refresh ESPN** (not every tick): slate missing/empty, `refreshedAt` older than 168 hours, or every stored kickoff is past the post-window *and* the last refresh was at least 6 hours ago (backoff so offseason does not hammer ESPN).
+
+`poll.yml` concurrency group `missed-kick-poll` still serializes overlapping Actions runs.
+
+### Deploy (`wrangler deploy`)
+
+Requires a free Cloudflare account. CI does **not** deploy live; it typechecks, tests, and runs `wrangler deploy --dry-run`.
+
+```bash
+cd worker
+npm install
+npx wrangler login
+npx wrangler kv namespace create SLATE
+```
+
+Paste the printed namespace id into [`worker/wrangler.jsonc`](worker/wrangler.jsonc) (`kv_namespaces[0].id`). Then set secrets and deploy:
+
+```bash
+npx wrangler secret put GITHUB_TOKEN
+# optional: protect POST /tick and POST /refresh
+npx wrangler secret put SCHEDULER_ADMIN_SECRET
+npx wrangler deploy
+```
+
+Seed the slate immediately (otherwise the first cron tick does it):
+
+```bash
+curl -X POST https://nfl-missed-kick-scheduler.<account>.workers.dev/refresh \
+  -H "Authorization: Bearer $SCHEDULER_ADMIN_SECRET"
+```
+
+Local (Miniflare KV, no Cloudflare credentials required for the bundle):
+
+```bash
+cd worker
+cp .dev.vars.example .dev.vars   # put a PAT in GITHUB_TOKEN to actually dispatch
+npm test
+npm run dry-run                  # live ESPN → print slate + live window; no KV / GitHub / X
+npm run dry-run -- --at 2026-11-26T18:05:00Z
+npx wrangler dev --test-scheduled
+curl http://localhost:8787/status
+curl -X POST http://localhost:8787/tick
+curl "http://localhost:8787/cdn-cgi/local/scheduled?format=json"
+```
+
+### Cloudflare secrets and vars
+
+**Secret** (Dashboard → Workers → Settings → Variables and Secrets, or `wrangler secret put`):
+
+| Secret | Required | Purpose |
+| --- | --- | --- |
+| `GITHUB_TOKEN` | yes | PAT that can create a `repository_dispatch` on `kalb2/nfl-missed-kick-bot` |
+| `SCHEDULER_ADMIN_SECRET` | no | If set, `POST /tick` and `POST /refresh` require `Authorization: Bearer …` |
+
+GitHub token permissions:
+
+- **Fine-grained PAT:** repository `kalb2/nfl-missed-kick-bot`, **Contents: Read and write** (needed for `POST /repos/{owner}/{repo}/dispatches`).
+- **Classic PAT:** `public_repo` on this public repo, or `repo` if you ever make it private.
+
+**Vars** (already in `wrangler.jsonc`; override in the dashboard if needed):
+
+| Var | Default | Purpose |
+| --- | --- | --- |
+| `GITHUB_OWNER` | `kalb2` | Repo owner for dispatch |
+| `GITHUB_REPO` | `nfl-missed-kick-bot` | Repo name for dispatch |
+| `GITHUB_EVENT_TYPE` | `nfl-poll` | `repository_dispatch` type (`poll.yml` listens for this) |
+| `PRE_KICKOFF_MIN` | `30` | Minutes before kickoff to start waking Actions |
+| `POST_KICKOFF_MIN` | `285` | Minutes after kickoff to keep waking (4h + 45m) |
+| `DISPATCH_COOLDOWN_MIN` | `5` | Minimum minutes between dispatches |
+| `SLATE_MAX_AGE_HOURS` | `168` | ESPN refresh at least weekly (flex updates) |
+| `REFRESH_MIN_INTERVAL_HOURS` | `6` | Backoff when the slate has no remaining kickoff |
+| `LOOKAHEAD_DAYS` | `16` | Extra ESPN weeks to prefetch on refresh |
+| `ESPN_USER_AGENT` | browser UA | Same idea as the bot; `site.api` often 403s from cloud IPs |
+
+Workers free tier is enough: one cron every 2 minutes (~720 invocations/day), one KV read per tick, ESPN only on refresh, KV writes only on refresh / dispatch.
+
 ## GitHub Actions
 
 Two workflows:
 
 | Workflow | When | What |
 | --- | --- | --- |
-| `ci.yml` | push / PR | `npm test` + typecheck |
-| `poll.yml` | cron + manual | one poll, cache `.state/seen.json` and `.state/tallies.json` |
+| `ci.yml` | push / PR | root tests + Worker tests + `wrangler deploy --dry-run` |
+| `poll.yml` | Worker `repository_dispatch` (`nfl-poll`) or manual | one poll, cache `.state/seen.json` and `.state/tallies.json` |
 
-`poll.yml` runs about every **5 minutes** during NFL windows: Sunday all day UTC; TNF 6:00 PM–11:00 PM America/Denver (Fri `*/5 0-5 * * 5`, which runs through 11:59 PM MT on the clock hour); and Mon/Tue overnight for leftover SNF / MNF. If the scoreboard has no in-progress or recently finished game, it exits after the scoreboard call.
+Worker-driven `repository_dispatch` uses the same live posting defaults the old schedule runs used: `DRY_RUN` and `SEED_SEEN` from repository variables (not the manual workflow inputs). Manual **Run workflow** still defaults `dry_run` to true so a dashboard click cannot tweet by accident.
+
+If the scoreboard has no in-progress or recently finished game, the bot exits after the scoreboard call.
 
 **Secrets** (same names as `.env`): `X_API_KEY`, `X_API_KEY_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`.
 
@@ -143,16 +271,16 @@ Two workflows:
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `DRY_RUN` | `true` | Set `false` to actually tweet |
+| `DRY_RUN` | `true` | Set `false` to actually tweet (Worker wakes and `npm start`) |
 | `SEED_SEEN` | unset | Set `true` for one run to backfill without tweeting |
 
 Actions state uses `actions/cache` on `.state/`. Caches can expire; the bot also ignores old finals (kickoff + ~4 hours + `RECENT_FINAL_WINDOW_MIN`), so a cache miss should not re-tweet last week. For the first live Sunday, run **Actions → Poll ESPN and tweet misses → Run workflow** with “Seed seen play IDs” enabled, then turn on posting.
 
-Workflow concurrency is serialized so two crons cannot double-tweet.
+Workflow concurrency is serialized so two wakes cannot double-tweet.
 
 ### Actions minutes vs always-on
 
-GitHub’s shortest reliable cron is **5 minutes**. A public repo is usually fine; a private repo’s 2,000 minute monthly quota can get tight if every Sunday is a full-day cron. Prefer `npm start` on a cheap always-on host if you want sub-minute latency or need to save Actions minutes:
+GitHub’s shortest reliable cron is **5 minutes**, but this repo no longer uses a weekday cron. The Worker is the wake source, so Actions minutes are spent only while games are in window. A public repo is usually fine; a private repo’s 2,000 minute monthly quota is much safer than an all-Sunday cron. Prefer `npm start` on a cheap always-on host if you want sub-minute latency:
 
 - A $4–6 VPS, Railway, Render, or Fly.io machine
 - `DRY_RUN=false npm start` under systemd or Docker
@@ -177,6 +305,7 @@ See [`.env.example`](.env.example).
 ```bash
 npm test
 npm run typecheck
+cd worker && npm test && npm run typecheck
 ```
 
 Fixtures under `test/fixtures/` are trimmed copies of real 2026-09-13 ESPN plays (Carlson FG, Sanders FG, Shrader PAT, plus Extra Point Good as a negative case).

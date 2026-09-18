@@ -1,0 +1,45 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "nfl-missed-kick-scheduler",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 },
+  },
+  // Replace `id` after: npx wrangler kv namespace create SLATE
+  // Local `wrangler dev` uses Miniflare and ignores the remote id.
+  "kv_namespaces": [
+    {
+      "binding": "SLATE",
+      "id": "00000000000000000000000000000000",
+    },
+  ],
+  "vars": {
+    "GITHUB_OWNER": "kalb2",
+    "GITHUB_REPO": "nfl-missed-kick-bot",
+    "GITHUB_EVENT_TYPE": "nfl-poll",
+    // 30 minutes before kickoff (America/Denver docs; stored times are UTC).
+    "PRE_KICKOFF_MIN": "30",
+    // 4h typical game + 45m recent-final window (matches the TypeScript bot).
+    "POST_KICKOFF_MIN": "285",
+    // Match Actions' practical cadence; concurrency group missed-kick-poll serializes runs.
+    "DISPATCH_COOLDOWN_MIN": "5",
+    // Force an ESPN resync at least weekly even when future kickoffs remain (flex moves).
+    "SLATE_MAX_AGE_HOURS": "168",
+    // Avoid ESPN retry loops when the board has no upcoming games (bye / offseason).
+    "REFRESH_MIN_INTERVAL_HOURS": "6",
+    "LOOKAHEAD_DAYS": "16",
+    "ESPN_USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+  },
+  // One cron only: every 2 minutes, read KV. ESPN is contacted only when the
+  // stored slate is empty, older than SLATE_MAX_AGE_HOURS, or has no remaining kickoff.
+  // Tuesday 14:00 UTC (~8:00 AM America/Denver in MDT) is not a separate trigger —
+  // the same tick refreshes whenever the slate is stale.
+  "triggers": {
+    "crons": ["*/2 * * * *"],
+  },
+}
