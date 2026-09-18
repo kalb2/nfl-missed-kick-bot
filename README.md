@@ -135,7 +135,7 @@ Two workflows:
 | `ci.yml` | push / PR | `npm test` + typecheck |
 | `poll.yml` | cron + manual | one poll, cache `.state/seen.json` and `.state/tallies.json` |
 
-`poll.yml` runs about every **5 minutes** during NFL windows (Sunday all day UTC, plus Thu/Fri and Mon/Tue overnight for TNF / SNF / MNF). If the scoreboard has no in-progress or recently finished game, it exits after the scoreboard call.
+`poll.yml` runs about every **5 minutes** during NFL windows: Sunday all day UTC; TNF 6:00 PM–11:00 PM America/Denver (Fri `*/5 0-5 * * 5`, which runs through 11:59 PM MT on the clock hour); and Mon/Tue overnight for leftover SNF / MNF. If the scoreboard has no in-progress or recently finished game, it exits after the scoreboard call.
 
 **Secrets** (same names as `.env`): `X_API_KEY`, `X_API_KEY_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`.
 
