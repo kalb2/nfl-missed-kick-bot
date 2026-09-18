@@ -1,25 +1,15 @@
 name: Poll ESPN and tweet misses
 
-# GitHub cron is UTC and 5 minutes is the practical minimum.
-# Local times below are America/Denver (MT). TNF is evening-only
-# (6:00 PM–11:00 PM MT); no Thursday cron fires before Fri 00:00 UTC.
+# Primary wake source is the Cloudflare Worker in worker/: it stores ESPN
+# kickoffs in KV and repository_dispatches this workflow only while a game is
+# in the live window (Thanksgiving, Christmas, flex, TNF, etc.).
 #
-# Sunday (early / late / SNF slates):
-#   */5 * * * 0              # all day UTC
-# Leftover SNF into Monday UTC:
-#   */5 0-4 * * 1            # Sun 6:00 PM–10:59 PM MT
-# MNF (Mon evening MT):
-#   */5 23 * * 1             # Mon 5:00–5:59 PM MT
-#   */5 0-5 * * 2            # Mon 6:00 PM–11:59 PM MT
-# TNF (6:00 PM–11:00 PM MT; Fri UTC cron covers through 11:59 PM MT):
-#   */5 0-5 * * 5            # Thu 6:00 PM–11:59 PM MT
+# The Worker dense-ticks Thursday–Monday UTC (plus early Tuesday UTC for late
+# MNF). Tue afternoon / Wednesday are refresh-only — no 2-minute wakes.
+# Emergency / demo runs use workflow_dispatch only.
 on:
-  schedule:
-    - cron: "*/5 * * * 0"
-    - cron: "*/5 0-4 * * 1"
-    - cron: "*/5 23 * * 1"
-    - cron: "*/5 0-5 * * 2"
-    - cron: "*/5 0-5 * * 5"
+  repository_dispatch:
+    types: [nfl-poll]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -71,6 +61,7 @@ jobs:
             echo "seed=${{ github.event.inputs.seed }}" >> "$GITHUB_OUTPUT"
             echo "all_today=${{ github.event.inputs.all_today }}" >> "$GITHUB_OUTPUT"
           else
+            # repository_dispatch from the Worker: same live defaults as the old schedule runs.
             echo "dry_run=${{ vars.DRY_RUN || 'true' }}" >> "$GITHUB_OUTPUT"
             echo "seed=${{ vars.SEED_SEEN || 'false' }}" >> "$GITHUB_OUTPUT"
             echo "all_today=false" >> "$GITHUB_OUTPUT"

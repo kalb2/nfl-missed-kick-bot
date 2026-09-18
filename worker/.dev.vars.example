@@ -1,0 +1,7 @@
+# Copy to .dev.vars for `wrangler dev` / `wrangler types`. Do not commit .dev.vars.
+# Fine-grained PAT: Contents Read and write on kalb2/nfl-missed-kick-bot
+# Classic PAT: public_repo (this public repo) or repo
+GITHUB_TOKEN=
+
+# Optional. If set, POST /tick and POST /refresh require Authorization: Bearer <secret>
+SCHEDULER_ADMIN_SECRET=

@@ -1,10 +1,6 @@
 node_modules/
 dist/
-.env
-.state/
 .wrangler/
+.dev.vars
 *.log
 .DS_Store
-coverage/
-.idea/
-.vscode/

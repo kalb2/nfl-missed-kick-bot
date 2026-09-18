@@ -1,0 +1,76 @@
+{
+  "season": {
+    "type": 2,
+    "year": 2026
+  },
+  "week": {
+    "number": 12
+  },
+  "events": [
+    {
+      "id": "thx-tnf",
+      "date": "2026-11-26T01:00:00.000Z",
+      "shortName": "GB @ LAR",
+      "name": "Green Bay Packers at Los Angeles Rams",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "week": {
+        "number": 12
+      }
+    },
+    {
+      "id": "thx-det",
+      "date": "2026-11-26T18:00:00.000Z",
+      "shortName": "CHI @ DET",
+      "name": "Chicago Bears at Detroit Lions",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "week": {
+        "number": 12
+      }
+    },
+    {
+      "id": "thx-dal",
+      "date": "2026-11-26T21:30:00.000Z",
+      "shortName": "PHI @ DAL",
+      "name": "Philadelphia Eagles at Dallas Cowboys",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "week": {
+        "number": 12
+      }
+    },
+    {
+      "id": "thx-buf",
+      "date": "2026-11-27T01:20:00.000Z",
+      "shortName": "KC @ BUF",
+      "name": "Kansas City Chiefs at Buffalo Bills",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "week": {
+        "number": 12
+      }
+    },
+    {
+      "id": "thx-sun",
+      "date": "2026-11-29T18:00:00.000Z",
+      "shortName": "NO @ CIN",
+      "name": "New Orleans Saints at Cincinnati Bengals",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "week": {
+        "number": 12
+      }
+    }
+  ]
+}
