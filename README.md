@@ -146,7 +146,7 @@ ESPN scoreboard
 
 1. **`poll.yml` cron is the primary wake.** It fires every 5 minutes Thursday–Monday UTC, plus Tuesday 00:00–07:59 UTC so late MNF that is still Monday evening in America/Denver stays covered. That window includes TNF, Friday/Saturday slates (internationals, Christmas), Sunday, and MNF. Tuesday after 08:00 UTC and all Wednesday have no Actions cron.
 2. Each cron run hits the ESPN scoreboard. If nothing is in-progress or recently finished, the bot **exits after that one call** — no season-tally refresh, no per-game summaries.
-3. The Worker in [`worker/`](worker/) is kept in-tree as an **optional** later wake: it can store ESPN kickoffs in KV and `repository_dispatch` `nfl-poll` only while a game is in a live window. It is **not** required for the bot to run. Deploy it only when you can inject a GitHub PAT into the Worker environment.
+3. The Worker in [`worker/`](worker/) is kept in-tree as an **optional** later wake: it can store ESPN kickoffs in KV and `repository_dispatch` `nfl-poll` only while a game is in a live window. It is **not** required for the bot to run. Publish it with **Actions → Deploy Cloudflare Worker → Run workflow** once `CLOUDFLARE_API_TOKEN` and `WORKER_GITHUB_PAT` are set.
 4. Tweets stay in the TypeScript bot. The Worker never talks to X.
 
 ### How holidays are covered
@@ -196,20 +196,25 @@ There is **no** `*/2 * * * *` all-week cron. Tuesday after 08:00 UTC and all of 
 
 `poll.yml` concurrency group `missed-kick-poll` still serializes overlapping Actions runs.
 
-### Deploy (`wrangler deploy`)
+### Deploy Worker
 
-Requires a free Cloudflare account. CI does **not** deploy live; it typechecks, tests, and runs `wrangler deploy --dry-run`.
+GitHub Actions publishes `nfl-missed-kick-scheduler` and sets its `GITHUB_TOKEN` from existing repo secrets. After this workflow is on `main`:
+
+1. Confirm repository secrets (Settings → Secrets and variables → Actions):
+   - `CLOUDFLARE_API_TOKEN` — Workers Scripts Edit + Workers KV Storage Edit
+   - `WORKER_GITHUB_PAT` — PAT that can `repository_dispatch` this repo
+2. Optional: set repository variable `CLOUDFLARE_ACCOUNT_ID` if the token can see more than one Cloudflare account. The workflow auto-detects the account from the token when there is only one.
+3. **Actions → Deploy Cloudflare Worker → Run workflow** (use the `main` branch).
+4. The job deploys the Worker and pipes `WORKER_GITHUB_PAT` into the Worker secret `GITHUB_TOKEN` (the value is never echoed). After that, Worker cron ticks can `repository_dispatch` type `nfl-poll`.
+
+`wrangler.jsonc` already points `SLATE` at KV namespace `nfl-missed-kick-slate` (`dc5248300f0c41898bba2959b3d5c314`). CI still does **not** deploy on push; it only typechecks, tests, and runs `wrangler deploy --dry-run`.
+
+Local deploy remains available for debugging:
 
 ```bash
 cd worker
 npm install
 npx wrangler login
-npx wrangler kv namespace create SLATE
-```
-
-Paste the printed namespace id into [`worker/wrangler.jsonc`](worker/wrangler.jsonc) (`kv_namespaces[0].id`). Then set secrets and deploy:
-
-```bash
 npx wrangler secret put GITHUB_TOKEN
 # optional: protect POST /tick and POST /refresh
 npx wrangler secret put SCHEDULER_ADMIN_SECRET
@@ -244,7 +249,7 @@ curl "http://localhost:8787/cdn-cgi/local/scheduled?format=json&cron=0+15+*+*+TU
 
 | Secret | Required | Purpose |
 | --- | --- | --- |
-| `GITHUB_TOKEN` | yes | PAT that can create a `repository_dispatch` on `kalb2/nfl-missed-kick-bot` |
+| `GITHUB_TOKEN` | yes | PAT that can create a `repository_dispatch` on `kalb2/nfl-missed-kick-bot`. The deploy workflow sets this from repo secret `WORKER_GITHUB_PAT`. |
 | `SCHEDULER_ADMIN_SECRET` | no | If set, `POST /tick` and `POST /refresh` require `Authorization: Bearer …` |
 
 GitHub token permissions:
@@ -271,12 +276,13 @@ Workers free tier is enough: 2-minute ticks only Thu–Mon plus 8 hours Tuesday 
 
 ## GitHub Actions
 
-Two workflows:
+Three workflows:
 
 | Workflow | When | What |
 | --- | --- | --- |
 | `ci.yml` | push / PR | root tests + Worker tests + `wrangler deploy --dry-run` |
 | `poll.yml` | **cron (primary)** + optional Worker `repository_dispatch` (`nfl-poll`) + manual | one poll, cache `.state/seen.json` and `.state/tallies.json` |
+| `deploy-worker.yml` | **manual** (Actions → Deploy Cloudflare Worker → Run workflow) | `wrangler deploy` + set Worker secret `GITHUB_TOKEN` from `WORKER_GITHUB_PAT` |
 
 `poll.yml` dense-polls every **5 minutes** Thursday–Monday UTC, plus Tuesday 00:00–07:59 UTC for late MNF (Monday evening America/Denver). That is the live wake until a Cloudflare Worker is deployed. `repository_dispatch` type `nfl-poll` remains so the Worker can still wake it later.
 
@@ -284,7 +290,7 @@ Cron and Worker-driven `repository_dispatch` use the same live posting defaults:
 
 If the scoreboard has no in-progress or recently finished game, the bot exits after the scoreboard call (no season-tally ESPN fan-out).
 
-**Secrets** (same names as `.env`): `X_API_KEY`, `X_API_KEY_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`.
+**Secrets** (same names as `.env` unless noted): `X_API_KEY`, `X_API_KEY_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`. Worker deploy additionally needs `CLOUDFLARE_API_TOKEN` and `WORKER_GITHUB_PAT` (piped into the Worker as `GITHUB_TOKEN`; never commit either value).
 
 **Variables** (optional):
 
@@ -292,6 +298,7 @@ If the scoreboard has no in-progress or recently finished game, the bot exits af
 | --- | --- | --- |
 | `DRY_RUN` | `true` | Set `false` to actually tweet (cron / optional Worker / `npm start`) |
 | `SEED_SEEN` | unset | Set `true` for one run to backfill without tweeting |
+| `CLOUDFLARE_ACCOUNT_ID` | auto-detect | Only needed if `CLOUDFLARE_API_TOKEN` can see more than one account |
 
 Actions state uses `actions/cache` on `.state/`. Caches can expire; the bot also ignores old finals (kickoff + ~4 hours + `RECENT_FINAL_WINDOW_MIN`), so a cache miss should not re-tweet last week. For the first live Sunday, run **Actions → Poll ESPN and tweet misses → Run workflow** with “Seed seen play IDs” enabled, then turn on posting.
 

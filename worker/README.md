@@ -4,7 +4,7 @@ Optional later wake for [`../.github/workflows/poll.yml`](../.github/workflows/p
 
 **Live polling does not require this Worker.** `poll.yml` has its own Thursday–Monday (plus early Tuesday UTC) GitHub Actions cron until someone deploys here with a GitHub PAT. Keep this package in-tree.
 
-See the root [README](../README.md#cloudflare-worker-scheduler-optional--future) for architecture, secrets, and deploy steps.
+See the root [README](../README.md#deploy-worker) to publish from **Actions → Deploy Cloudflare Worker → Run workflow**. Architecture and secrets are in [Cloudflare Worker scheduler](../README.md#cloudflare-worker-scheduler-optional--future).
 
 ```bash
 npm install

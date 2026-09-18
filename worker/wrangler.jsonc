@@ -10,12 +10,12 @@
     "logs": { "head_sampling_rate": 1 },
     "traces": { "enabled": true, "head_sampling_rate": 0.01 },
   },
-  // Replace `id` after: npx wrangler kv namespace create SLATE
+  // Remote KV namespace nfl-missed-kick-slate.
   // Local `wrangler dev` uses Miniflare and ignores the remote id.
   "kv_namespaces": [
     {
       "binding": "SLATE",
-      "id": "00000000000000000000000000000000",
+      "id": "dc5248300f0c41898bba2959b3d5c314",
     },
   ],
   "vars": {
