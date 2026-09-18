@@ -1,8 +1,10 @@
 # NFL slate scheduler (Cloudflare Worker)
 
-Wakes [`../.github/workflows/poll.yml`](../.github/workflows/poll.yml) only when the stored ESPN slate says a game is in a live window. It does **not** tweet.
+Optional later wake for [`../.github/workflows/poll.yml`](../.github/workflows/poll.yml): when deployed, it dispatches only when the stored ESPN slate says a game is in a live window. It does **not** tweet.
 
-See the root [README](../README.md#cloudflare-worker-scheduler) for architecture, secrets, and deploy steps.
+**Live polling does not require this Worker.** `poll.yml` has its own Thursday–Monday (plus early Tuesday UTC) GitHub Actions cron until someone deploys here with a GitHub PAT. Keep this package in-tree.
+
+See the root [README](../README.md#cloudflare-worker-scheduler-optional--future) for architecture, secrets, and deploy steps.
 
 ```bash
 npm install
