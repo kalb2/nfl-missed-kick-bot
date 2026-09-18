@@ -2,7 +2,9 @@
 
 A small TypeScript bot that polls ESPN’s **public, keyless** NFL APIs and tweets whenever a kicker misses a field goal or a PAT / extra point.
 
-It runs on its own — a Cloudflare Worker watches the ESPN slate and wakes GitHub Actions only when games are on, or you can use `npm start`. It does **not** use Cursor/Grok routines or X MCP credits. The Worker never tweets.
+It runs on its own — **GitHub Actions cron** dense-polls ESPN on NFL game days (Thursday–Monday UTC, plus early Tuesday UTC for late MNF), or you can use `npm start`. It does **not** use Cursor/Grok routines or X MCP credits.
+
+A Cloudflare Worker in [`worker/`](worker/) is **optional / future**: once deployed it can `repository_dispatch` the same workflow only while a stored kickoff is in a live window. The bot does **not** need that Worker (or any Cloudflare credentials) to poll tonight. The Worker never tweets.
 
 ## What it tweets
 
@@ -130,40 +132,40 @@ If any secret is missing, the bot logs tweets instead of posting.
 ## Architecture
 
 ```
-ESPN scoreboard (slow)     Workers KV slate          poll.yml
-        │                        │                       │
-        ▼                        ▼                       ▼
- Cloudflare Worker ──if live──► repository_dispatch ──► TypeScript bot ──► X
-  dense tick Thu–Mon            event `nfl-poll`         (tweets)
-  (+ early Tue UTC for MNF)
-  midweek cron = refresh only
+ESPN scoreboard
+        │
+        ▼
+ GitHub Actions cron (primary) ──► poll.yml ──► TypeScript bot ──► X
+  */5 Thu–Mon UTC                              (tweets)
+  */5 Tue 00:00–07:59 UTC (late MNF)
+        ▲
+        │ optional later
+ Cloudflare Worker ──if live──► repository_dispatch (`nfl-poll`)
+  (not required; no Cloudflare credentials needed to poll)
 ```
 
-1. The Worker in [`worker/`](worker/) refreshes ESPN’s NFL scoreboard/calendar only when the stored slate is empty, older than 7 days, or has no remaining kickoff. Kickoffs are written to Workers KV as UTC ISO times.
-2. **Dense ticks** (every 2 minutes) run **Thursday–Monday UTC only**, plus **Tuesday 00:00–07:59 UTC** so late MNF that is still Monday evening in America/Denver stays covered. Those ticks read **KV only**. No ESPN scoreboard or summary calls on idle ticks.
-3. **Tuesday after 08:00 UTC and all Wednesday** have no 2-minute cron. A separate **Tue/Wed 15:00 UTC** cron refreshes the slate when needed and never dispatches.
-4. If any kickoff is in the live window (30 minutes before through 4 hours + 45 minutes after), a dense tick wakes `poll.yml` via GitHub `repository_dispatch` (`nfl-poll`), at most once every 5 minutes.
-5. `poll.yml` runs the existing TypeScript bot. Tweets stay there. The Worker never talks to X.
-
-Weekday GitHub Actions crons are gone. Thanksgiving, Christmas (when it lands Thu–Mon), Saturday internationals, flex moves, TNF, and SNF/MNF are covered because those kickoffs live on the stored ESPN slate **and** they fall on the dense-tick days. Midweek is refresh-only so KV still updates without waking Actions every 2 minutes.
+1. **`poll.yml` cron is the primary wake.** It fires every 5 minutes Thursday–Monday UTC, plus Tuesday 00:00–07:59 UTC so late MNF that is still Monday evening in America/Denver stays covered. That window includes TNF, Friday/Saturday slates (internationals, Christmas), Sunday, and MNF. Tuesday after 08:00 UTC and all Wednesday have no Actions cron.
+2. Each cron run hits the ESPN scoreboard. If nothing is in-progress or recently finished, the bot **exits after that one call** — no season-tally refresh, no per-game summaries.
+3. The Worker in [`worker/`](worker/) is kept in-tree as an **optional** later wake: it can store ESPN kickoffs in KV and `repository_dispatch` `nfl-poll` only while a game is in a live window. It is **not** required for the bot to run. Deploy it only when you can inject a GitHub PAT into the Worker environment.
+4. Tweets stay in the TypeScript bot. The Worker never talks to X.
 
 ### How holidays are covered
 
-ESPN’s site scoreboard includes `leagues[0].calendar` (preseason / regular / postseason weeks) and per-week `events[].date` kickoffs. The Worker stores those dates, then opens the live window from the kickoff clock:
+Actions cron already runs all day Thursday–Monday UTC, so Thanksgiving, Christmas (when it lands Thu–Fri), Saturday internationals, and flex moves do not need a Worker. ESPN’s daily scoreboard lists those games; idle hours still exit after the scoreboard call.
 
-| Example (2026, from ESPN) | Kickoff (UTC) | America/Denver |
-| --- | --- | --- |
-| Thanksgiving CHI @ DET | `2026-11-26T18:00:00.000Z` | Thu 11:00 AM MT |
-| Thanksgiving PHI @ DAL | `2026-11-26T21:30:00.000Z` | Thu 2:30 PM MT |
-| Christmas GB @ CHI | `2026-12-25T18:00:00.000Z` | Fri 11:00 AM MT |
-| Christmas BUF @ DEN | `2026-12-25T21:30:00.000Z` | Fri 2:30 PM MT |
-| TNF / flex / London | whatever ESPN posts that week | derived from UTC |
+| Example (2026, from ESPN) | Kickoff (UTC) | America/Denver | Actions cron? |
+| --- | --- | --- | --- |
+| Thanksgiving CHI @ DET | `2026-11-26T18:00:00.000Z` | Thu 11:00 AM MT | Thursday `*/5` |
+| Thanksgiving PHI @ DAL | `2026-11-26T21:30:00.000Z` | Thu 2:30 PM MT | Thursday `*/5` |
+| Christmas GB @ CHI | `2026-12-25T18:00:00.000Z` | Fri 11:00 AM MT | Friday `*/5` |
+| Christmas BUF @ DEN | `2026-12-25T21:30:00.000Z` | Fri 2:30 PM MT | Friday `*/5` |
+| TNF / flex / London | whatever ESPN posts that week | derived from UTC | Thu–Mon `*/5` |
 
-A Sunday-only Actions cron would miss all of those. Dense Worker ticks still skip Tuesday afternoon / Wednesday because NFL kickoffs do not land then; the holiday examples above are Thursday or Friday and stay on the 2-minute schedule.
+A Sunday-only cron would miss all of those. Tue afternoon / Wednesday stay quiet because NFL kickoffs do not land then.
 
-## Cloudflare Worker scheduler
+## Cloudflare Worker scheduler (optional / future)
 
-Package: [`worker/`](worker/) (own `package.json`, `wrangler.jsonc`, TypeScript). The root bot package is unchanged.
+Package: [`worker/`](worker/) (own `package.json`, `wrangler.jsonc`, TypeScript). **Do not delete it.** It is not the live wake source until someone deploys it with a GitHub PAT; GitHub Actions cron covers game days without it. The root bot package does not depend on a live Worker.
 
 ### What is stored in KV
 
@@ -274,11 +276,13 @@ Two workflows:
 | Workflow | When | What |
 | --- | --- | --- |
 | `ci.yml` | push / PR | root tests + Worker tests + `wrangler deploy --dry-run` |
-| `poll.yml` | Worker `repository_dispatch` (`nfl-poll`) or manual | one poll, cache `.state/seen.json` and `.state/tallies.json` |
+| `poll.yml` | **cron (primary)** + optional Worker `repository_dispatch` (`nfl-poll`) + manual | one poll, cache `.state/seen.json` and `.state/tallies.json` |
 
-Worker-driven `repository_dispatch` uses the same live posting defaults the old schedule runs used: `DRY_RUN` and `SEED_SEEN` from repository variables (not the manual workflow inputs). Manual **Run workflow** still defaults `dry_run` to true so a dashboard click cannot tweet by accident.
+`poll.yml` dense-polls every **5 minutes** Thursday–Monday UTC, plus Tuesday 00:00–07:59 UTC for late MNF (Monday evening America/Denver). That is the live wake until a Cloudflare Worker is deployed. `repository_dispatch` type `nfl-poll` remains so the Worker can still wake it later.
 
-If the scoreboard has no in-progress or recently finished game, the bot exits after the scoreboard call.
+Cron and Worker-driven `repository_dispatch` use the same live posting defaults: `DRY_RUN` and `SEED_SEEN` from repository variables (not the manual workflow inputs). Manual **Run workflow** still defaults `dry_run` to true so a dashboard click cannot tweet by accident.
+
+If the scoreboard has no in-progress or recently finished game, the bot exits after the scoreboard call (no season-tally ESPN fan-out).
 
 **Secrets** (same names as `.env`): `X_API_KEY`, `X_API_KEY_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`.
 
@@ -286,7 +290,7 @@ If the scoreboard has no in-progress or recently finished game, the bot exits af
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `DRY_RUN` | `true` | Set `false` to actually tweet (Worker wakes and `npm start`) |
+| `DRY_RUN` | `true` | Set `false` to actually tweet (cron / optional Worker / `npm start`) |
 | `SEED_SEEN` | unset | Set `true` for one run to backfill without tweeting |
 
 Actions state uses `actions/cache` on `.state/`. Caches can expire; the bot also ignores old finals (kickoff + ~4 hours + `RECENT_FINAL_WINDOW_MIN`), so a cache miss should not re-tweet last week. For the first live Sunday, run **Actions → Poll ESPN and tweet misses → Run workflow** with “Seed seen play IDs” enabled, then turn on posting.
@@ -295,7 +299,7 @@ Workflow concurrency is serialized so two wakes cannot double-tweet.
 
 ### Actions minutes vs always-on
 
-GitHub’s shortest reliable cron is **5 minutes**, but this repo no longer uses a weekday cron. The Worker is the wake source, so Actions minutes are spent only while games are in window. A public repo is usually fine; a private repo’s 2,000 minute monthly quota is much safer than an all-Sunday cron. Prefer `npm start` on a cheap always-on host if you want sub-minute latency:
+GitHub’s shortest reliable cron is **5 minutes**. This repo uses that on Thu–Mon (plus early Tuesday UTC). Empty hours still spend an Actions minute on `npm ci` + one scoreboard fetch, then exit. A public repo is usually fine; a private repo’s 2,000 minute monthly quota can get tight. After a Worker is deployed you can drop the weekday crons again. Prefer `npm start` on a cheap always-on host if you want sub-minute latency:
 
 - A $4–6 VPS, Railway, Render, or Fly.io machine
 - `DRY_RUN=false npm start` under systemd or Docker

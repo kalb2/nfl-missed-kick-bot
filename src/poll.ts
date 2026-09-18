@@ -21,6 +21,22 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
     }),
   );
 
+  // Cheap idle-cron exit: skip season-wide tally refreshes and per-game
+  // summaries when the scoreboard has nothing in the watch window.
+  if (events.length === 0) {
+    console.log("No in-progress or recently finished games; exiting after scoreboard.");
+    return {
+      gamesScanned: 0,
+      missesFound: 0,
+      newMisses: [],
+      posted: 0,
+      skippedSeen: 0,
+      tweets: [],
+      seasonGamesScanned: 0,
+      seasonTallies: [],
+    };
+  }
+
   const tallies = deps.tallies ?? new SeasonTallyIndex();
   await tallies.refresh(deps.espn, board);
 

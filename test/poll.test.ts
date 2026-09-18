@@ -112,6 +112,47 @@ describe("pollOnce", () => {
     expect(store.has("4018729241674")).toBe(true);
   });
 
+  it("exits after the scoreboard when no game is in the watch window", async () => {
+    let scoreboardCalls = 0;
+    let summaryCalls = 0;
+    const espn = {
+      concurrency: 2,
+      getScoreboard: async (query?: { week?: number }) => {
+        scoreboardCalls += 1;
+        if (query?.week !== undefined) {
+          throw new Error("weekly scoreboard should not run on idle cron");
+        }
+        return {
+          season: { type: 2, year: 2026 },
+          week: { number: 3 },
+          events: [
+            {
+              id: "pre-only",
+              shortName: "KC @ BUF",
+              date: new Date(Date.now() + 3 * 60 * 60_000).toISOString(),
+              status: { type: { state: "pre", name: "STATUS_SCHEDULED", completed: false } },
+              competitions: [],
+            },
+          ],
+        };
+      },
+      getSummary: async () => {
+        summaryCalls += 1;
+        throw new Error("summary should not run on idle scoreboard");
+      },
+    } as unknown as EspnClient;
+
+    const result = await pollOnce(
+      { espn, store: new SeenStore(path.join(os.tmpdir(), "unused-seen.json")), poster: { post: async () => ({}) } },
+      { dryRun: true, seedSeen: false, allToday: false, persist: false, recentFinalWindowMin: 45 },
+    );
+
+    expect(result.gamesScanned).toBe(0);
+    expect(result.tweets).toEqual([]);
+    expect(scoreboardCalls).toBe(1);
+    expect(summaryCalls).toBe(0);
+  });
+
   it("ignores Extra Point Good games", async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), "missed-kick-"));
     dirs.push(dir);

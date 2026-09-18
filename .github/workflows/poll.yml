@@ -1,13 +1,24 @@
 name: Poll ESPN and tweet misses
 
-# Primary wake source is the Cloudflare Worker in worker/: it stores ESPN
-# kickoffs in KV and repository_dispatches this workflow only while a game is
-# in the live window (Thanksgiving, Christmas, flex, TNF, etc.).
+# Primary wake source is GitHub Actions cron (no Cloudflare required).
+# GitHub cron is UTC; 5 minutes is the practical minimum. Local notes
+# below are America/Denver (MT).
 #
-# The Worker dense-ticks Thursday–Monday UTC (plus early Tuesday UTC for late
-# MNF). Tue afternoon / Wednesday are refresh-only — no 2-minute wakes.
-# Emergency / demo runs use workflow_dispatch only.
+# Dense poll Thursday–Monday UTC so TNF, Friday/Saturday slates
+# (internationals, Christmas), Sunday, and MNF are covered without a
+# Worker. Early Tuesday UTC keeps late MNF that is still Monday evening
+# in America/Denver in window — same idea as worker/ `*/2 0-7 * * TUE`.
+#
+#   */5 * * * 4,5,6,0,1   # Thu–Mon all day UTC
+#   */5 0-7 * * 2         # Tue 00:00–07:59 UTC (Mon ~5–6 PM through ~1 AM MT)
+#
+# repository_dispatch (nfl-poll) stays so a Cloudflare Worker can still
+# wake this workflow later when it is deployed. workflow_dispatch is for
+# emergency / demo runs.
 on:
+  schedule:
+    - cron: "*/5 * * * 4,5,6,0,1"
+    - cron: "*/5 0-7 * * 2"
   repository_dispatch:
     types: [nfl-poll]
   workflow_dispatch:
@@ -61,7 +72,8 @@ jobs:
             echo "seed=${{ github.event.inputs.seed }}" >> "$GITHUB_OUTPUT"
             echo "all_today=${{ github.event.inputs.all_today }}" >> "$GITHUB_OUTPUT"
           else
-            # repository_dispatch from the Worker: same live defaults as the old schedule runs.
+            # schedule (primary) and repository_dispatch (optional Worker):
+            # same live defaults as before the Worker-only change.
             echo "dry_run=${{ vars.DRY_RUN || 'true' }}" >> "$GITHUB_OUTPUT"
             echo "seed=${{ vars.SEED_SEEN || 'false' }}" >> "$GITHUB_OUTPUT"
             echo "all_today=false" >> "$GITHUB_OUTPUT"
