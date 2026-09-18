@@ -1,17 +1,27 @@
 name: Poll ESPN and tweet misses
 
 # GitHub cron is UTC and 5 minutes is the practical minimum.
-# Sunday covers the early/late/SNF slates. Thu/Fri and Mon/Tue
-# windows cover TNF, leftover SNF, and MNF without running 24/7.
+# Local times below are America/Denver (MT). TNF is evening-only
+# (~5:00 PM–11:59 PM MT); no Thursday cron fires before 23:00 UTC.
+#
+# Sunday (early / late / SNF slates):
+#   */5 * * * 0              # all day UTC
+# Leftover SNF into Monday UTC:
+#   */5 0-4 * * 1            # Sun 6:00 PM–10:59 PM MT
+# MNF (Mon evening MT):
+#   */5 23 * * 1             # Mon 5:00–5:59 PM MT
+#   */5 0-5 * * 2            # Mon 6:00 PM–11:59 PM MT
+# TNF (Thu evening MT only):
+#   */5 23 * * 4             # Thu 5:00–5:59 PM MT
+#   */5 0-5 * * 5            # Thu 6:00 PM–11:59 PM MT
 on:
   schedule:
     - cron: "*/5 * * * 0"
+    - cron: "*/5 0-4 * * 1"
     - cron: "*/5 23 * * 1"
     - cron: "*/5 0-5 * * 2"
     - cron: "*/5 23 * * 4"
     - cron: "*/5 0-5 * * 5"
-    - cron: "*/5 16-23 * * 4"
-    - cron: "*/5 0-4 * * 1"
   workflow_dispatch:
     inputs:
       dry_run:
