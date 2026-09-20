@@ -1,5 +1,6 @@
 import { cronKind } from "./cron.js";
 import { fetchNflSlate } from "./espn.js";
+import { isGitHubDispatchError, publicErrorMessage } from "./github.js";
 import type { GitHubDispatcher, SchedulerConfig, Slate, SlateStore, StoredGame, TickResult } from "./types.js";
 import { LAST_DISPATCH_KEY, SLATE_KEY } from "./types.js";
 import {
@@ -154,21 +155,35 @@ export async function runTick(
     };
   }
 
-  await deps.github.dispatch({
-    owner: deps.config.githubOwner,
-    repo: deps.config.githubRepo,
-    eventType: deps.config.githubEventType,
-    token: deps.config.githubToken,
-    payload: {
-      reason: "live-window",
-      dispatchedAt: nowIso,
-      games: live.map((game: StoredGame) => ({
-        id: game.id,
-        name: game.name,
-        kickoff: game.kickoff,
-      })),
-    },
-  });
+  try {
+    await deps.github.dispatch({
+      owner: deps.config.githubOwner,
+      repo: deps.config.githubRepo,
+      eventType: deps.config.githubEventType,
+      token: deps.config.githubToken,
+      payload: {
+        reason: "live-window",
+        dispatchedAt: nowIso,
+        games: live.map((game: StoredGame) => ({
+          id: game.id,
+          name: game.name,
+          kickoff: game.kickoff,
+        })),
+      },
+    });
+  } catch (error) {
+    return {
+      action: "dispatch-failed",
+      now: nowIso,
+      refreshed,
+      espnCalls,
+      live,
+      ...(nextKickoff ? { nextKickoff } : {}),
+      ...(lastDispatchAt ? { lastDispatchAt } : {}),
+      reason: publicErrorMessage(error),
+      ...(isGitHubDispatchError(error) ? { githubStatus: error.status } : {}),
+    };
+  }
   await saveLastDispatchAt(deps.kv, nowIso);
 
   return {
@@ -194,6 +209,7 @@ export function logTick(result: TickResult): void {
       liveCount: result.live.length,
       live: result.live.map((game) => game.name),
       nextKickoff: result.nextKickoff ?? null,
+      githubStatus: result.githubStatus ?? null,
     }),
   );
 }

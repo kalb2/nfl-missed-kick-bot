@@ -196,6 +196,8 @@ There is **no** `*/2 * * * *` all-week cron. Tuesday after 08:00 UTC and all of 
 
 `poll.yml` concurrency group `missed-kick-poll` still serializes overlapping Actions runs.
 
+If `/tick` or cron ticks fail, the Worker now returns/logs the GitHub/ESPN error string (PATs redacted) instead of swallowing it as `"Internal server error"`. See [Troubleshooting `/tick`](#troubleshooting-tick).
+
 ### Deploy Worker
 
 GitHub Actions publishes `nfl-missed-kick-scheduler` and sets its `GITHUB_TOKEN` from existing repo secrets. After this workflow is on `main`:
@@ -205,7 +207,45 @@ GitHub Actions publishes `nfl-missed-kick-scheduler` and sets its `GITHUB_TOKEN`
    - `WORKER_GITHUB_PAT` — PAT that can `repository_dispatch` this repo
 2. Optional: set repository variable `CLOUDFLARE_ACCOUNT_ID` if the token can see more than one Cloudflare account. The workflow auto-detects the account from the token when there is only one.
 3. **Actions → Deploy Cloudflare Worker → Run workflow** (use the `main` branch).
-4. The job deploys the Worker and pipes `WORKER_GITHUB_PAT` into the Worker secret `GITHUB_TOKEN` (the value is never echoed). After that, Worker cron ticks can `repository_dispatch` type `nfl-poll`.
+4. The job checks that `WORKER_GITHUB_PAT` is accepted by GitHub (`GET /user` and `GET /repos/kalb2/nfl-missed-kick-bot` must be HTTP 200), deploys the Worker, and pipes the PAT into the Worker secret `GITHUB_TOKEN` (the value is never echoed). After that, Worker cron ticks can `repository_dispatch` type `nfl-poll`.
+
+### Troubleshooting `/tick`
+
+`GET /status` never calls GitHub. A healthy status with `lastDispatchAt: null` and live Sunday games means the slate is fine and dispatch has never succeeded.
+
+| `/tick` body | Meaning |
+| --- | --- |
+| `action: "no-token"` (HTTP 200) | Worker secret `GITHUB_TOKEN` is unset. Re-run **Deploy Cloudflare Worker** after setting `WORKER_GITHUB_PAT`. |
+| `action: "dispatch-failed"`, `githubStatus: 401`, `error` contains `Bad credentials` (HTTP 502) | Secret is **set but invalid** (expired PAT, wrong value, or Actions `GITHUB_TOKEN` pasted into `WORKER_GITHUB_PAT`). This is the live 2026-09-20 failure: Cloudflare observability logged `GitHub dispatch 401: Bad credentials` while `/tick` only returned `{ "error": "Internal server error" }`. |
+| `action: "dispatched"` (HTTP 200) | `repository_dispatch` `nfl-poll` was accepted. Check Actions for a `repository_dispatch` poll run. |
+
+Replace the PAT (do not invent or commit a token):
+
+1. GitHub → Settings → Developer settings → Personal access tokens.
+   - **Fine-grained:** resource owner your user, repository `kalb2/nfl-missed-kick-bot`, **Contents: Read and write** (required for `POST /repos/{owner}/{repo}/dispatches`).
+   - **Classic:** `public_repo` on this public repo (`repo` if it is ever private).
+2. Repo → Settings → Secrets and variables → Actions → update `WORKER_GITHUB_PAT` to the new PAT. Do not put Cloudflare’s token here. Do not use the automatic Actions `GITHUB_TOKEN`.
+3. Confirm the PAT locally (prints only the status code; never `echo` the secret):
+
+```bash
+curl -sS -o /tmp/pat-user.json -w 'GET /user %{http_code}\n' \
+  -H "Authorization: Bearer $WORKER_GITHUB_PAT" \
+  -H "Accept: application/vnd.github+json" \
+  -H "User-Agent: nfl-missed-kick-scheduler" \
+  https://api.github.com/user
+# expect 200
+```
+
+4. **Actions → Deploy Cloudflare Worker → Run workflow** on `main` (preferred). That re-validates the PAT, `wrangler deploy`s, and `printf '%s' "$WORKER_GITHUB_PAT" | npx wrangler secret put GITHUB_TOKEN --name nfl-missed-kick-scheduler`.
+5. Local equivalent if you already have Wrangler auth:
+
+```bash
+cd worker
+printf '%s' "$WORKER_GITHUB_PAT" | npx wrangler secret put GITHUB_TOKEN --name nfl-missed-kick-scheduler
+npx wrangler deploy
+```
+
+6. `POST https://nfl-missed-kick-scheduler.k24corp.workers.dev/tick` should return `action: "dispatched"` or a structured GitHub error (`error` + `githubStatus`), not a bare `"Internal server error"`. `/status` should then show `lastDispatchAt` and `hasGithubToken: true`.
 
 `wrangler.jsonc` already points `SLATE` at KV namespace `nfl-missed-kick-slate` (`dc5248300f0c41898bba2959b3d5c314`). CI still does **not** deploy on push; it only typechecks, tests, and runs `wrangler deploy --dry-run`.
 

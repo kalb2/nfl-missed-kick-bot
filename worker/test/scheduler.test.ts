@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { testConfig } from "../src/config.js";
 import { REFRESH_CRONS, TICK_CRONS } from "../src/cron.js";
+import { GitHubDispatchError } from "../src/github.js";
 import { handleScheduled, runRefreshOnly, runTick } from "../src/scheduler.js";
 import type { Slate, SlateStore, StoredGame } from "../src/types.js";
 import { LAST_DISPATCH_KEY, SLATE_KEY } from "../src/types.js";
@@ -81,6 +82,61 @@ describe("runTick", () => {
     expect(result.espnCalls).toBe(0);
     expect(dispatches[0]?.eventType).toBe("nfl-poll");
     expect(kv.map.get(LAST_DISPATCH_KEY)).toBe("2026-11-26T18:05:00.000Z");
+  });
+
+  it("returns no-token without calling GitHub when GITHUB_TOKEN is empty", async () => {
+    const kv = new MemoryKV();
+    seedSlate(
+      kv,
+      [storedGame({ id: "thx-det", kickoff: "2026-11-26T18:00:00.000Z", name: "CHI @ DET" })],
+      "2026-11-26T00:00:00.000Z",
+    );
+    let calls = 0;
+    const result = await runTick(
+      {
+        kv,
+        config: testConfig({ githubToken: "" }),
+        github: {
+          dispatch: async () => {
+            calls += 1;
+          },
+        },
+      },
+      Date.parse("2026-11-26T18:05:00.000Z"),
+    );
+    expect(result.action).toBe("no-token");
+    expect(result.reason).toBe("missing-github-token");
+    expect(calls).toBe(0);
+    expect(kv.map.get(LAST_DISPATCH_KEY)).toBeUndefined();
+  });
+
+  it("returns dispatch-failed with the GitHub status instead of throwing", async () => {
+    const kv = new MemoryKV();
+    seedSlate(
+      kv,
+      [storedGame({ id: "thx-det", kickoff: "2026-11-26T18:00:00.000Z", name: "CHI @ DET" })],
+      "2026-11-26T00:00:00.000Z",
+    );
+    const result = await runTick(
+      {
+        kv,
+        config: testConfig(),
+        github: {
+          dispatch: async () => {
+            throw new GitHubDispatchError(
+              401,
+              '{"message":"Bad credentials","documentation_url":"https://docs.github.com/rest","status":"401"}',
+            );
+          },
+        },
+      },
+      Date.parse("2026-11-26T18:05:00.000Z"),
+    );
+    expect(result.action).toBe("dispatch-failed");
+    expect(result.githubStatus).toBe(401);
+    expect(result.reason).toContain("GitHub dispatch 401");
+    expect(result.reason).toContain("Bad credentials");
+    expect(kv.map.get(LAST_DISPATCH_KEY)).toBeUndefined();
   });
 
   it("skips a second wake inside the 5-minute cooldown", async () => {
