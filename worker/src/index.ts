@@ -1,7 +1,8 @@
 import { configFromEnv } from "./config.js";
-import { dispatchRepositoryEvent } from "./github.js";
+import { dispatchRepositoryEvent, publicErrorMessage } from "./github.js";
 import { handleScheduled, loadLastDispatchAt, loadSlate, logTick, refreshStoredSlate, runTick } from "./scheduler.js";
 import type { SchedulerDeps } from "./scheduler.js";
+import type { TickResult } from "./types.js";
 import { gamesInWindow, nextKickoffIso } from "./window.js";
 
 function depsFromEnv(env: Env): SchedulerDeps {
@@ -34,6 +35,20 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
+/** HTTP 502 when GitHub dispatch failed so ops see a real error body, not a generic 500. */
+export function tickHttpResponse(tick: TickResult): Response {
+  if (tick.action === "dispatch-failed") {
+    return json({ error: tick.reason, ...tick }, 502);
+  }
+  return json(tick);
+}
+
+export function unhandledErrorResponse(error: unknown): Response {
+  const message = publicErrorMessage(error);
+  console.error(JSON.stringify({ message: "unhandled error", error: message }));
+  return json({ error: message }, 500);
+}
+
 async function statusPayload(env: Env, nowMs: number): Promise<Record<string, unknown>> {
   const config = configFromEnv(env);
   const slate = await loadSlate(env.SLATE);
@@ -49,6 +64,7 @@ async function statusPayload(env: Env, nowMs: number): Promise<Record<string, un
     live: live.map((game) => ({ id: game.id, name: game.name, kickoff: game.kickoff })),
     nextKickoff: slate ? (nextKickoffIso(slate.games, nowMs) ?? null) : null,
     lastDispatchAt: lastDispatchAt ?? null,
+    hasGithubToken: Boolean(config.githubToken),
     github: `${config.githubOwner}/${config.githubRepo}`,
     eventType: config.githubEventType,
     crons: {
@@ -78,11 +94,15 @@ export default {
           const result = await refreshStoredSlate(deps, nowMs);
           const tick = await runTick(deps, nowMs);
           logTick(tick);
-          return json({ refreshed: result.slate, tick });
+          const failed = tick.action === "dispatch-failed";
+          return json(
+            failed ? { error: tick.reason, refreshed: result.slate, tick } : { refreshed: result.slate, tick },
+            failed ? 502 : 200,
+          );
         }
         const tick = await runTick(deps, nowMs);
         logTick(tick);
-        return json(tick);
+        return tickHttpResponse(tick);
       }
 
       if (request.method === "GET" && url.pathname === "/health") {
@@ -91,15 +111,23 @@ export default {
 
       return json({ error: "Not found" }, 404);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      console.error(JSON.stringify({ message: "unhandled error", error: message }));
-      return json({ error: "Internal server error" }, 500);
+      return unhandledErrorResponse(error);
     }
   },
 
   async scheduled(controller: ScheduledController, env: Env): Promise<void> {
     const nowMs = controller.scheduledTime || Date.now();
-    const tick = await handleScheduled(controller.cron, depsFromEnv(env), nowMs);
-    logTick(tick);
+    try {
+      const tick = await handleScheduled(controller.cron, depsFromEnv(env), nowMs);
+      logTick(tick);
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          message: "unhandled scheduled error",
+          error: publicErrorMessage(error),
+          cron: controller.cron,
+        }),
+      );
+    }
   },
 } satisfies ExportedHandler<Env>;

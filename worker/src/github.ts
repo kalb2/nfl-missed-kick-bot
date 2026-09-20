@@ -8,6 +8,36 @@ export interface DispatchInput {
 
 const GITHUB_API_VERSION = "2022-11-28";
 
+/** Strip credentials so Worker HTTP/logs never echo a PAT. */
+export function sanitizePublicText(text: string): string {
+  return text
+    .replace(/Bearer\s+\S+/gi, "Bearer [redacted]")
+    .replace(/\bgithub_pat_[A-Za-z0-9_]+/g, "[redacted-token]")
+    .replace(/\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]+/g, "[redacted-token]");
+}
+
+export function publicErrorMessage(error: unknown): string {
+  if (error instanceof Error) return sanitizePublicText(error.message);
+  return "Unknown error";
+}
+
+export class GitHubDispatchError extends Error {
+  readonly status: number;
+  readonly detail: string;
+
+  constructor(status: number, detail: string) {
+    const cleanDetail = sanitizePublicText(detail);
+    super(sanitizePublicText(`GitHub dispatch ${status}${cleanDetail ? `: ${cleanDetail}` : ""}`));
+    this.name = "GitHubDispatchError";
+    this.status = status;
+    this.detail = cleanDetail;
+  }
+}
+
+export function isGitHubDispatchError(error: unknown): error is GitHubDispatchError {
+  return error instanceof GitHubDispatchError;
+}
+
 export async function dispatchRepositoryEvent(
   input: DispatchInput,
   fetchImpl: typeof fetch = fetch,
@@ -37,5 +67,5 @@ export async function dispatchRepositoryEvent(
   } catch {
     detail = "";
   }
-  throw new Error(`GitHub dispatch ${res.status}${detail ? `: ${detail}` : ""}`);
+  throw new GitHubDispatchError(res.status, detail);
 }

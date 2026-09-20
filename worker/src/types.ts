@@ -37,7 +37,7 @@ export interface SchedulerConfig {
   adminSecret: string;
 }
 
-export type TickAction = "idle" | "dispatched" | "cooldown" | "no-token";
+export type TickAction = "idle" | "dispatched" | "cooldown" | "no-token" | "dispatch-failed";
 
 export interface TickResult {
   action: TickAction;
@@ -48,6 +48,7 @@ export interface TickResult {
   nextKickoff?: string;
   lastDispatchAt?: string;
   reason: string;
+  githubStatus?: number;
 }
 
 export interface SlateStore {
