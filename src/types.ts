@@ -136,6 +136,13 @@ export interface ScoreboardQuery {
   dates?: string;
 }
 
+export interface WinProbabilityPoint {
+  playId: string;
+  /** Home-team win probability after this play, 0–1. */
+  homeWinPercentage: number;
+  tiePercentage?: number;
+}
+
 export interface GameSummary {
   drives?: {
     previous?: Array<{ plays?: Play[] }>;
@@ -154,6 +161,8 @@ export interface GameSummary {
     players?: BoxscorePlayers[];
     teams?: unknown;
   };
+  /** Site summary `winprobability[]` — home WP after each playId. */
+  winprobability?: WinProbabilityPoint[];
   [key: string]: unknown;
 }
 
@@ -188,6 +197,12 @@ export interface MissedKick {
   seasonFgMisses?: number;
   /** Regular-season PAT misses for this kicker, inclusive of this play. */
   seasonPatMisses?: number;
+  /** Kicking-team win probability before the miss, 0–1. */
+  wpBefore?: number;
+  /** Kicking-team win probability after the miss, 0–1. */
+  wpAfter?: number;
+  /** Kick-team WP change (after − before), 0–1 — not percentage points. */
+  wpDelta?: number;
 }
 
 export interface PollOptions {

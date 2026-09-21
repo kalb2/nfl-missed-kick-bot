@@ -160,6 +160,25 @@ describe("alternate play feeds", () => {
     expect(summaryHasPlays(merged)).toBe(true);
   });
 
+  it("keeps site-summary winprobability when merging a CDN drive feed", () => {
+    const merged = mergeSummaries(
+      {
+        header: { id: "1" },
+        drives: { previous: [] },
+        winprobability: [
+          { playId: "prev", homeWinPercentage: 0.51 },
+          { playId: "4018729234815", homeWinPercentage: 0.509 },
+        ],
+      },
+      { drives: { previous: [{ plays: [missPlay] }] }, winprobability: [] },
+    );
+    expect(merged.winprobability).toEqual([
+      { playId: "prev", homeWinPercentage: 0.51, tiePercentage: 0 },
+      { playId: "4018729234815", homeWinPercentage: 0.509, tiePercentage: 0 },
+    ]);
+    expect(summaryHasPlays(merged)).toBe(true);
+  });
+
   it("falls back to CDN play-by-play when the site summary has no drives", async () => {
     const urls: string[] = [];
     const fetchImpl = async (url: string | URL | Request) => {
@@ -250,6 +269,46 @@ describe("athlete profiles", () => {
     expect(second?.displayName).toBe("Wil Lutz");
     expect(hits).toBe(1);
     expect(urls[0]).toContain("/athletes/2985659");
+  });
+});
+
+describe("getWinProbability", () => {
+  it("parses core /probabilities items via play $ref", async () => {
+    const urls: string[] = [];
+    const fetchImpl = async (url: string | URL | Request) => {
+      urls.push(String(url));
+      return new Response(
+        JSON.stringify({
+          count: 2,
+          pageCount: 1,
+          pageIndex: 1,
+          items: [
+            {
+              homeWinPercentage: 0.5127,
+              play: {
+                $ref: "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401872923/competitions/401872923/plays/4018729234782",
+              },
+            },
+            {
+              homeWinPercentage: 0.509,
+              play: {
+                $ref: "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401872923/competitions/401872923/plays/4018729234815",
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    };
+    const client = new EspnClient({
+      userAgent: "test",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    const points = await client.getWinProbability("401872923");
+    expect(points).toHaveLength(2);
+    expect(points[1]).toMatchObject({ playId: "4018729234815", homeWinPercentage: 0.509 });
+    expect(urls[0]).toContain("/probabilities?");
+    expect(urls[0]).toContain("limit=400");
   });
 });
 

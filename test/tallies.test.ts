@@ -66,6 +66,7 @@ function mockEspn(
       if (!summary) throw new Error(`unexpected event ${eventId}`);
       return summary;
     },
+    getWinProbability: async () => [],
   } as unknown as EspnClient;
   return { espn, summaryCalls };
 }

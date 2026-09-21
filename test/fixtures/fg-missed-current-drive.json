@@ -39,6 +39,10 @@
       ]
     }
   },
+  "winprobability": [
+    { "playId": "4018726573613", "homeWinPercentage": 0.001, "tiePercentage": 0.0 },
+    { "playId": "4018726573620", "homeWinPercentage": 0.001, "tiePercentage": 0.0 }
+  ],
   "boxscore": {
     "players": [
       {

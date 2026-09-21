@@ -40,6 +40,7 @@ function mockEspn(summaries: Record<string, GameSummary>, events: ScoreboardEven
       if (!summary) throw new Error(`unexpected event ${eventId}`);
       return summary;
     },
+    getWinProbability: async () => [],
   } as unknown as EspnClient;
 }
 
@@ -80,7 +81,9 @@ describe("pollOnce", () => {
     expect(first.newMisses.find((m) => m.kicker === "Spencer Shrader")?.seasonFgMisses).toBe(0);
     expect(first.newMisses.find((m) => m.kicker === "Spencer Shrader")?.seasonPatMisses).toBe(1);
     expect(posted.find((t) => t.includes("Daniel Carlson"))).toContain("Season: 1 missed FG · 0 missed PAT");
+    expect(posted.find((t) => t.includes("Daniel Carlson"))).toContain("WP: +0.4%");
     expect(posted.find((t) => t.includes("Spencer Shrader"))).toContain("Season: 0 missed FG · 1 missed PAT");
+    expect(posted.find((t) => t.includes("Spencer Shrader"))).not.toMatch(/^WP:/m);
     expect(first.seasonTallies).toEqual(
       expect.arrayContaining([
         { kicker: "Daniel Carlson", teamAbbr: "NO", fg: 1, pat: 0 },
@@ -140,6 +143,9 @@ describe("pollOnce", () => {
         summaryCalls += 1;
         throw new Error("summary should not run on idle scoreboard");
       },
+      getWinProbability: async () => {
+        throw new Error("win probability should not run on idle scoreboard");
+      },
     } as unknown as EspnClient;
 
     const result = await pollOnce(
@@ -151,6 +157,33 @@ describe("pollOnce", () => {
     expect(result.tweets).toEqual([]);
     expect(scoreboardCalls).toBe(1);
     expect(summaryCalls).toBe(0);
+  });
+
+  it("fills WP from the core probabilities feed when the summary omitted it", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "missed-kick-"));
+    dirs.push(dir);
+    const store = new SeenStore(path.join(dir, "seen.json"));
+    const sanders = loadFixture("fg-missed-sanders.json");
+    const { winprobability, ...noWp } = sanders;
+    let wpCalls = 0;
+    const espn = {
+      concurrency: 2,
+      getScoreboard: async () => ({ events: [liveEvent("401872924", "NYJ @ TEN")] }),
+      getSummary: async () => noWp as GameSummary,
+      getWinProbability: async () => {
+        wpCalls += 1;
+        return winprobability ?? [];
+      },
+    } as unknown as EspnClient;
+
+    const result = await pollOnce(
+      { espn, store, poster: { post: async () => ({}) } },
+      { dryRun: true, seedSeen: false, allToday: false, persist: false, recentFinalWindowMin: 45 },
+    );
+
+    expect(wpCalls).toBe(1);
+    expect(result.newMisses[0]?.wpDelta).toBeCloseTo(-0.0435, 4);
+    expect(result.tweets[0]).toContain("WP: −4.4%");
   });
 
   it("ignores Extra Point Good games", async () => {
