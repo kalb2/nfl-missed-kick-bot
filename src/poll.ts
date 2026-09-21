@@ -1,5 +1,12 @@
 import { composeTweet } from "./compose.js";
-import { buildGameContext, detectMissedKicks, enrichKickerNames } from "./detect.js";
+import {
+  attachAvailableWinProbability,
+  buildGameContext,
+  collectPlays,
+  detectMissedKicks,
+  enrichKickerNames,
+  missesNeedWinProbability,
+} from "./detect.js";
 import { REGULAR_SEASON_TYPE, contextFromEvent, isWatchableGame, mapPool, type EspnClient } from "./espn.js";
 import type { SeenStore } from "./store.js";
 import { SeasonTallyIndex } from "./tallies.js";
@@ -59,6 +66,20 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
     const ctx = buildGameContext(event.id, summary, game);
     const misses = detectMissedKicks(summary, ctx);
     await enrichKickerNames(deps.espn, misses);
+    const plays = collectPlays(summary);
+    if (missesNeedWinProbability(misses, plays)) {
+      try {
+        const extra = await deps.espn.getWinProbability(event.id);
+        attachAvailableWinProbability(misses, plays, extra);
+      } catch (err) {
+        console.warn(
+          "win probability failed for %s (%s): %s",
+          event.id,
+          game.shortName,
+          (err as Error).message,
+        );
+      }
+    }
     for (const miss of misses) {
       if (shouldAttachSeason(ctx, board.season?.type)) {
         tallies.attachTo(miss);

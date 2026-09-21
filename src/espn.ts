@@ -1,4 +1,5 @@
-import type { AthleteRef, GameContext, GameSummary, Play, Scoreboard, ScoreboardEvent, ScoreboardQuery, SeasonRef, WeekRef } from "./types.js";
+import type { AthleteRef, GameContext, GameSummary, Play, Scoreboard, ScoreboardEvent, ScoreboardQuery, SeasonRef, WeekRef, WinProbabilityPoint } from "./types.js";
+import { extractWinProbability, winProbabilityFromCorePayload } from "./win-probability.js";
 
 /** ESPN regular season. Preseason=1, regular=2, postseason=3. */
 export const REGULAR_SEASON_TYPE = 2;
@@ -19,6 +20,11 @@ function playFeedUrls(eventId: string): string[] {
     `https://cdn.espn.com/core/nfl/playbyplay?xhr=1&gameId=${id}`,
     `https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/${id}/competitions/${id}/plays?limit=400`,
   ];
+}
+
+function probabilityFeedUrl(eventId: string, page = 1): string {
+  const id = encodeURIComponent(eventId);
+  return `https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/${id}/competitions/${id}/probabilities?limit=400&page=${page}`;
 }
 
 function athleteProfileUrls(athleteId: string): string[] {
@@ -127,6 +133,28 @@ export class EspnClient {
     return undefined;
   }
 
+  /**
+   * Core probabilities list — used when the site summary omitted `winprobability`.
+   * Each item is home WP after that play (`play.$ref` / `homeWinPercentage`).
+   */
+  async getWinProbability(eventId: string): Promise<WinProbabilityPoint[]> {
+    const collected: unknown[] = [];
+    let page = 1;
+    let pageCount = 1;
+    while (page <= pageCount && page <= 5) {
+      const raw = await this.getJson(probabilityFeedUrl(eventId, page));
+      if (!raw || typeof raw !== "object") break;
+      const obj = raw as Record<string, unknown>;
+      if (Array.isArray(obj.items)) collected.push(...obj.items);
+      if (typeof obj.pageCount === "number" && Number.isFinite(obj.pageCount)) {
+        pageCount = obj.pageCount;
+      }
+      if (!Array.isArray(obj.items) || obj.items.length === 0) break;
+      page += 1;
+    }
+    return winProbabilityFromCorePayload({ items: collected });
+  }
+
   private async getFirstJson(urls: string[]): Promise<unknown> {
     let lastErr: unknown;
     for (const url of urls) {
@@ -201,13 +229,17 @@ export function athleteFromPayload(raw: unknown): AthleteRef | undefined {
 export function normalizeGamePayload(raw: unknown): GameSummary {
   if (!raw || typeof raw !== "object") return {};
   const obj = raw as Record<string, unknown>;
+  let summary: GameSummary;
   if (obj.gamepackageJSON && typeof obj.gamepackageJSON === "object") {
-    return obj.gamepackageJSON as GameSummary;
+    summary = obj.gamepackageJSON as GameSummary;
+  } else if (Array.isArray(obj.items) && !obj.drives) {
+    summary = { drives: { previous: [{ plays: obj.items as Play[] }] } };
+  } else {
+    summary = obj as GameSummary;
   }
-  if (Array.isArray(obj.items) && !obj.drives) {
-    return { drives: { previous: [{ plays: obj.items as Play[] }] } };
-  }
-  return obj as GameSummary;
+  const wp = extractWinProbability(summary);
+  if (wp.length) summary.winprobability = wp;
+  return summary;
 }
 
 export function summaryHasPlays(summary: GameSummary): boolean {
@@ -223,11 +255,15 @@ export function summaryHasPlays(summary: GameSummary): boolean {
 export function mergeSummaries(primary: GameSummary | undefined, alt: GameSummary | undefined): GameSummary {
   const primaryHas = primary ? summaryHasPlays(primary) : false;
   const altHas = alt ? summaryHasPlays(alt) : false;
+  const primaryWp = extractWinProbability(primary);
+  const altWp = extractWinProbability(alt);
+  const winprobability = primaryWp.length ? primaryWp : altWp;
   return {
     ...(alt ?? {}),
     ...(primary ?? {}),
     drives: primaryHas ? primary!.drives : altHas ? alt!.drives : primary?.drives ?? alt?.drives,
     header: primary?.header ?? alt?.header,
+    ...(winprobability.length ? { winprobability } : {}),
   };
 }
 

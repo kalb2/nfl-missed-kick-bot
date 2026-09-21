@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { composeTweet, isTweetLengthOk, stripUrls, teamHashtag } from "../src/compose.js";
+import { composeTweet, formatWpDelta, isTweetLengthOk, stripUrls, teamHashtag } from "../src/compose.js";
 import type { MissedKick } from "../src/types.js";
 
 const carlson: MissedKick = {
@@ -42,6 +42,9 @@ const sanders: MissedKick = {
   playText: "J.Sanders 54 yard field goal is No Good, Wide Left, Center-T.Hennessy, Holder-A.McNamara.",
   seasonFgMisses: 1,
   seasonPatMisses: 0,
+  wpBefore: 0.6837,
+  wpAfter: 0.6402,
+  wpDelta: -0.0435,
 };
 
 const shrader: MissedKick = {
@@ -92,6 +95,7 @@ describe("composeTweet", () => {
         "Result: Wide Left",
         "When: Q2 2:44",
         "Score: NYJ 10-3 TEN",
+        "WP: −4.4%",
         "Season: 1 missed FG · 0 missed PAT",
         "#JetUp #TitanUp",
       ].join("\n"),
@@ -147,6 +151,25 @@ describe("composeTweet", () => {
     expect(stripUrls("plain text")).toBe("plain text");
   });
 
+  it("omits the WP line when win-probability data is missing", () => {
+    const tweet = composeTweet(carlson);
+    expect(tweet).not.toMatch(/^WP:/m);
+    expect(tweet).toContain("Score: NO 24-24 DET");
+    expect(tweet).toContain("Season: 2 missed FG · 0 missed PAT");
+  });
+
+  it("prints a labeled WP swing for the kicking team", () => {
+    const tweet = composeTweet({
+      ...carlson,
+      wpBefore: 0.4873,
+      wpAfter: 0.491,
+      wpDelta: 0.0037,
+    });
+    expect(tweet).toContain("WP: +0.4%");
+    expect(tweet.indexOf("Score:")).toBeLessThan(tweet.indexOf("WP:"));
+    expect(tweet.indexOf("WP:")).toBeLessThan(tweet.indexOf("Season:"));
+  });
+
   it("omits the Season line when tallies are not attached", () => {
     const tweet = composeTweet({
       ...carlson,
@@ -167,6 +190,28 @@ describe("composeTweet", () => {
     expect(tweet).toContain("Score: NO 24-24 DET");
     expect(tweet).toContain("When: Q4 0:02");
     expect(tweet).not.toMatch(/#Saints|#OnePride|#NO\b|#DET\b/);
+  });
+
+  it("keeps WP after dropping hashtags and Season, then drops WP", () => {
+    const withWp = {
+      ...sanders,
+      result: "Wide Left " + "x".repeat(130),
+    };
+    const kept = composeTweet(withWp);
+    expect(kept.length).toBeLessThanOrEqual(280);
+    expect(kept).toContain("WP: −4.4%");
+    expect(kept).toContain("Score: NYJ 10-3 TEN");
+    expect(kept).not.toMatch(/^Season:/m);
+    expect(kept).not.toMatch(/#JetUp|#TitanUp/);
+
+    const stillOver = composeTweet({
+      ...sanders,
+      result: "Wide Left " + "x".repeat(168),
+    });
+    expect(stillOver.length).toBeLessThanOrEqual(280);
+    expect(stillOver).toContain("Score: NYJ 10-3 TEN");
+    expect(stillOver).not.toMatch(/^WP:/m);
+    expect(stillOver).not.toMatch(/^Season:/m);
   });
 
   it("drops Season after Score/When when still over length", () => {
@@ -226,6 +271,17 @@ describe("composeTweet", () => {
       ].join("\n"),
     );
     expect(tweet).not.toMatch(/W\.\s*Lutz/);
+  });
+});
+
+describe("formatWpDelta", () => {
+  it("formats signed percentage points with a unicode minus", () => {
+    expect(formatWpDelta(-0.0435)).toBe("−4.4%");
+    expect(formatWpDelta(0.6402 - 0.6837)).toBe("−4.4%");
+    expect(formatWpDelta(0.0037)).toBe("+0.4%");
+    expect(formatWpDelta(0)).toBe("0.0%");
+    expect(formatWpDelta(-0.0002)).toBe("0.0%");
+    expect(formatWpDelta(-0.053)).toBe("−5.3%");
   });
 });
 

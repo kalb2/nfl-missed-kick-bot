@@ -15,6 +15,7 @@ Kick: 62 yards
 Result: Wide Right
 When: Q4 0:02
 Score: NO 24-24 DET
+WP: +0.4%
 Season: 2 missed FG · 0 missed PAT
 #Saints #OnePride
 ```
@@ -26,6 +27,7 @@ Kick: 54 yards
 Result: Wide Left
 When: Q2 2:44
 Score: NYJ 10-3 TEN
+WP: −4.4%
 Season: 1 missed FG · 0 missed PAT
 #JetUp #TitanUp
 ```
@@ -40,7 +42,7 @@ Season: 0 missed FG · 1 missed PAT
 #ForTheShoe #RavensFlock
 ```
 
-Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. Each alert is labeled line-by-line (PAT omits the Kick/distance line). A **Season** line shows that kicker’s regular-season miss totals (FG and PAT only, inclusive of the kick just posted). Tweets end with official primary season hashtags for both teams — kicking team first, never raw abbreviations like `#NO`. Those tags trigger custom team emojis on X. Tweets stay under 280 characters and are **plain text with no URLs** — X pay-per-use charges more for posts that include links. If a post would exceed 280 characters, hashtags are dropped first; the Season line is kept ahead of hashtags and is dropped only after Score / When.
+Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. Each alert is labeled line-by-line (PAT omits the Kick/distance line). A **WP** line is the kicking team’s win-probability change on that kick play (`after − before`, one decimal, signed). Carlson’s 62-yarder at 0:02 was already priced as unlikely, so the model’s swing can be a small plus; Sanders’ 54-yard miss is the typical “lost ~4 points of WP” case. The line is omitted when ESPN has no WP for the play, and on PAT misses that ESPN attaches to the touchdown play (that swing includes the TD). A **Season** line shows that kicker’s regular-season miss totals (FG and PAT only, inclusive of the kick just posted). Tweets end with official primary season hashtags for both teams — kicking team first, never raw abbreviations like `#NO`. Those tags trigger custom team emojis on X. Tweets stay under 280 characters and are **plain text with no URLs** — X pay-per-use charges more for posts that include links. If a post would exceed 280 characters, hashtags are dropped first; Season, then WP, are kept ahead of hashtags and dropped only after Score / When.
 
 ## How detection works
 
@@ -54,6 +56,7 @@ Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. E
 6. Each miss is keyed by ESPN play `id` and persisted so the same kick is never tweeted twice.
 7. **Kicker name** — play text is `D.Carlson` / `W. Lutz`. Tweets prefer a full first + last name from the summary boxscore kicking athletes, a play participant athlete (`displayName` / `fullName` / first+last), or the ESPN athlete profile when `athleteId` is known. Initials remain the fallback.
 8. **Season tallies** — each poll recomputes per-kicker miss counts from ESPN play-by-play for regular-season games (`seasontype=2`) that have already started this season (weeks 1…current, or all 18 once the postseason begins). The same miss detectors as above are used. Kickers are keyed by athlete id when the play has one (core `/plays` `participants[].athlete`), otherwise by a normalized name + team. Full names and initial forms (`Wil Lutz` / `W. Lutz`) alias to the same kicker. Tallies are not incremented from a local counter; ESPN PBP is the source of truth. Completed games may be cached in `.state/tallies.json` so later polls skip them; if that file is missing the bot rebuilds from ESPN. In-progress games are always refetched. Within one process, a game is not parsed twice.
+9. **Win probability** — the site summary includes `winprobability[]` (`playId`, `homeWinPercentage` after that play, `tiePercentage`). The bot looks up the miss play and the previous row, converts home WP to the kicking team, and tweets `WP: −4.4%` (percentage points, one decimal). If the summary omitted the array (CDN / core play-by-play fallback), it fetches core `/probabilities` (`play.$ref` + `homeWinPercentage`) only for games that have a miss needing a swing. No WP line is invented when those rows are missing, and PAT-on-TD plays are skipped because the play’s WP change includes the touchdown.
 
 Team comes from `teamParticipants` (`type === "offense"`) matched to the game’s competitors. Distance is parsed from the play text (FG only). Result detail (Wide Left / Right, Short, Blocked, Hit Right Upright, …) is parsed from the `No Good, …` clause.
 
@@ -65,9 +68,10 @@ These endpoints are **undocumented public JSON**. ESPN can change or rate-limit 
 | --- | --- |
 | Scoreboard (today / current week) | `GET https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard` |
 | Scoreboard by week | same + `?seasontype=2&week=12` (Worker refresh; type 1=pre, 2=reg, 3=post) |
-| Game summary (primary) | `GET https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={eventId}` |
+| Game summary (primary) | `GET https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={eventId}` — includes `winprobability[]` (`playId`, `homeWinPercentage`) |
 | CDN play-by-play (fallback) | `GET https://cdn.espn.com/core/nfl/playbyplay?xhr=1&gameId={eventId}` |
 | Core plays list (fallback) | `GET https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/{eventId}/competitions/{eventId}/plays?limit=400` |
+| Core win probability (fallback) | `GET https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/{eventId}/competitions/{eventId}/probabilities?limit=400` |
 | Athlete profile (name fallback) | `GET https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/{athleteId}` |
 
 `site.api.espn.com` is the same summary/scoreboard path ESPN publishes more often, but Akamai frequently returns **403** from datacenter IPs. The bot tries `site.web.api.espn.com` first and falls back to `site.api.espn.com`.
@@ -87,7 +91,7 @@ cp .env.example .env
 
 ### Dry-run against live ESPN (no tweets)
 
-Prints today’s misses from the live scoreboard without posting — including the Season tally line and a `[season]` leaderboard of kickers who have missed this regular season. Uses `--fresh` so a leftover `.state` file does not hide them:
+Prints today’s misses from the live scoreboard without posting — including the WP swing line (when ESPN has it), the Season tally line, and a `[season]` leaderboard of kickers who have missed this regular season. Uses `--fresh` so a leftover `.state` file does not hide them:
 
 ```bash
 npm run dry-run -- --fresh
@@ -127,7 +131,7 @@ The bot posts with **OAuth 1.0a user context** for a dedicated bot account. It n
 
 If any secret is missing, the bot logs tweets instead of posting.
 
-**Cost tip:** keep tweets as plain-text alerts (kicker, distance, result, clock, score, season miss tallies, official team season hashtags). Do not add ESPN or highlight URLs — X pay-per-use bills more for posts that contain links.
+**Cost tip:** keep tweets as plain-text alerts (kicker, distance, result, clock, score, WP swing, season miss tallies, official team season hashtags). Do not add ESPN or highlight URLs — X pay-per-use bills more for posts that contain links.
 
 ## Architecture
 
@@ -379,7 +383,7 @@ Fixtures under `test/fixtures/` are trimmed copies of real 2026-09-13 ESPN plays
 ## Caveats
 
 - ESPN’s site/v2 APIs are unofficial. Field names, type ids, and availability can change.
-- PAT misses live on the **TD play** via `pointAfterAttempt`, not a separate “extra point” play. Detection depends on that field (or equivalent text).
+- PAT misses live on the **TD play** via `pointAfterAttempt`, not a separate “extra point” play. Detection depends on that field (or equivalent text). The WP line is omitted on those combined plays because ESPN’s `homeWinPercentage` swing includes the touchdown.
 - Blocked kicks are treated as misses when the play text says so; two-point conversions are ignored.
 - First start mid-game will tweet every unseen miss still inside the watch window unless you `--seed`.
 - Do not commit `.env` or `.state/`.

@@ -8,7 +8,9 @@ import type {
   KickType,
   MissedKick,
   Play,
+  WinProbabilityPoint,
 } from "./types.js";
+import { attachWinProbability, extractWinProbability } from "./win-probability.js";
 
 const FG_MISS_TYPE_ID = "60";
 const PAT_MISS_TYPE_ID = "62";
@@ -458,13 +460,56 @@ export function toMissedKick(
   };
 }
 
+/**
+ * FG misses (and standalone Extra Point Missed plays) can use the play's WP
+ * swing. PAT misses attached to a TD play cannot — that delta includes the TD.
+ */
+export function canAttributeWinProbability(play: Play, kickType: KickType): boolean {
+  if (kickType === "FG") return true;
+  const typeId = String(play.type?.id ?? "");
+  const typeText = play.type?.text ?? "";
+  return typeId === PAT_MISS_TYPE_ID || typeText === "Extra Point Missed";
+}
+
+export function attachAvailableWinProbability(
+  misses: MissedKick[],
+  plays: Play[],
+  points: WinProbabilityPoint[],
+): void {
+  if (!points.length) return;
+  const byId = new Map(plays.map((play) => [String(play.id), play]));
+  for (const miss of misses) {
+    if (miss.wpDelta !== undefined) continue;
+    const play = byId.get(miss.playId);
+    if (!play) continue;
+    const kickType = classifyMiss(play) ?? miss.kickType;
+    if (!canAttributeWinProbability(play, kickType)) continue;
+    attachWinProbability(miss, points);
+  }
+}
+
+export function missesNeedWinProbability(misses: MissedKick[], plays: Play[]): boolean {
+  const byId = new Map(plays.map((play) => [String(play.id), play]));
+  return misses.some((miss) => {
+    if (miss.wpDelta !== undefined) return false;
+    const play = byId.get(miss.playId);
+    if (!play) return miss.kickType === "FG";
+    return canAttributeWinProbability(play, classifyMiss(play) ?? miss.kickType);
+  });
+}
+
 export function detectMissedKicks(summary: GameSummary, game: GameContext): MissedKick[] {
   const plays = collectPlays(summary);
   const roster = kickingAthletesFromSummary(summary);
+  const points = extractWinProbability(summary);
   const misses: MissedKick[] = [];
   for (const play of plays) {
     const miss = toMissedKick(play, game, roster);
-    if (miss) misses.push(miss);
+    if (!miss) continue;
+    if (canAttributeWinProbability(play, miss.kickType)) {
+      attachWinProbability(miss, points);
+    }
+    misses.push(miss);
   }
   return misses;
 }

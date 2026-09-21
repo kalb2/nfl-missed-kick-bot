@@ -67,6 +67,9 @@ describe("Field Goal Missed (type.id 60)", () => {
     expect(miss.awayScore).toBe(24);
     expect(miss.homeScore).toBe(24);
     expect(miss.matchup).toBe("NO @ DET");
+    expect(miss.wpBefore).toBeCloseTo(0.4873, 4);
+    expect(miss.wpAfter).toBeCloseTo(0.491, 4);
+    expect(miss.wpDelta).toBeCloseTo(0.0037, 4);
   });
 
   it("detects Sanders 54 WL from live-shaped ESPN JSON", () => {
@@ -83,6 +86,9 @@ describe("Field Goal Missed (type.id 60)", () => {
     expect(miss.clock).toBe("2:44");
     expect(miss.awayScore).toBe(10);
     expect(miss.homeScore).toBe(3);
+    expect(miss.wpBefore).toBeCloseTo(0.6837, 4);
+    expect(miss.wpAfter).toBeCloseTo(0.6402, 4);
+    expect(miss.wpDelta).toBeCloseTo(-0.0435, 4);
   });
 
   it("detects a miss sitting only on the current drive", () => {
@@ -93,6 +99,7 @@ describe("Field Goal Missed (type.id 60)", () => {
     expect(misses[0].athleteId).toBe("4034949");
     expect(misses[0].result).toBe("Hit Right Upright");
     expect(misses[0].teamAbbr).toBe("SF");
+    expect(misses[0].wpDelta).toBeCloseTo(0, 4);
   });
 });
 
@@ -113,6 +120,10 @@ describe("Extra Point Missed (pointAfterAttempt.id 62)", () => {
     expect(miss.clock).toBe("10:33");
     expect(miss.awayScore).toBe(0);
     expect(miss.homeScore).toBe(6);
+    // PAT-on-TD: summary has winprobability, but the swing includes the TD.
+    expect(miss.wpDelta).toBeUndefined();
+    expect(miss.wpBefore).toBeUndefined();
+    expect(miss.wpAfter).toBeUndefined();
   });
 
   it("falls back to play text when pointAfterAttempt is missing", () => {

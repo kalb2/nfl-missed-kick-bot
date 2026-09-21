@@ -69,13 +69,15 @@ export function composeTweet(miss: MissedKick): string {
   const result = `Result: ${miss.result}`;
   const when = whenLine(miss);
   const score = scoreLine(miss);
+  const wp = wpLine(miss);
   const season = seasonLine(miss);
   const hashtags = hashtagLine(miss);
 
-  // Drop hashtags first, then Season (after Score/When), then Score, then When.
+  // Drop hashtags first, then Season, then WP, then Score, then When.
   const variants: Array<Array<string | undefined>> = [
-    [header, kicker, kick, result, when, score, season, hashtags],
-    [header, kicker, kick, result, when, score, season],
+    [header, kicker, kick, result, when, score, wp, season, hashtags],
+    [header, kicker, kick, result, when, score, wp, season],
+    [header, kicker, kick, result, when, score, wp],
     [header, kicker, kick, result, when, score],
     [header, kicker, kick, result, when],
     [header, kicker, kick, result],
@@ -100,6 +102,23 @@ export function teamHashtag(abbr: string): string | undefined {
 function seasonLine(miss: MissedKick): string | undefined {
   if (miss.seasonFgMisses === undefined || miss.seasonPatMisses === undefined) return undefined;
   return formatSeasonLine(miss.seasonFgMisses, miss.seasonPatMisses);
+}
+
+const MINUS_SIGN = "\u2212";
+
+/** Kick-team WP change as `+4.2%` / `−4.2%` / `0.0%` (percentage points). */
+export function formatWpDelta(delta: number): string {
+  const pts = delta * 100;
+  // 0.6402 − 0.6837 is −4.34999…; nudge so 4.35 still rounds to 4.4.
+  const absTenths = Math.round((Math.abs(pts) + 1e-8) * 10) / 10;
+  if (absTenths === 0) return "0.0%";
+  const sign = pts < 0 ? MINUS_SIGN : "+";
+  return `${sign}${absTenths.toFixed(1)}%`;
+}
+
+function wpLine(miss: MissedKick): string | undefined {
+  if (typeof miss.wpDelta !== "number" || !Number.isFinite(miss.wpDelta)) return undefined;
+  return `WP: ${formatWpDelta(miss.wpDelta)}`;
 }
 
 function scoreLine(miss: MissedKick): string | undefined {
