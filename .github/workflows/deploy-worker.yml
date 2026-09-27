@@ -60,13 +60,15 @@ jobs:
             https://api.github.com/user)
           if [ "$user_code" != "200" ]; then
             echo "::error::WORKER_GITHUB_PAT was rejected by GitHub HTTP ${user_code} on GET /user. The Worker secret GITHUB_TOKEN will fail repository_dispatch with 401. Create a new PAT (fine-grained Contents: Read and write on this repo, or classic public_repo) and update the WORKER_GITHUB_PAT repository secret. Do not reuse GitHub's automatic GITHUB_TOKEN."
+            # Keep this Python indented inside the run: | block. A column-0 line
+            # ends the YAML scalar, so GitHub drops name and workflow_dispatch.
             python3 -c 'import json
-try:
-    data = json.load(open("/tmp/pat-user.json", encoding="utf-8"))
-    print(data.get("message", "(no message)"))
-except Exception:
-    print("(unreadable GitHub body)")
-'
+          try:
+              data = json.load(open("/tmp/pat-user.json", encoding="utf-8"))
+              print(data.get("message", "(no message)"))
+          except Exception:
+              print("(unreadable GitHub body)")
+          '
             exit 1
           fi
           repo_code=$(curl -sS -o /tmp/pat-repo.json -w '%{http_code}' \
@@ -77,13 +79,14 @@ except Exception:
             https://api.github.com/repos/kalb2/nfl-missed-kick-bot)
           if [ "$repo_code" != "200" ]; then
             echo "::error::WORKER_GITHUB_PAT cannot read kalb2/nfl-missed-kick-bot (HTTP ${repo_code}). Grant the PAT access to this repository."
+            # Same indent rule as the /user check above.
             python3 -c 'import json
-try:
-    data = json.load(open("/tmp/pat-repo.json", encoding="utf-8"))
-    print(data.get("message", "(no message)"))
-except Exception:
-    print("(unreadable GitHub body)")
-'
+          try:
+              data = json.load(open("/tmp/pat-repo.json", encoding="utf-8"))
+              print(data.get("message", "(no message)"))
+          except Exception:
+              print("(unreadable GitHub body)")
+          '
             exit 1
           fi
 
