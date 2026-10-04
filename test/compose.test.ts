@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { composeTweet, formatWpDelta, isTweetLengthOk, stripUrls, teamHashtag } from "../src/compose.js";
+import {
+  composeLeaderboardTweet,
+  composeTweet,
+  formatWpDelta,
+  isTweetLengthOk,
+  stripUrls,
+  teamHashtag,
+} from "../src/compose.js";
 import type { MissedKick } from "../src/types.js";
 
 const carlson: MissedKick = {
@@ -349,5 +356,64 @@ describe("teamHashtag", () => {
   it("does not emit abbreviation-style tags for unknown codes", () => {
     expect(teamHashtag("NO")).toBe("#Saints");
     expect(teamHashtag("XYZ")).toBeUndefined();
+  });
+});
+
+describe("composeLeaderboardTweet", () => {
+  it("lists season year, week, and each kicker's FG and PAT split", () => {
+    const tweet = composeLeaderboardTweet({
+      seasonYear: 2026,
+      week: 4,
+      rows: [
+        { kicker: "Daniel Carlson", teamAbbr: "NO", fg: 3, pat: 1 },
+        { kicker: "Jason Sanders", teamAbbr: "NYJ", fg: 2, pat: 1 },
+        { kicker: "Spencer Shrader", teamAbbr: "IND", fg: 0, pat: 1 },
+      ],
+    });
+    expect(tweet).toBe(
+      [
+        "❌ Season miss leaders",
+        "Season: 2026 · Week 4",
+        "1. Daniel Carlson (NO): 4 (3 FG · 1 PAT)",
+        "2. Jason Sanders (NYJ): 3 (2 FG · 1 PAT)",
+        "3. Spencer Shrader (IND): 1 (0 FG · 1 PAT)",
+      ].join("\n"),
+    );
+    expect(isTweetLengthOk(tweet)).toBe(true);
+    expect(tweet).not.toMatch(/https?:\/\//i);
+  });
+
+  it("omits the week when only the season year is known", () => {
+    const tweet = composeLeaderboardTweet({
+      seasonYear: 2026,
+      rows: [{ kicker: "Wil Lutz", teamAbbr: "DEN", fg: 2, pat: 0 }],
+    });
+    expect(tweet).toBe(["❌ Season miss leaders", "Season: 2026", "1. Wil Lutz (DEN): 2 (2 FG · 0 PAT)"].join("\n"));
+  });
+
+  it("drops the week before it drops the FG/PAT split, and stays within 280 characters", () => {
+    const rows = Array.from({ length: 5 }, (_, index) => ({
+      // 18-character names: the week line is the piece that pushes the post over 280.
+      kicker: `Kicker Name ${index}`.padEnd(18, "x"),
+      teamAbbr: "WAS",
+      fg: 12,
+      pat: 6,
+    }));
+    const tweet = composeLeaderboardTweet({ seasonYear: 2026, week: 18, rows });
+    expect(isTweetLengthOk(tweet)).toBe(true);
+    expect(tweet).not.toContain("Week 18");
+    for (const row of rows) {
+      expect(tweet).toContain(`${row.kicker} (WAS): 18 (12 FG · 6 PAT)`);
+    }
+  });
+
+  it("strips URLs so the weekly post stays plain text", () => {
+    const tweet = composeLeaderboardTweet({
+      seasonYear: 2026,
+      week: 2,
+      rows: [{ kicker: "See https://example.com/highlight", teamAbbr: "NO", fg: 1, pat: 0 }],
+    });
+    expect(tweet).not.toMatch(/https?:\/\//i);
+    expect(tweet).toContain("1 FG · 0 PAT");
   });
 });

@@ -1,0 +1,92 @@
+name: Weekly season miss leaderboard
+
+# Tuesday 9:17 AM America/Denver, after Monday Night Football.
+# GitHub cron is UTC and does not follow DST, so both offsets are
+# scheduled. The job posts from the one that is 9:17 AM Denver that day
+# and skips the other.
+#
+#   MDT (UTC−6, second Sunday in March through the first Sunday in November): 15:17 UTC
+#   MST (UTC−7, the rest of the year): 16:17 UTC
+#
+# This is separate from the dense live poll. poll.yml exits after the
+# scoreboard when nothing is in the watch window, which is the normal
+# Tuesday-morning case. `src/index.ts leaderboard` still refreshes every
+# started regular-season week.
+on:
+  schedule:
+    - cron: "17 15 * * 2"
+    - cron: "17 16 * * 2"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Log the leaderboard tweet instead of posting"
+        type: boolean
+        default: true
+
+concurrency:
+  group: missed-kick-leaderboard
+  cancel-in-progress: false
+
+jobs:
+  leaderboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Read the poll's tally cache so completed games are not parsed again.
+      # Do not save: a unique cache key would become the newest `missed-kicks-`
+      # snapshot and could roll `.state/seen.json` back to the start of this job.
+      - name: Restore season tally cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .state
+          key: missed-kicks-${{ github.run_id }}
+          restore-keys: |
+            missed-kicks-
+
+      - name: Skip the Denver offset that is not 9:17 AM
+        id: window
+        if: github.event_name == 'schedule'
+        run: |
+          offset=$(TZ=America/Denver date +%z)
+          schedule="${{ github.event.schedule }}"
+          if [ "$offset" = "-0600" ] && [ "$schedule" = "17 15 * * 2" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ "$offset" = "-0700" ] && [ "$schedule" = "17 16 * * 2" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Denver offset $offset does not match schedule '$schedule'; skipping."
+          fi
+
+      - name: Resolve dry-run flag
+        id: flags
+        if: steps.window.outputs.run != 'false'
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "dry_run=${{ github.event.inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "dry_run=${{ vars.DRY_RUN || 'true' }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post season miss leaderboard
+        if: steps.window.outputs.run != 'false'
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_KEY_SECRET: ${{ secrets.X_API_KEY_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          DRY_RUN: ${{ steps.flags.outputs.dry_run }}
+          LEADERBOARD_REQUIRE_RECENT: ${{ github.event_name == 'schedule' && 'true' || 'false' }}
+          STATE_PATH: .state/seen.json
+        run: npx tsx src/index.ts leaderboard

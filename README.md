@@ -1,6 +1,6 @@
 # NFL Missed Kick Bot
 
-A small TypeScript bot that polls ESPN’s **public, keyless** NFL APIs and tweets whenever a kicker misses a field goal or a PAT / extra point.
+A small TypeScript bot that polls ESPN’s **public, keyless** NFL APIs and tweets whenever a kicker misses a field goal or a PAT / extra point. On Tuesday morning it also posts one season-to-date leaderboard of the five kickers with the most misses.
 
 It runs on its own — **GitHub Actions cron** dense-polls ESPN on NFL game days (Thursday–Monday UTC, plus early Tuesday UTC for late MNF), or you can use `npm start`. It does **not** use Cursor/Grok routines or X MCP credits.
 
@@ -42,7 +42,15 @@ Season: 0 missed FG · 1 missed PAT
 #ForTheShoe #RavensFlock
 ```
 
-Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. Each alert is labeled line-by-line (PAT omits the Kick/distance line). A **WP** line is the kicking team’s win-probability change on that kick play (`after − before`, one decimal, signed). Carlson’s 62-yarder at 0:02 was already priced as unlikely, so the model’s swing can be a small plus; Sanders’ 54-yard miss is the typical “lost ~4 points of WP” case. The line is omitted when ESPN has no WP for the play, and on PAT misses that ESPN attaches to the touchdown play (that swing includes the TD). A **Season** line shows that kicker’s regular-season miss totals (FG and PAT only, inclusive of the kick just posted). Tweets end with official primary season hashtags for both teams — kicking team first, never raw abbreviations like `#NO`. Those tags trigger custom team emojis on X. Tweets stay under 280 characters and are **plain text with no URLs** — X pay-per-use charges more for posts that include links. If a post would exceed 280 characters, hashtags are dropped first; Season, then WP, are kept ahead of hashtags and dropped only after Score / When.
+```
+❌ Season miss leaders
+Season: 2026 · Week 4
+1. Daniel Carlson (NO): 4 (3 FG · 1 PAT)
+2. Jason Sanders (NYJ): 3 (2 FG · 1 PAT)
+3. Spencer Shrader (IND): 1 (0 FG · 1 PAT)
+```
+
+The first three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. Each alert is labeled line-by-line (PAT omits the Kick/distance line). The fourth block is the weekly leaderboard’s shape; those counts are illustrative. Rank is regular-season misses so far (missed FG + missed PAT). Ties break by kicker name (`en` locale), then team abbreviation, so the fifth spot is stable. Fewer than five kickers means the post lists whoever has a miss. Zero misses means no tweet. Team season hashtags stay on the per-miss alerts. The weekly post keeps the labeled lines and the FG/PAT split inside 280 characters, dropping the week line before it drops those splits. A **WP** line is the kicking team’s win-probability change on that kick play (`after − before`, one decimal, signed). Carlson’s 62-yarder at 0:02 was already priced as unlikely, so the model’s swing can be a small plus; Sanders’ 54-yard miss is the typical “lost ~4 points of WP” case. The line is omitted when ESPN has no WP for the play, and on PAT misses that ESPN attaches to the touchdown play (that swing includes the TD). A **Season** line shows that kicker’s regular-season miss totals (FG and PAT only, inclusive of the kick just posted). Tweets end with official primary season hashtags for both teams — kicking team first, never raw abbreviations like `#NO`. Those tags trigger custom team emojis on X. Tweets stay under 280 characters and are **plain text with no URLs** — X pay-per-use charges more for posts that include links. If a post would exceed 280 characters, hashtags are dropped first; Season, then WP, are kept ahead of hashtags and dropped only after Score / When.
 
 ## How detection works
 
@@ -148,7 +156,7 @@ ESPN scoreboard
   (not required; no Cloudflare credentials needed to poll)
 ```
 
-1. **`poll.yml` cron is the primary wake.** It fires every 5 minutes Thursday–Monday UTC, plus Tuesday 00:00–07:59 UTC so late MNF that is still Monday evening in America/Denver stays covered. That window includes TNF, Friday/Saturday slates (internationals, Christmas), Sunday, and MNF. Tuesday after 08:00 UTC and all Wednesday have no Actions cron.
+1. **`poll.yml` cron is the primary wake.** It fires every 5 minutes Thursday–Monday UTC, plus Tuesday 00:00–07:59 UTC so late MNF that is still Monday evening in America/Denver stays covered. That window includes TNF, Friday/Saturday slates (internationals, Christmas), Sunday, and MNF. Tuesday after 08:00 UTC and all Wednesday have no dense poll. **`leaderboard.yml`** runs once on Tuesday at 9:17 AM America/Denver (15:17 UTC during MDT, 16:17 UTC during MST) and posts the season miss leaderboard.
 2. Each cron run hits the ESPN scoreboard. If nothing is in-progress or recently finished, the bot **exits after that one call** — no season-tally refresh, no per-game summaries.
 3. The Worker in [`worker/`](worker/) is kept in-tree as an **optional** later wake: it can store ESPN kickoffs in KV and `repository_dispatch` `nfl-poll` only while a game is in a live window. It is **not** required for the bot to run. Publish it with **Actions → Deploy Cloudflare Worker → Run workflow** once `CLOUDFLARE_API_TOKEN` and `WORKER_GITHUB_PAT` are set.
 4. Tweets stay in the TypeScript bot. The Worker never talks to X.
@@ -320,13 +328,22 @@ Workers free tier is enough: 2-minute ticks only Thu–Mon plus 8 hours Tuesday 
 
 ## GitHub Actions
 
-Three workflows:
+Four workflows:
 
 | Workflow | When | What |
 | --- | --- | --- |
 | `ci.yml` | push / PR | root tests + Worker tests + `wrangler deploy --dry-run` |
 | `poll.yml` | **cron (primary)** + optional Worker `repository_dispatch` (`nfl-poll`) + manual | one poll, cache `.state/seen.json` and `.state/tallies.json` |
+| `leaderboard.yml` | Tuesday 9:17 AM America/Denver + manual | one season-to-date top-5 tweet |
 | `deploy-worker.yml` | **manual** (Actions → Deploy Cloudflare Worker → Run workflow) | `wrangler deploy` + set Worker secret `GITHUB_TOKEN` from `WORKER_GITHUB_PAT` |
+
+### Weekly season leaderboard
+
+`leaderboard.yml` posts exactly one tweet: the top 5 kickers by regular-season misses (FG + PAT) for the season year on the ESPN scoreboard, through games that have already started. It does not use the live watch window, so a Tuesday with no kickoff still scans weeks 1…current. The week in the tweet is the last regular-season week with a started game, which stays put when ESPN has already rolled the scoreboard forward to next week.
+
+The scheduled run posts only when that latest game kicked off within the last 6 days, so the frozen board is not tweeted every Tuesday after the regular season. **Run workflow** can still dry-run or post the current board whenever you want it. `dry_run` defaults to true on that manual run. The schedule uses the `DRY_RUN` repository variable, same as the live poll (`false` posts).
+
+Ranking order, in `compareSeasonTallies`: total misses descending, then kicker name (`localeCompare` with locale `en`), then team abbreviation. The post shows each kicker’s FG and PAT counts. Completed games are read from the same `.state/tallies.json` cache the poll writes; this workflow restores that cache and does not save a new one, so it cannot roll back `.state/seen.json`.
 
 `poll.yml` dense-polls every **5 minutes** Thursday–Monday UTC, plus Tuesday 00:00–07:59 UTC for late MNF (Monday evening America/Denver). That is the live wake until a Cloudflare Worker is deployed. `repository_dispatch` type `nfl-poll` remains so the Worker can still wake it later.
 
@@ -368,6 +385,7 @@ See [`.env.example`](.env.example).
 | `STATE_PATH` | `.state/seen.json` | Seen play IDs (season tallies live beside it as `tallies.json`) |
 | `RECENT_FINAL_WINDOW_MIN` | `45` | Extra time after a ~4h game |
 | `SEED_SEEN` | `false` | Record misses, do not tweet |
+| `LEADERBOARD_REQUIRE_RECENT` | `false` | Weekly cron sets `true` so an offseason Tuesday does not re-post a frozen board |
 | `ESPN_USER_AGENT` | bot UA | Override if ESPN blocks |
 
 ## Development

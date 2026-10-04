@@ -1,19 +1,20 @@
-import { loadConfig } from "./config.js";
+import { boolEnv, loadConfig } from "./config.js";
 import { EspnClient } from "./espn.js";
+import { runSeasonLeaderboard, summarizeLeaderboard } from "./leaderboard.js";
 import { pollOnce, summarizeResult } from "./poll.js";
 import { SeenStore } from "./store.js";
 import { SeasonTallyIndex, tallyPathFromStatePath } from "./tallies.js";
 import { createPoster } from "./twitter.js";
 import type { PollOptions } from "./types.js";
 
-type Command = "once" | "loop" | "dry-run";
+type Command = "once" | "loop" | "dry-run" | "leaderboard";
 
 function parseArgs(argv: string[]): { command: Command; fresh: boolean; allToday: boolean; seed: boolean } {
   const flags = new Set(argv.filter((a) => a.startsWith("-")));
   const positional = argv.filter((a) => !a.startsWith("-"));
   const command = (positional[0] as Command | undefined) ?? "once";
-  if (command !== "once" && command !== "loop" && command !== "dry-run") {
-    console.error("Usage: nfl-missed-kick-bot <once|loop|dry-run> [--fresh] [--all-today] [--seed]");
+  if (command !== "once" && command !== "loop" && command !== "dry-run" && command !== "leaderboard") {
+    console.error("Usage: nfl-missed-kick-bot <once|loop|dry-run|leaderboard> [--fresh] [--all-today] [--seed]");
     process.exit(2);
   }
   return {
@@ -33,6 +34,33 @@ async function main(): Promise<void> {
 
   const store = new SeenStore(config.statePath);
   const tallies = new SeasonTallyIndex(tallyPathFromStatePath(config.statePath));
+  const espn = new EspnClient({ userAgent: config.userAgent, concurrency: 2 });
+  const forceDry = args.command === "dry-run";
+  const poster = createPoster(config, forceDry);
+
+  if (args.command === "leaderboard") {
+    if (!args.fresh) {
+      await tallies.load();
+      if (tallies.size) {
+        console.log("Loaded season tally cache for %d game(s)", tallies.size);
+      }
+    } else {
+      console.log("Starting with an empty season tally cache (--fresh)");
+    }
+    const result = await runSeasonLeaderboard(
+      { espn, poster, tallies },
+      {
+        persist: true,
+        requireRecentGame: boolEnv("LEADERBOARD_REQUIRE_RECENT", false),
+      },
+    );
+    summarizeLeaderboard(result);
+    for (const tweet of result.tweets) {
+      console.log("---\n%s", tweet);
+    }
+    return;
+  }
+
   if (!args.fresh) {
     await store.load();
     await tallies.load();
@@ -43,10 +71,6 @@ async function main(): Promise<void> {
   } else {
     console.log("Starting with empty seen-play state (--fresh)");
   }
-
-  const espn = new EspnClient({ userAgent: config.userAgent, concurrency: 2 });
-  const forceDry = args.command === "dry-run";
-  const poster = createPoster(config, forceDry);
 
   const options: PollOptions = {
     dryRun: forceDry || config.dryRun,

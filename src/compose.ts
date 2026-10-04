@@ -1,5 +1,5 @@
 import { formatSeasonLine } from "./tallies.js";
-import type { MissedKick } from "./types.js";
+import type { MissedKick, SeasonTallyRow } from "./types.js";
 
 const MAX_TWEET = 280;
 
@@ -92,6 +92,57 @@ export function composeTweet(miss: MissedKick): string {
   }
 
   return stripUrls(header).slice(0, MAX_TWEET);
+}
+
+export interface LeaderboardTweetInput {
+  seasonYear?: number;
+  /** Last regular-season week with a game that has already started. */
+  week?: number;
+  rows: SeasonTallyRow[];
+}
+
+/**
+ * One weekly post: season-to-date top kickers by total misses.
+ * Same labeled multi-line voice as a single miss. Team hashtags stay on
+ * the per-miss tweets — five of them would push the FG/PAT splits past 280.
+ * Week is dropped before the year, and the repeated total is dropped before
+ * any kicker line, so the split stays checkable.
+ */
+export function composeLeaderboardTweet(input: LeaderboardTweetInput): string {
+  const header = "❌ Season miss leaders";
+  const withWeek = seasonContextLine(input.seasonYear, input.week);
+  const yearOnly = seasonContextLine(input.seasonYear, undefined);
+  const full = input.rows.map((row, index) => formatLeaderboardLine(index + 1, row, "full"));
+  const compact = input.rows.map((row, index) => formatLeaderboardLine(index + 1, row, "compact"));
+
+  const candidates: Array<Array<string | undefined>> = [
+    [header, withWeek, ...full],
+    [header, yearOnly, ...full],
+    [header, withWeek, ...compact],
+    [header, yearOnly, ...compact],
+    [header, ...compact],
+  ];
+
+  for (const lines of candidates) {
+    const tweet = stripUrls(lines.filter((line): line is string => Boolean(line)).join("\n"));
+    if (tweet.length <= MAX_TWEET) return tweet;
+  }
+
+  return stripUrls([header, ...compact].filter(Boolean).join("\n")).slice(0, MAX_TWEET);
+}
+
+function formatLeaderboardLine(place: number, row: SeasonTallyRow, style: "full" | "compact"): string {
+  const split = `${row.fg} FG · ${row.pat} PAT`;
+  if (style === "compact") return `${place}. ${row.kicker} (${row.teamAbbr}): ${split}`;
+  const total = row.fg + row.pat;
+  return `${place}. ${row.kicker} (${row.teamAbbr}): ${total} (${split})`;
+}
+
+function seasonContextLine(year?: number, week?: number): string | undefined {
+  if (year !== undefined && week !== undefined) return `Season: ${year} · Week ${week}`;
+  if (year !== undefined) return `Season: ${year}`;
+  if (week !== undefined) return `Week: ${week}`;
+  return undefined;
 }
 
 export function teamHashtag(abbr: string): string | undefined {
