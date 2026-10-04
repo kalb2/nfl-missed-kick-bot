@@ -1,7 +1,7 @@
 import "dotenv/config";
 import path from "node:path";
 
-function boolEnv(name: string, fallback: boolean): boolean {
+export function boolEnv(name: string, fallback: boolean): boolean {
   const raw = process.env[name];
   if (raw === undefined || raw === "") return fallback;
   return ["1", "true", "yes", "on"].includes(raw.toLowerCase());

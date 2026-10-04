@@ -9,6 +9,7 @@ import { EspnClient } from "../src/espn.js";
 import {
   SeasonTallyIndex,
   collectStartedRegularSeasonEvents,
+  compareSeasonTallies,
   formatSeasonLine,
   kickerKeys,
   normalizeKickerName,
@@ -101,6 +102,22 @@ describe("kicker identity", () => {
       "name:wlutz|DEN",
     ]);
     expect(kickerKeys({ kicker: "W. Lutz", teamAbbr: "DEN" })).toEqual(["name:wlutz|DEN"]);
+  });
+});
+
+describe("compareSeasonTallies", () => {
+  it("ranks by total misses, then kicker name, then team abbreviation", () => {
+    const amy = { kicker: "Amy Baker", teamAbbr: "DEN", fg: 2, pat: 2 };
+    const ben = { kicker: "Ben Cole", teamAbbr: "KC", fg: 3, pat: 1 };
+    const amySf = { kicker: "Amy Baker", teamAbbr: "SF", fg: 1, pat: 3 };
+    const amyWas = { kicker: "Amy Baker", teamAbbr: "WAS", fg: 4, pat: 0 };
+
+    expect(amy.fg + amy.pat).toBe(ben.fg + ben.pat);
+    expect(compareSeasonTallies(amy, ben)).toBeLessThan(0);
+    expect(compareSeasonTallies(ben, amy)).toBeGreaterThan(0);
+    expect(compareSeasonTallies(amy, { ...amy, fg: 1, pat: 0 })).toBeLessThan(0);
+    expect(compareSeasonTallies(amySf, amyWas)).toBeLessThan(0);
+    expect(compareSeasonTallies(amyWas, amySf)).toBeGreaterThan(0);
   });
 });
 

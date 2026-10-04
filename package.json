@@ -11,6 +11,7 @@
     "start": "tsx src/index.ts loop",
     "once": "tsx src/index.ts once",
     "dry-run": "tsx src/index.ts dry-run",
+    "leaderboard": "tsx src/index.ts leaderboard",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"

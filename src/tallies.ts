@@ -84,6 +84,23 @@ export function formatSeasonLine(fg: number, pat: number): string {
   return `Season: ${fg} missed FG · ${pat} missed PAT`;
 }
 
+/**
+ * Season-to-date rank order.
+ *
+ * 1. Total misses (missed FG + missed PAT), descending.
+ * 2. Kicker name, `localeCompare` with locale `en` (earlier name ranks higher).
+ * 3. Team abbreviation, same locale (earlier abbreviation ranks higher).
+ *
+ * The name and team keys are what make a top-5 cutoff stable when totals tie.
+ */
+export function compareSeasonTallies(a: SeasonTallyRow, b: SeasonTallyRow): number {
+  const byTotal = b.fg + b.pat - (a.fg + a.pat);
+  if (byTotal !== 0) return byTotal;
+  const byName = a.kicker.localeCompare(b.kicker, "en");
+  if (byName !== 0) return byName;
+  return a.teamAbbr.localeCompare(b.teamAbbr, "en");
+}
+
 export function weeksToScan(board: Scoreboard): number[] {
   const type = board.season?.type;
   const week = board.week?.number ?? 1;
@@ -107,15 +124,22 @@ export async function collectStartedRegularSeasonEvents(
   board: Scoreboard,
 ): Promise<ScoreboardEvent[]> {
   const byId = new Map<string, ScoreboardEvent>();
-  const add = (event: ScoreboardEvent): void => {
+  const add = (event: ScoreboardEvent, week?: number): void => {
     if (!event?.id || byId.has(event.id)) return;
     if (!isRegularSeasonEvent(event, board)) return;
     if (!hasGameStarted(event)) return;
-    byId.set(event.id, event);
+    // Weekly scoreboards know the week even when an event omits it. The
+    // leaderboard labels the last week that actually started, which is not
+    // the upcoming week ESPN has already rolled onto by Tuesday.
+    const stamped =
+      event.week?.number !== undefined || week === undefined
+        ? event
+        : { ...event, week: { number: week } };
+    byId.set(event.id, stamped);
   };
 
   if (board.season?.type === undefined || board.season.type === REGULAR_SEASON_TYPE) {
-    for (const event of board.events ?? []) add(event);
+    for (const event of board.events ?? []) add(event, board.week?.number);
   }
 
   const year = board.season?.year;
@@ -128,7 +152,7 @@ export async function collectStartedRegularSeasonEvents(
       week,
       ...(year !== undefined ? { dates: String(year) } : {}),
     });
-    for (const event of weekly.events ?? []) add(event);
+    for (const event of weekly.events ?? []) add(event, weekly.week?.number ?? week);
   }
 
   return [...byId.values()];
@@ -139,6 +163,8 @@ export class SeasonTallyIndex {
   private summaries = new Map<string, GameSummary>();
   private seasonYear: number | undefined;
   private fetchedThisRefresh = 0;
+  private latestWeek: number | undefined;
+  private latestKickoffAt: number | undefined;
 
   constructor(private readonly filePath?: string) {}
 
@@ -148,6 +174,16 @@ export class SeasonTallyIndex {
 
   get fetchedLastRefresh(): number {
     return this.fetchedThisRefresh;
+  }
+
+  /** Highest regular-season week among games that have already started. */
+  get latestStartedWeek(): number | undefined {
+    return this.latestWeek;
+  }
+
+  /** Kickoff time of the latest started regular-season game, if ESPN sent one. */
+  get latestKickoffMs(): number | undefined {
+    return this.latestKickoffAt;
   }
 
   getSummary(eventId: string): GameSummary | undefined {
@@ -189,6 +225,8 @@ export class SeasonTallyIndex {
     this.games.clear();
     this.summaries.clear();
     this.seasonYear = undefined;
+    this.latestWeek = undefined;
+    this.latestKickoffAt = undefined;
   }
 
   async refresh(espn: EspnClient, board: Scoreboard): Promise<{ games: number; fetched: number }> {
@@ -199,6 +237,7 @@ export class SeasonTallyIndex {
     if (year !== undefined) this.seasonYear = year;
 
     const events = await collectStartedRegularSeasonEvents(espn, board);
+    this.noteStartedEvents(events);
     this.fetchedThisRefresh = 0;
 
     await mapPool(events, espn.concurrency, async (event) => {
@@ -262,8 +301,26 @@ export class SeasonTallyIndex {
         pat: bucket.pat,
       });
     }
-    rows.sort((a, b) => b.fg + b.pat - (a.fg + a.pat) || a.kicker.localeCompare(b.kicker));
+    rows.sort(compareSeasonTallies);
     return rows;
+  }
+
+  private noteStartedEvents(events: ScoreboardEvent[]): void {
+    this.latestWeek = undefined;
+    this.latestKickoffAt = undefined;
+    for (const event of events) {
+      const week = event.week?.number;
+      if (week !== undefined && (this.latestWeek === undefined || week > this.latestWeek)) {
+        this.latestWeek = week;
+      }
+      const kickoff = Date.parse(event.date || event.competitions?.[0]?.date || "");
+      if (
+        Number.isFinite(kickoff) &&
+        (this.latestKickoffAt === undefined || kickoff > this.latestKickoffAt)
+      ) {
+        this.latestKickoffAt = kickoff;
+      }
+    }
   }
 
   private aggregate(): Map<string, KickerBucket> {
