@@ -50,8 +50,8 @@ Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. E
 2. **Game summary** — fetch drives/plays for each watched game.
 3. **Missed FG** — a play whose `type.text === "Field Goal Missed"` (type id `"60"`), e.g.  
    `D.Carlson 62 yard field goal is No Good, Wide Right, Center-Z.Wood, Holder-R.Wright.`
-4. **Missed PAT** — prefer structured `pointAfterAttempt.id === 62` / text `Extra Point Missed` when present (often *on the touchdown play*). Also treat play text matching `extra point is No Good` as a backup when ESPN omits `pointAfterAttempt`.  
-   **Extra Point Good (`id` 61) is never treated as a miss.** Key off `id` / `text`, not `value` — ESPN sometimes sets `value: 1` on a miss.
+4. **Missed PAT** — prefer structured `pointAfterAttempt` when present (often *on the touchdown play*): id `62` / text `Extra Point Missed`, and id `43` / text `Blocked PAT`. Also treat play text matching `extra point is No Good` or `extra point is Blocked` as a backup when ESPN omits `pointAfterAttempt`.  
+   **Extra Point Good (`id` 61) is never treated as a miss.** Key off `id` / `text`, not `value` — ESPN sometimes sets `value: 1` on a miss. A blocked PAT counts as a PAT miss for season tallies and tweets. Its win-probability swing is still omitted when the attempt is attached to the touchdown play.
 5. Plays are collected from `drives.previous`, `drives.current`, and any other `plays[]` arrays in the payload.
 6. Each miss is keyed by ESPN play `id` and persisted so the same kick is never tweeted twice.
 7. **Kicker name** — play text is `D.Carlson` / `W. Lutz`. Tweets prefer a full first + last name from the summary boxscore kicking athletes, a play participant athlete (`displayName` / `fullName` / first+last), or the ESPN athlete profile when `athleteId` is known. Initials remain the fallback.
@@ -384,7 +384,7 @@ Fixtures under `test/fixtures/` are trimmed copies of real 2026-09-13 ESPN plays
 
 - ESPN’s site/v2 APIs are unofficial. Field names, type ids, and availability can change.
 - PAT misses live on the **TD play** via `pointAfterAttempt`, not a separate “extra point” play. Detection depends on that field (or equivalent text). The WP line is omitted on those combined plays because ESPN’s `homeWinPercentage` swing includes the touchdown.
-- Blocked kicks are treated as misses when the play text says so; two-point conversions are ignored.
+- Blocked field goals are misses when the play text says the kick is blocked. Blocked PATs are misses when `pointAfterAttempt` is id `43` / `Blocked PAT`, or when the play text says the extra point is blocked. Two-point conversions are ignored.
 - First start mid-game will tweet every unseen miss still inside the watch window unless you `--seed`.
 - Do not commit `.env` or `.state/`.
 

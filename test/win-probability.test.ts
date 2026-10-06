@@ -147,6 +147,15 @@ describe("canAttributeWinProbability", () => {
     };
     expect(canAttributeWinProbability(play, "PAT")).toBe(false);
   });
+
+  it("rejects a blocked PAT attached to a touchdown play", () => {
+    const play: Play = {
+      type: { id: "67", text: "Passing Touchdown" },
+      text: "B.Young pass short left to J.Coker for 8 yards, TOUCHDOWN. R.Fitzgerald extra point is Blocked (D.Odeyingbo).",
+      pointAfterAttempt: { id: 43, text: "Blocked PAT", abbreviation: "Blocked PAT", value: 0 },
+    };
+    expect(canAttributeWinProbability(play, "PAT")).toBe(false);
+  });
 });
 
 describe("detectMissedKicks win probability", () => {
