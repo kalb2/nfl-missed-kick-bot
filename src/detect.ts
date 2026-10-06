@@ -15,6 +15,8 @@ import { attachWinProbability, extractWinProbability } from "./win-probability.j
 const FG_MISS_TYPE_ID = "60";
 const PAT_MISS_TYPE_ID = "62";
 const PAT_GOOD_TYPE_ID = "61";
+/** ESPN `pointAfterAttempt.id` for a blocked extra point (text "Blocked PAT"). */
+const PAT_BLOCKED_TYPE_ID = "43";
 
 /** ESPN PBP uses "W.Lutz" or "W. Lutz". Last name cannot include another "X." */
 const FG_KICKER_RE =
@@ -25,6 +27,7 @@ const NAME_SUFFIXES = new Set(["jr", "sr", "ii", "iii", "iv", "v"]);
 const RESULT_RE =
   /(?:is\s+)?No Good(?:,\s*)?([^.,]+)?|field goal is BLOCKED|extra point is BLOCKED|BLOCKED/i;
 const PAT_NO_GOOD_RE = /extra point is No Good/i;
+const PAT_BLOCKED_RE = /extra point is Blocked/i;
 
 /**
  * Walk a summary (or any ESPN JSON blob) and collect play-like objects.
@@ -81,19 +84,26 @@ export function isFieldGoalMiss(play: Play): boolean {
   return false;
 }
 
+function isBlockedPointAfter(paa: NonNullable<Play["pointAfterAttempt"]>): boolean {
+  const paaId = String(paa.id ?? "");
+  return paaId === PAT_BLOCKED_TYPE_ID || paa.text === "Blocked PAT" || paa.abbreviation === "Blocked PAT";
+}
+
 export function isExtraPointMiss(play: Play): boolean {
   const paa = play.pointAfterAttempt;
   if (paa) {
     const paaId = String(paa.id ?? "");
     if (paaId === PAT_GOOD_TYPE_ID || paa.text === "Extra Point Good") return false;
     if (paaId === PAT_MISS_TYPE_ID || paa.text === "Extra Point Missed") return true;
+    // Blocked PATs are not id 62. ESPN attaches id 43 / "Blocked PAT" to the TD play.
+    if (isBlockedPointAfter(paa)) return true;
   }
   const typeId = String(play.type?.id ?? "");
   const typeText = play.type?.text ?? "";
   if (typeId === PAT_MISS_TYPE_ID || typeText === "Extra Point Missed") return true;
   // Structured PAA is preferred; text is a backup when ESPN omits pointAfterAttempt.
   const text = `${play.text ?? ""} ${play.shortText ?? ""}`;
-  if (PAT_NO_GOOD_RE.test(text)) return true;
+  if (PAT_NO_GOOD_RE.test(text) || PAT_BLOCKED_RE.test(text)) return true;
   return false;
 }
 
@@ -463,6 +473,8 @@ export function toMissedKick(
 /**
  * FG misses (and standalone Extra Point Missed plays) can use the play's WP
  * swing. PAT misses attached to a TD play cannot — that delta includes the TD.
+ * A blocked PAT (pointAfterAttempt id 43) is still attached to the touchdown,
+ * so the play type stays the TD and win probability stays off.
  */
 export function canAttributeWinProbability(play: Play, kickType: KickType): boolean {
   if (kickType === "FG") return true;

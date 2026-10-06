@@ -166,6 +166,114 @@ describe("Extra Point Missed (pointAfterAttempt.id 62)", () => {
   });
 });
 
+describe("Blocked PAT (pointAfterAttempt.id 43)", () => {
+  const fitzgeraldText =
+    "(No Huddle, Shotgun) B.Young pass short left to J.Coker for 8 yards, TOUCHDOWN. R.Fitzgerald extra point is Blocked (D.Odeyingbo), Center-J.Jansen, Holder-S.Martin.";
+
+  function blockedPatSummary(pointAfterAttempt?: Play["pointAfterAttempt"]): GameSummary {
+    return {
+      header: {
+        competitions: [
+          {
+            competitors: [
+              { homeAway: "away", team: { id: "3", abbreviation: "CHI", displayName: "Chicago Bears" } },
+              { homeAway: "home", team: { id: "29", abbreviation: "CAR", displayName: "Carolina Panthers" } },
+            ],
+          },
+        ],
+      },
+      drives: {
+        previous: [
+          {
+            plays: [
+              {
+                id: "4018726614523",
+                type: { id: "67", text: "Passing Touchdown" },
+                text: fitzgeraldText,
+                ...(pointAfterAttempt ? { pointAfterAttempt } : {}),
+                period: { number: 4 },
+                clock: { displayValue: "4:00" },
+                awayScore: 52,
+                homeScore: 37,
+                teamParticipants: [{ id: "29", type: "offense" }],
+                statYardage: 8,
+              },
+            ],
+          },
+        ],
+      },
+      winprobability: [
+        { playId: "4018726614495", homeWinPercentage: 0.0016, tiePercentage: 0 },
+        { playId: "4018726614523", homeWinPercentage: 0.0031, tiePercentage: 0 },
+      ],
+    };
+  }
+
+  it("counts a blocked PAT on a touchdown play as a PAT miss and skips its WP swing", () => {
+    const summary = blockedPatSummary({
+      id: 43,
+      text: "Blocked PAT",
+      abbreviation: "Blocked PAT",
+      value: 0,
+    });
+    const play = collectPlays(summary)[0];
+    expect(isExtraPointMiss(play)).toBe(true);
+    expect(isFieldGoalMiss(play)).toBe(false);
+    expect(classifyMiss(play)).toBe("PAT");
+
+    const misses = detectMissedKicks(summary, gameFromSummary(summary, "CHI @ CAR"));
+    expect(misses).toHaveLength(1);
+    const miss = misses[0];
+    expect(miss.playId).toBe("4018726614523");
+    expect(miss.kickType).toBe("PAT");
+    expect(miss.kicker).toBe("R.Fitzgerald");
+    expect(miss.teamAbbr).toBe("CAR");
+    expect(miss.distance).toBeUndefined();
+    expect(miss.result).toBe("Blocked");
+    expect(miss.quarter).toBe("Q4");
+    expect(miss.clock).toBe("4:00");
+    expect(miss.awayScore).toBe(52);
+    expect(miss.homeScore).toBe(37);
+    // PAT-on-TD: the summary WP row includes the touchdown, not just the kick.
+    expect(miss.wpDelta).toBeUndefined();
+    expect(miss.wpBefore).toBeUndefined();
+    expect(miss.wpAfter).toBeUndefined();
+
+    expect(
+      isExtraPointMiss({
+        id: "id-only-blocked-pat",
+        type: { id: "68", text: "Rushing Touchdown" },
+        pointAfterAttempt: { id: 43, value: 0 },
+      }),
+    ).toBe(true);
+    expect(
+      isExtraPointMiss({
+        id: "label-only-blocked-pat",
+        type: { id: "67", text: "Passing Touchdown" },
+        pointAfterAttempt: { text: "Blocked PAT" },
+      }),
+    ).toBe(true);
+  });
+
+  it("falls back to 'extra point is Blocked' when pointAfterAttempt is missing", () => {
+    const play: Play = {
+      id: "text-only-blocked-pat",
+      type: { id: "67", text: "Passing Touchdown" },
+      text: fitzgeraldText,
+    };
+    expect(isExtraPointMiss(play)).toBe(true);
+    expect(classifyMiss(play)).toBe("PAT");
+    expect(parseResult(play.text ?? "")).toBe("Blocked");
+
+    const summary = blockedPatSummary();
+    const misses = detectMissedKicks(summary, gameFromSummary(summary, "CHI @ CAR"));
+    expect(misses).toHaveLength(1);
+    expect(misses[0].kickType).toBe("PAT");
+    expect(misses[0].result).toBe("Blocked");
+    expect(misses[0].wpDelta).toBeUndefined();
+  });
+});
+
 describe("athleteIdFromPlay", () => {
   it("reads a kicker athlete id from a core-API $ref", () => {
     expect(
@@ -210,6 +318,13 @@ describe("parsers", () => {
 
   it("reads a spaced initial form from play text as a fallback", () => {
     expect(parseKicker("W. Lutz 51 yard field goal is No Good, Wide Right.", "FG")).toBe("W. Lutz");
+  });
+
+  it("reads Blocked from a blocked extra point and ignores the defender name", () => {
+    const text =
+      "B.Young pass short left to J.Coker for 8 yards, TOUCHDOWN. R.Fitzgerald extra point is Blocked (D.Odeyingbo), Center-J.Jansen, Holder-S.Martin.";
+    expect(parseKicker(text, "PAT")).toBe("R.Fitzgerald");
+    expect(parseResult(text)).toBe("Blocked");
   });
 
   it("reads kicker from PAT text and ignores TD yardage", () => {
