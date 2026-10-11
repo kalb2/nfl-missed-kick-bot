@@ -60,7 +60,8 @@ export function collectPlays(root: unknown): Play[] {
       return;
     }
     seen.add(id);
-    out.push(play);
+    // Shallow copy so merging duplicate-id texts never mutates the ESPN payload.
+    out.push({ ...play });
   };
 
   const walk = (node: unknown): void => {
@@ -297,7 +298,6 @@ export function resolveKickerName(
   play: Play,
   kickType: KickType,
   roster: AthleteRef[] = [],
-  teamKickers: AthleteRef[] = [],
 ): { kicker: string; athleteId?: string } {
   const texts = [play.text, play.shortText, ...(play.altTexts ?? [])].filter(
     (t): t is string => Boolean(t),
@@ -322,32 +322,7 @@ export function resolveKickerName(
     return { kicker: fromRoster, ...(athleteId ? { athleteId } : {}) };
   }
 
-  // Last resort: the kicking team had exactly one kicker in the boxscore.
-  if (parsed === "Unknown kicker" && teamKickers.length === 1) {
-    const only = teamKickers[0];
-    const name = fullNameFromAthlete(only);
-    const id = athleteIdFromRef(only);
-    if (name) return { kicker: name, ...(id ? { athleteId: id } : {}) };
-  }
-
   return { kicker: parsed, ...(athleteId ? { athleteId } : {}) };
-}
-
-export function kickersByTeam(summary: GameSummary): Map<string, AthleteRef[]> {
-  const out = new Map<string, AthleteRef[]>();
-  const players = summary.boxscore?.players;
-  if (!Array.isArray(players)) return out;
-  for (const team of players as BoxscorePlayers[]) {
-    const teamId = team.team?.id ? String(team.team.id) : undefined;
-    if (!teamId) continue;
-    const list: AthleteRef[] = [];
-    for (const group of team.statistics ?? []) {
-      if ((group.name ?? "").toLowerCase() !== "kicking") continue;
-      for (const row of group.athletes ?? []) if (row.athlete) list.push(row.athlete);
-    }
-    out.set(teamId, list);
-  }
-  return out;
 }
 
 export async function enrichKickerNames(
@@ -492,7 +467,6 @@ export function toMissedKick(
   play: Play,
   game: GameContext,
   roster: AthleteRef[] = [],
-  byTeam: Map<string, AthleteRef[]> = new Map(),
 ): MissedKick | null {
   const kickType = classifyMiss(play);
   if (!kickType || !play.id) return null;
@@ -501,12 +475,13 @@ export function toMissedKick(
   const team = teamFromPlay(play, game.competitors);
   const home = game.competitors.find((c) => c.homeAway === "home");
   const away = game.competitors.find((c) => c.homeAway === "away");
-  const teamId = team?.team?.id ?? team?.id;
-  const teamKickers = teamId ? byTeam.get(String(teamId)) ?? [] : [];
-  const resolved = resolveKickerName(play, kickType, roster, teamKickers);
+  const resolved = resolveKickerName(play, kickType, roster);
 
+  const altTexts = (play.altTexts ?? []).filter((t) => t && t !== text);
   return {
+    ...(altTexts.length ? { altPlayTexts: altTexts } : {}),
     playId: String(play.id),
+    eventId: game.eventId,
     kickType,
     kicker: resolved.kicker,
     ...(resolved.athleteId ? { athleteId: resolved.athleteId } : {}),
@@ -568,11 +543,10 @@ export function missesNeedWinProbability(misses: MissedKick[], plays: Play[]): b
 export function detectMissedKicks(summary: GameSummary, game: GameContext): MissedKick[] {
   const plays = collectPlays(summary);
   const roster = kickingAthletesFromSummary(summary);
-  const byTeam = kickersByTeam(summary);
   const points = extractWinProbability(summary);
   const misses: MissedKick[] = [];
   for (const play of plays) {
-    const miss = toMissedKick(play, game, roster, byTeam);
+    const miss = toMissedKick(play, game, roster);
     if (!miss) continue;
     if (canAttributeWinProbability(play, miss.kickType)) {
       attachWinProbability(miss, points);

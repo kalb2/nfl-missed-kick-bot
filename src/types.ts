@@ -180,6 +180,10 @@ export interface GameContext {
 
 export interface MissedKick {
   playId: string;
+  /** ESPN event id of the game. */
+  eventId?: string;
+  /** Other ESPN wordings of the same play (e.g. scoringPlays[] copy). */
+  altPlayTexts?: string[];
   kickType: KickType;
   kicker: string;
   athleteId?: string;
@@ -229,6 +233,8 @@ export interface PollResult {
   posted: number;
   skippedSeen: number;
   tweets: string[];
+  /** Misses not tweeted because no ESPN text named the kicker. */
+  heldForManualPost?: MissedKick[];
   seasonGamesScanned?: number;
   seasonTallies?: SeasonTallyRow[];
 }

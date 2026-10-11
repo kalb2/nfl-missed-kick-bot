@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "notes": "Plays fixed by hand. alreadyPosted=true means a tweet already exists, so the bot must never post it again. kicker/athleteId override name resolution for tweets and the season tally.",
+  "plays": [
+    {
+      "playId": "4018729824202",
+      "eventId": "401872982",
+      "game": "CIN @ MIA 2026-10-11",
+      "kickType": "PAT",
+      "kicker": "Riley Patterson",
+      "athleteId": "4243371",
+      "teamAbbr": "MIA",
+      "alreadyPosted": true,
+      "reason": "ESPN drive text '(  PAT failed)' had a blank kicker; bot tweeted 'Unknown kicker' and Kaleb posted the corrected tweet by hand."
+    }
+  ]
+}

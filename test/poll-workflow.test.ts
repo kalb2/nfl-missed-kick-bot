@@ -18,4 +18,9 @@ describe("poll.yml wake sources", () => {
     expect(pollYml).toMatch(/types:\s*\[nfl-poll\]/);
     expect(pollYml).toMatch(/workflow_dispatch:/);
   });
+
+  it("grants issues: write and passes GITHUB_TOKEN for manual-post issues", () => {
+    expect(pollYml).toMatch(/issues:\s*write/);
+    expect(pollYml).toMatch(/GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GITHUB_TOKEN\s*\}\}/);
+  });
 });

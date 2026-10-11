@@ -46,6 +46,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      # Opens a "needs-manual-post" issue when a miss has no named kicker.
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
@@ -88,6 +90,7 @@ jobs:
           DRY_RUN: ${{ steps.flags.outputs.dry_run }}
           SEED_SEEN: ${{ steps.flags.outputs.seed }}
           STATE_PATH: .state/seen.json
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           EXTRA=""
           if [ "${{ steps.flags.outputs.all_today }}" = "true" ]; then

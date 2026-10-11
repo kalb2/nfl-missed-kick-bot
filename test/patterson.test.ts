@@ -42,14 +42,14 @@ describe("CIN @ MIA 2026-10-11 missed PAT (Riley Patterson)", () => {
     expect(miss.clock).toBe("0:45");
   });
 
-  it("falls back to the team's only boxscore kicker when no text names one", () => {
+  it("stays Unknown kicker when no ESPN text names the kicker (no box-score guess)", () => {
     const stripped = JSON.parse(JSON.stringify(summary)) as GameSummary & {
       scoringPlays?: unknown[];
     };
     delete stripped.scoringPlays;
     const [miss] = detectMissedKicks(stripped, game);
-    expect(miss.kicker).toBe("Riley Patterson");
-    expect(miss.athleteId).toBe("4243371");
+    expect(miss.kicker).toBe("Unknown kicker");
+    expect(miss.athleteId).toBeUndefined();
   });
 
   it("does not treat a two-point try as a missed PAT", () => {
