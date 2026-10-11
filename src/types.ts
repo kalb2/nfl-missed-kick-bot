@@ -71,6 +71,8 @@ export interface Play {
   statYardage?: number;
   start?: { team?: { id?: string }; yardsToEndzone?: number };
   team?: { id?: string; abbreviation?: string };
+  /** Other texts ESPN gave for the same play id (e.g. scoringPlays[] wording). */
+  altTexts?: string[];
 }
 
 export interface Competitor {

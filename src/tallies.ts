@@ -69,9 +69,18 @@ export function normalizeKickerName(name: string): string {
   return compactKickerName(name);
 }
 
-export function kickerKeys(miss: Pick<MissedKick, "athleteId" | "kicker" | "teamAbbr">): string[] {
+export const UNKNOWN_KICKER = "Unknown kicker";
+
+export function kickerKeys(
+  miss: Pick<MissedKick, "athleteId" | "kicker" | "teamAbbr"> & { playId?: string },
+): string[] {
   const keys: string[] = [];
   if (miss.athleteId) keys.push(`id:${miss.athleteId}`);
+  // Never pool unresolved kickers into one "Unknown kicker" bucket.
+  if (miss.kicker === UNKNOWN_KICKER) {
+    if (!miss.athleteId) keys.push(`play:${miss.playId ?? Math.random()}`);
+    return keys;
+  }
   const team = (miss.teamAbbr || "UNK").trim().toUpperCase();
   const full = normalizeKickerName(miss.kicker);
   if (full) keys.push(`name:${full}|${team}`);
@@ -203,7 +212,8 @@ export class SeasonTallyIndex {
 
     await mapPool(events, espn.concurrency, async (event) => {
       const cached = this.games.get(event.id);
-      if (cached && cached.status === "post" && isCompletedGame(event)) {
+      const hasUnknown = cached?.misses.some((m) => m.kicker === UNKNOWN_KICKER) ?? false;
+      if (cached && cached.status === "post" && isCompletedGame(event) && !hasUnknown) {
         return;
       }
       try {
