@@ -391,3 +391,11 @@ Fixtures under `test/fixtures/` are trimmed copies of real 2026-09-13 ESPN plays
 ## License
 
 MIT
+
+## Misses with no named kicker
+
+The bot never guesses who kicked. If no ESPN text (drive play-by-play, scoring summary, participants) names the kicker:
+
+- the miss is **not tweeted**; instead `poll.yml` (with `issues: write`) opens one GitHub issue labelled `needs-manual-post` titled `... [play <id>]` with the game, play id, quarter/clock, score and raw ESPN texts. Dedupe: `.state/seen.json` `notifiedIssues`, plus a title search on the label if the cache was lost.
+- the miss stays pending. If a later poll (game still in the watch window) finds the name **and the issue is still open**, the bot tweets, comments and closes the issue. If the issue is closed, the bot treats the play as handled and never tweets it.
+- after posting by hand, add the play to `config/manual-overrides.json` (`kicker`, `athleteId`, `teamAbbr`, `alreadyPosted: true`) so the season tally credits the right kicker and the play is never tweeted.

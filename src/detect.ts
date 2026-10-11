@@ -22,6 +22,13 @@ const PAT_BLOCKED_TYPE_ID = "43";
 const FG_KICKER_RE =
   /([A-Z]\.\s*[\p{L}'’-]+)\s+(\d+)\s+yard field goal/u;
 const PAT_KICKER_RE = /([A-Z]\.\s*[\p{L}'’-]+)\s+extra point/giu;
+/**
+ * Scoring-summary wording: "(Riley Patterson PAT failed)", "(Riley Patterson Kick)".
+ * The drive PBP for the same play can drop the name entirely: "(  PAT failed)".
+ */
+const PAT_FULLNAME_RE =
+  /\(\s*(\p{Lu}[\p{L}'’.-]*(?:\s+[\p{L}'’.-]+){1,3}?)\s+(?:PAT|Kick)\b[^)]*\)/u;
+const TWO_POINT_RE = /two[- ]point/i;
 const INITIAL_NAME_RE = /^[A-Za-z]\.\s*[\p{L}'’.\-]+$/u;
 const NAME_SUFFIXES = new Set(["jr", "sr", "ii", "iii", "iv", "v"]);
 const RESULT_RE =
@@ -42,9 +49,19 @@ export function collectPlays(root: unknown): Play[] {
     if (!play || typeof play !== "object") return;
     if (!play.id || (!play.type && !play.text && !play.pointAfterAttempt)) return;
     const id = String(play.id);
-    if (seen.has(id)) return;
+    if (seen.has(id)) {
+      const first = out.find((p) => String(p.id) === id);
+      if (first && play.text && play.text !== first.text) {
+        first.altTexts = [...(first.altTexts ?? []), play.text];
+      }
+      if (first && !first.pointAfterAttempt && play.pointAfterAttempt) {
+        first.pointAfterAttempt = play.pointAfterAttempt;
+      }
+      return;
+    }
     seen.add(id);
-    out.push(play);
+    // Shallow copy so merging duplicate-id texts never mutates the ESPN payload.
+    out.push({ ...play });
   };
 
   const walk = (node: unknown): void => {
@@ -94,6 +111,8 @@ export function isExtraPointMiss(play: Play): boolean {
   if (paa) {
     const paaId = String(paa.id ?? "");
     if (paaId === PAT_GOOD_TYPE_ID || paa.text === "Extra Point Good") return false;
+    // 2-pt tries (and fakes) are not kicks.
+    if (paa.value === 2 || TWO_POINT_RE.test(`${paa.text ?? ""} ${paa.abbreviation ?? ""}`)) return false;
     if (paaId === PAT_MISS_TYPE_ID || paa.text === "Extra Point Missed") return true;
     // Blocked PATs are not id 62. ESPN attaches id 43 / "Blocked PAT" to the TD play.
     if (isBlockedPointAfter(paa)) return true;
@@ -129,6 +148,8 @@ export function parseKicker(text: string, kickType: KickType): string {
   }
   const pat = lastCapture(text, PAT_KICKER_RE);
   if (pat) return pat;
+  const full = text.match(PAT_FULLNAME_RE);
+  if (full && !TWO_POINT_RE.test(full[0])) return full[1].trim();
   const fg = text.match(FG_KICKER_RE);
   if (fg) return fg[1];
   return "Unknown kicker";
@@ -278,8 +299,14 @@ export function resolveKickerName(
   kickType: KickType,
   roster: AthleteRef[] = [],
 ): { kicker: string; athleteId?: string } {
-  const text = play.text || play.shortText || "";
-  const parsed = parseKicker(text, kickType);
+  const texts = [play.text, play.shortText, ...(play.altTexts ?? [])].filter(
+    (t): t is string => Boolean(t),
+  );
+  let parsed = "Unknown kicker";
+  for (const t of texts) {
+    parsed = parseKicker(t, kickType);
+    if (parsed !== "Unknown kicker") break;
+  }
   const playAthlete = kickerAthleteFromPlay(play);
   const playId = athleteIdFromPlay(play) ?? athleteIdFromRef(playAthlete);
   const fromPlay = fullNameFromAthlete(playAthlete);
@@ -450,8 +477,11 @@ export function toMissedKick(
   const away = game.competitors.find((c) => c.homeAway === "away");
   const resolved = resolveKickerName(play, kickType, roster);
 
+  const altTexts = (play.altTexts ?? []).filter((t) => t && t !== text);
   return {
+    ...(altTexts.length ? { altPlayTexts: altTexts } : {}),
     playId: String(play.id),
+    eventId: game.eventId,
     kickType,
     kicker: resolved.kicker,
     ...(resolved.athleteId ? { athleteId: resolved.athleteId } : {}),

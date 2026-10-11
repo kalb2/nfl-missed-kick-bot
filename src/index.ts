@@ -1,6 +1,8 @@
 import { loadConfig } from "./config.js";
 import { EspnClient } from "./espn.js";
 import { pollOnce, summarizeResult } from "./poll.js";
+import { createNotifier } from "./notify.js";
+import { Overrides } from "./overrides.js";
 import { SeenStore } from "./store.js";
 import { SeasonTallyIndex, tallyPathFromStatePath } from "./tallies.js";
 import { createPoster } from "./twitter.js";
@@ -32,7 +34,8 @@ async function main(): Promise<void> {
   });
 
   const store = new SeenStore(config.statePath);
-  const tallies = new SeasonTallyIndex(tallyPathFromStatePath(config.statePath));
+  const overrides = Overrides.load();
+  const tallies = new SeasonTallyIndex(tallyPathFromStatePath(config.statePath), overrides);
   if (!args.fresh) {
     await store.load();
     await tallies.load();
@@ -47,6 +50,7 @@ async function main(): Promise<void> {
   const espn = new EspnClient({ userAgent: config.userAgent, concurrency: 2 });
   const forceDry = args.command === "dry-run";
   const poster = createPoster(config, forceDry);
+  const notifier = createNotifier(forceDry || config.dryRun);
 
   const options: PollOptions = {
     dryRun: forceDry || config.dryRun,
@@ -61,8 +65,11 @@ async function main(): Promise<void> {
   }
 
   const run = async (): Promise<void> => {
-    const result = await pollOnce({ espn, store, poster, tallies }, options);
+    const result = await pollOnce({ espn, store, poster, tallies, notifier, overrides }, options);
     summarizeResult(result, args.command);
+    for (const miss of result.heldForManualPost ?? []) {
+      console.log("HELD (unknown kicker, needs manual post): play %s %s %s %s", miss.playId, miss.matchup, miss.quarter, miss.clock);
+    }
     if (result.tweets.length) {
       for (const tweet of result.tweets) {
         console.log("---\n%s", tweet);

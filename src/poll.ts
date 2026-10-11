@@ -8,6 +8,8 @@ import {
   missesNeedWinProbability,
 } from "./detect.js";
 import { REGULAR_SEASON_TYPE, contextFromEvent, isWatchableGame, mapPool, type EspnClient } from "./espn.js";
+import { UNKNOWN_KICKER, type MissNotifier, LogNotifier } from "./notify.js";
+import { Overrides } from "./overrides.js";
 import type { SeenStore } from "./store.js";
 import { SeasonTallyIndex } from "./tallies.js";
 import type { TweetPoster } from "./twitter.js";
@@ -18,6 +20,8 @@ export interface PollDeps {
   store: SeenStore;
   poster: TweetPoster;
   tallies?: SeasonTallyIndex;
+  notifier?: MissNotifier;
+  overrides?: Overrides;
 }
 
 export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<PollResult> {
@@ -44,13 +48,17 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
     };
   }
 
-  const tallies = deps.tallies ?? new SeasonTallyIndex();
+  const overrides = deps.overrides ?? new Overrides();
+  const notifier = deps.notifier ?? new LogNotifier();
+  for (const id of overrides.alreadyPostedIds()) deps.store.add(id);
+  const tallies = deps.tallies ?? new SeasonTallyIndex(undefined, overrides);
   await tallies.refresh(deps.espn, board);
 
   const tweets: string[] = [];
   const newMisses: MissedKick[] = [];
   let skippedSeen = 0;
   let posted = 0;
+  const held: MissedKick[] = [];
 
   await mapPool(events, deps.espn.concurrency, async (event) => {
     const game = contextFromEvent(event);
@@ -81,6 +89,7 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
       }
     }
     for (const miss of misses) {
+      overrides.apply(miss);
       if (shouldAttachSeason(ctx, board.season?.type)) {
         tallies.attachTo(miss);
       }
@@ -88,17 +97,60 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
         skippedSeen += 1;
         continue;
       }
-      newMisses.push(miss);
-      const tweet = composeTweet(miss);
-      tweets.push(tweet);
       if (options.seedSeen) {
+        newMisses.push(miss);
+        tweets.push(composeTweet(miss));
         deps.store.add(miss.playId);
         continue;
       }
+
+      // Never guess the kicker: hold the miss and ask Kaleb to post it by hand.
+      if (miss.kicker === UNKNOWN_KICKER) {
+        held.push(miss);
+        if (deps.store.notifiedIssue(miss.playId) !== undefined) continue;
+        try {
+          const issue = (await notifier.find(miss.playId)) ?? (await notifier.open(miss));
+          deps.store.setNotified(miss.playId, issue.number);
+          if (issue.state === "closed") deps.store.add(miss.playId);
+        } catch (err) {
+          console.error("manual-post notification failed for play %s: %s", miss.playId, (err as Error).message);
+        }
+        continue;
+      }
+
+      // Name resolved on a later poll: only tweet if Kaleb hasn't handled the issue.
+      const pendingIssue = deps.store.notifiedIssue(miss.playId);
+      let issueRef: Awaited<ReturnType<MissNotifier["find"]>>;
+      if (pendingIssue !== undefined) {
+        try {
+          issueRef = await notifier.find(miss.playId);
+        } catch (err) {
+          console.error("issue lookup failed for play %s: %s", miss.playId, (err as Error).message);
+          continue; // fail closed: don't risk a duplicate of a manual post
+        }
+        if (issueRef?.state === "closed") {
+          deps.store.add(miss.playId);
+          deps.store.clearNotified(miss.playId);
+          skippedSeen += 1;
+          continue;
+        }
+      }
+
+      newMisses.push(miss);
+      const tweet = composeTweet(miss);
+      tweets.push(tweet);
       try {
         await deps.poster.post(tweet);
         posted += 1;
         deps.store.add(miss.playId);
+        if (pendingIssue !== undefined) {
+          deps.store.clearNotified(miss.playId);
+          if (issueRef) {
+            await notifier
+              .resolve(issueRef, `Kicker resolved to ${miss.kicker} on a later poll; the bot tweeted it:\n\n${tweet}`)
+              .catch((err) => console.warn("closing issue failed: %s", (err as Error).message));
+          }
+        }
       } catch (err) {
         console.error("tweet failed for play %s: %s", miss.playId, (err as Error).message);
       }
@@ -117,6 +169,7 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
     posted,
     skippedSeen,
     tweets,
+    heldForManualPost: held,
     seasonGamesScanned: tallies.size,
     seasonTallies: tallies.leaderboard(),
   };

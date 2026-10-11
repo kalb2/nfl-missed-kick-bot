@@ -16,6 +16,8 @@ import {
   mapPool,
 } from "./espn.js";
 import type { EspnClient } from "./espn.js";
+import { UNKNOWN_KICKER } from "./notify.js";
+import { Overrides } from "./overrides.js";
 import type {
   GameSummary,
   KickType,
@@ -69,9 +71,19 @@ export function normalizeKickerName(name: string): string {
   return compactKickerName(name);
 }
 
-export function kickerKeys(miss: Pick<MissedKick, "athleteId" | "kicker" | "teamAbbr">): string[] {
+
+export { UNKNOWN_KICKER };
+
+export function kickerKeys(
+  miss: Pick<MissedKick, "athleteId" | "kicker" | "teamAbbr"> & { playId?: string },
+): string[] {
   const keys: string[] = [];
   if (miss.athleteId) keys.push(`id:${miss.athleteId}`);
+  // Never pool unresolved kickers into one "Unknown kicker" bucket.
+  if (miss.kicker === UNKNOWN_KICKER) {
+    if (!miss.athleteId) keys.push(`play:${miss.playId ?? Math.random()}`);
+    return keys;
+  }
   const team = (miss.teamAbbr || "UNK").trim().toUpperCase();
   const full = normalizeKickerName(miss.kicker);
   if (full) keys.push(`name:${full}|${team}`);
@@ -140,7 +152,10 @@ export class SeasonTallyIndex {
   private seasonYear: number | undefined;
   private fetchedThisRefresh = 0;
 
-  constructor(private readonly filePath?: string) {}
+  constructor(
+    private readonly filePath?: string,
+    private readonly overrides: Overrides = new Overrides(),
+  ) {}
 
   get size(): number {
     return this.games.size;
@@ -203,7 +218,8 @@ export class SeasonTallyIndex {
 
     await mapPool(events, espn.concurrency, async (event) => {
       const cached = this.games.get(event.id);
-      if (cached && cached.status === "post" && isCompletedGame(event)) {
+      const hasUnknown = cached?.misses.some((m) => m.kicker === UNKNOWN_KICKER) ?? false;
+      if (cached && cached.status === "post" && isCompletedGame(event) && !hasUnknown) {
         return;
       }
       try {
@@ -212,6 +228,7 @@ export class SeasonTallyIndex {
         const ctx = buildGameContext(event.id, summary, contextFromEvent(event));
         const misses = detectMissedKicks(summary, ctx);
         await enrichKickerNames(espn, misses);
+        for (const miss of misses) this.overrides.apply(miss);
         this.games.set(event.id, {
           status: event.status?.type?.state ?? ctx.statusState ?? "unknown",
           misses: misses.map((miss) => ({
@@ -269,7 +286,8 @@ export class SeasonTallyIndex {
   private aggregate(): Map<string, KickerBucket> {
     const map = new Map<string, KickerBucket>();
     for (const game of this.games.values()) {
-      for (const miss of game.misses) {
+      for (const cachedMiss of game.misses) {
+        const miss = this.overrides.apply({ ...cachedMiss });
         const keys = kickerKeys(miss);
         let bucket: KickerBucket | undefined;
         for (const key of keys) {
