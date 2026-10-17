@@ -54,7 +54,7 @@ Those three are real Week 1 (2026-09-13) misses, taken from ESPN play-by-play. E
    **Extra Point Good (`id` 61) is never treated as a miss.** Key off `id` / `text`, not `value` — ESPN sometimes sets `value: 1` on a miss. A blocked PAT counts as a PAT miss for season tallies and tweets. Its win-probability swing is still omitted when the attempt is attached to the touchdown play.
 5. Plays are collected from `drives.previous`, `drives.current`, and any other `plays[]` arrays in the payload.
 6. **Erased kicks are skipped** — a play is never a miss if ESPN typed it `Penalty` (id `8`), its text says `No Play`, `NULLIFIED` or that the down is replayed, the miss only appears *before* a `REVERSED` ruling, it carries an accepted flag that was not `enforced between downs`, or it is a PAT on a touchdown that is no longer in `scoringPlays`. A bare `PENALTY` is **not** disqualifying: a PAT missed after a TD with a flag enforced on the kickoff (or a declined flag) still counts.
-7. **Two identical sightings** — a miss is posted only after it looks the same (play id, ESPN play type, kick type, result, kicker) on two consecutive polls at least 60s apart. See [Reliability](#reliability-confirmation-and-durable-state).
+7. **Same-run recheck** — a new miss is re-fetched ~60s later in the same run and posted only if it still matches (play id, ESPN play type, kick type, result, kicker) and isn't erased. See [Reliability](#reliability-recheck-alerts-and-durable-state).
 8. Each handled miss is stored as `<game id>:<play id>` in a durable list so the same kick is never tweeted twice.
 9. **Kicker name** — play text is `D.Carlson` / `W. Lutz`. Tweets prefer a full first + last name from the summary boxscore kicking athletes, a play participant athlete (`displayName` / `fullName` / first+last), or the ESPN athlete profile when `athleteId` is known. Initials remain the fallback.
 10. **Season tallies** — each poll recomputes per-kicker miss counts from ESPN play-by-play for regular-season games (`seasontype=2`) that have already started this season (weeks 1…current, or all 18 once the postseason begins). The same miss detectors as above are used. Kickers are keyed by athlete id when the play has one (core `/plays` `participants[].athlete`), otherwise by a normalized name + team. Full names and initial forms (`Wil Lutz` / `W. Lutz`) alias to the same kicker. Tallies are not incremented from a local counter; ESPN PBP is the source of truth. Completed games may be cached in `.state/tallies.json` so later polls skip them; if that file is missing the bot rebuilds from ESPN. In-progress games are always refetched. Within one process, a game is not parsed twice.
@@ -346,7 +346,7 @@ If the scoreboard has no in-progress or recently finished game, the bot exits af
 | `SEED_SEEN` | unset | Set `true` for one run to backfill without tweeting |
 | `CLOUDFLARE_ACCOUNT_ID` | auto-detect | Only needed if `CLOUDFLARE_API_TOKEN` can see more than one account |
 
-The handled-plays list lives on the `bot-state` branch (see [Reliability](#reliability-confirmation-and-durable-state)); `actions/cache` on `.state/` only keeps the season tally cache. If the list is missing the bot posts nothing and opens a `bot-state-unavailable` issue. Create or restore it with **Run workflow** + `bootstrap_state`.
+The handled-plays list lives on the `bot-state` branch (see [Reliability](#reliability-recheck-alerts-and-durable-state)); `actions/cache` on `.state/` only keeps the season tally cache. If the list is missing the bot posts nothing and opens a `bot-state-unavailable` issue. Create or restore it with **Run workflow** + `bootstrap_state`.
 
 Workflow concurrency is serialized so two wakes cannot double-tweet.
 
@@ -396,16 +396,30 @@ Fixtures under `test/fixtures/` are trimmed copies of real 2026-09-13 ESPN plays
 
 MIT
 
-## Reliability: confirmation and durable state
+## Reliability: recheck, alerts and durable state
 
-**Confirmation delay.** In practice polls come from the Worker: a `*/2` cron with a 5-minute dispatch cooldown, which GitHub Actions run history shows as one poll every **~6 minutes** during games (median 6.0, worst 7.0 across Oct 6–16, 2026). The `*/5` Actions cron fires only every 1–4 hours, so it is a backstop and not the cadence. Requiring a second identical sighting therefore delays each tweet by **one poll, ~6 minutes (up to ~7)** after ESPN first shows the miss. That window is when ESPN usually applies a flag ("No Play") or corrects the result.
+**Same-run recheck.** When a run detects a new miss it waits **60 seconds**, re-fetches the ESPN summary (cache bypassed), and posts only if the play still matches (same play id, ESPN play type, kick type, result, kicker) and isn't erased (penalty, No Play, nullified, reversed, replayed down, TD dropped from scoringPlays). If it changed or vanished it is held, logged, and evaluated again from scratch on the next poll. All candidates in a run, across every game, share **one** wait. Runs with nothing new don't wait.
 
-**Last poll of a game.** The Worker dispatches until kickoff + 285 min, and the bot watches finals for the same span. If a miss is first seen within 12 minutes of that window closing, the next poll may never come. So the same run waits 90s, re-fetches the summary (bypassing the cache), and treats an identical re-fetch as the second sighting. A miss on the final play (or in OT near the window's end) still posts, and a flag applied in those 90s still blocks it.
+**Posting delay.** Polls come from the Worker: a `*/2` cron with a 5-minute dispatch cooldown, which Actions run history shows as one poll every **~6 minutes** during games (median 6.0, worst 7.0 across Oct 6–16, 2026). The `*/5` Actions cron fires only every 1–4 hours. A miss is therefore tweeted **about 60–65 seconds after the poll that first sees it** (the wait plus one re-fetch), i.e. roughly 1–8 minutes after ESPN publishes it, depending on where it lands in the 6-minute poll cycle. Because the check happens inside the same run, a miss on the last play of a game posts even if no later poll comes.
 
-**Durable handled-plays list.** Handled misses (`<game id>:<play id>` → posted / posting / failed / seeded / manual) plus pending first sightings live in `handled-plays.json` on the **`bot-state` branch**. poll.yml commits to it through the GitHub contents API with the built-in `GITHUB_TOKEN` (`contents: write`). It survives Actions cache eviction, runner restarts and Worker redeploys, and every change is a commit you can read or revert. The Actions cache now only holds the season tally cache (rebuildable from ESPN).
+**Posted misses stay watched.** Every poll re-checks the misses it already tweeted for any game still in its watch window (kickoff + 4h45m). If one is no longer a miss, the run waits for the same recheck. If it is still gone, the bot opens one `posted_miss_erased` alert issue. It never deletes the tweet.
 
-- **Write-ahead.** Before tweeting, the run commits the play as `posting`. If that commit fails, nothing is posted. If the run dies after posting, the claim is already stored, so a miss can never be posted twice. A tweet that errors is marked `failed` and opens a `needs-manual-post` issue instead of being retried, because the request may have gone out.
-- **Fail closed.** If the list can't be loaded (missing branch/file, API error, bad JSON, missing token), the run fetches and posts **nothing**, fails red, and opens one `bot-state-unavailable` issue. That issue closes itself when the list loads again. A missing list is never treated as "nothing handled yet".
+**Alerts are GitHub issues.** Every alert is one deduplicated issue labelled **`bot-alert`**, plus a reason label. The title reads `[bot-alert] <what happened>: <matchup> <quarter> <clock> [play <id>]`. The body lists reason, game, kicker, team, kick/result, quarter/clock, score, tweet URL, ESPN link, play id and raw ESPN texts. Dedupe is per play + reason in bot-state (`alerts`), plus a title search so a rebuilt state doesn't re-open. No new secrets are needed: the workflow's `GITHUB_TOKEN` has `issues: write`.
+
+| reason | label(s) | when |
+| --- | --- | --- |
+| `needs_manual_post` | `bot-alert`, `needs-manual-post` | confirmed miss but no ESPN text names the kicker |
+| `tweet_failed` | `bot-alert`, `needs-manual-post` | X rejected or errored; not retried |
+| `posted_miss_erased` | `bot-alert`, `posted-miss-erased` | a tweeted miss was later erased/reversed |
+| `state_unavailable` | `bot-alert`, `bot-state-unavailable` | handled-plays list can't be loaded/saved (posting paused) |
+| `state_recovered` | (closes the state issue with a comment) | list loads again |
+
+If an issue can't be opened, the run logs a red `::error::` annotation with the full alert and retries on the next poll.
+
+**Durable handled-plays list.** Handled misses (`<game id>:<play id>` → posted / posting / failed / seeded / manual, with a snapshot of what was tweeted) plus per-play alert dedupe live in `handled-plays.json` on the **`bot-state` branch**. poll.yml commits to it through the GitHub contents API with the built-in `GITHUB_TOKEN` (`contents: write`). It survives Actions cache eviction, runner restarts and Worker redeploys, and every change is a commit you can read or revert. The Actions cache now only holds the season tally cache (rebuildable from ESPN).
+
+- **Write-ahead.** Before tweeting, the run commits the play as `posting`. If that commit fails, nothing is posted. If the run dies after posting, the claim is already stored, so a miss can never be posted twice. A tweet that errors is marked `failed` and opens a `tweet_failed` alert issue instead of being retried, because the request may have gone out.
+- **Fail closed.** If the list can't be loaded (missing branch/file, API error, bad JSON, missing token), the run fetches and posts **nothing**, fails red, and opens one `bot-state-unavailable` alert issue. That issue closes itself when the list loads again. A missing list is never treated as "nothing handled yet".
 - **Bootstrap / restore.** Run **Actions → Poll ESPN and tweet misses → Run workflow** with `bootstrap_state` checked. It creates the `bot-state` branch if needed and marks as handled: every regular-season miss ESPN currently shows, every miss in games from the last ~36h, the old cache `seen.json`, and `alreadyPosted` overrides. It posts nothing and refuses to overwrite an existing list.
 - **Dry runs** (`dry_run` input / `DRY_RUN=true`) read the durable list but never write it, so a demo run can't swallow a live miss.
 
@@ -413,6 +427,6 @@ MIT
 
 The bot never guesses who kicked. If no ESPN text (drive play-by-play, scoring summary, participants) names the kicker:
 
-- the miss is **not tweeted**; instead `poll.yml` (with `issues: write`) opens one GitHub issue labelled `needs-manual-post` titled `... [play <id>]` with the game, play id, quarter/clock, score and raw ESPN texts. Dedupe: `notifiedIssues` in the durable handled-plays list, plus a title search on the label. Like tweets, the issue only opens after the miss is seen identically on two polls.
+- the miss is **not tweeted**; instead `poll.yml` (with `issues: write`) opens one `needs_manual_post` alert issue (labels `bot-alert` + `needs-manual-post`) titled `[bot-alert] Missed FG needs manual post: ... [play <id>]` with the alert fields above. Dedupe: per play + reason in the durable list, plus a title search on the label. Like tweets, the issue only opens after the same-run recheck.
 - the miss stays pending. If a later poll (game still in the watch window) finds the name **and the issue is still open**, the bot tweets, comments and closes the issue. If the issue is closed, the bot treats the play as handled and never tweets it.
 - after posting by hand, add the play to `config/manual-overrides.json` (`kicker`, `athleteId`, `teamAbbr`, `alreadyPosted: true`) so the season tally credits the right kicker and the play is never tweeted.

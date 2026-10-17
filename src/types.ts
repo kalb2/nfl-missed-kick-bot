@@ -227,19 +227,11 @@ export interface PollOptions {
   persist: boolean;
   recentFinalWindowMin: number;
   /**
-   * Identical sightings required before posting. Default 2: a miss must look the
-   * same (play id, play type, kick type, result, kicker) on two consecutive polls.
+   * A newly detected miss is re-fetched after this delay in the same run and
+   * posted only if it still matches and isn't erased (default 60s). All
+   * candidates in one run share a single wait.
    */
-  confirmPolls?: number;
-  /** Minimum time between the two sightings (default 60s) so back-to-back runs don't count. */
-  minConfirmGapMs?: number;
-  /**
-   * Near the end of a game's watch window there may be no next poll, so the run
-   * waits this long and re-fetches the summary as the second sighting (default 90s).
-   */
-  finalRefetchDelayMs?: number;
-  /** Minutes before the watch window closes that the in-run re-fetch kicks in (default 12). */
-  finalConfirmWindowMin?: number;
+  recheckDelayMs?: number;
 }
 
 export interface SeasonTallyRow {
@@ -258,8 +250,10 @@ export interface PollResult {
   tweets: string[];
   /** Misses not tweeted because no ESPN text named the kicker. */
   heldForManualPost?: MissedKick[];
-  /** Misses seen once and waiting for an identical second sighting. */
-  awaitingConfirmation?: MissedKick[];
+  /** Misses that changed or vanished on the same-run recheck; re-evaluated next poll. */
+  heldForRecheck?: MissedKick[];
+  /** Posted misses that ESPN later erased/reversed (alerted once, never auto-deleted). */
+  erasedAfterPosting?: string[];
   /** Set when state could not be saved; nothing was posted after the failure. */
   stateWriteError?: string;
   seasonGamesScanned?: number;

@@ -1,3 +1,5 @@
+import { missAlert, snapshotOf, type AlertSink } from "./alerts.js";
+import { AlertRouter } from "./alerts.js";
 import { composeTweet } from "./compose.js";
 import {
   attachAvailableWinProbability,
@@ -8,37 +10,39 @@ import {
   enrichKickerNames,
   initialLastCompact,
   missesNeedWinProbability,
+  nullifiedReason,
 } from "./detect.js";
 import { REGULAR_SEASON_TYPE, contextFromEvent, isWatchableGame, mapPool, type EspnClient } from "./espn.js";
-import { UNKNOWN_KICKER, type MissNotifier, LogNotifier } from "./notify.js";
+import { UNKNOWN_KICKER, type IssueRef, type MissNotifier, LogNotifier, LogStateAlerter } from "./notify.js";
 import { Overrides } from "./overrides.js";
-import type { SeenStore } from "./store.js";
+import type { HandledEntry, SeenStore } from "./store.js";
 import { SeasonTallyIndex } from "./tallies.js";
 import type { TweetPoster } from "./twitter.js";
-import type { GameContext, GameSummary, MissedKick, PollOptions, PollResult, ScoreboardEvent } from "./types.js";
+import type { GameContext, GameSummary, MissedKick, Play, PollOptions, PollResult, ScoreboardEvent } from "./types.js";
 
 export interface PollDeps {
   espn: EspnClient;
   store: SeenStore;
   poster: TweetPoster;
   tallies?: SeasonTallyIndex;
+  /** GitHub issue operations (find / open / resolve / openAlert). */
   notifier?: MissNotifier;
+  /** Where alerts go. Defaults to GitHub issues through `notifier`. */
+  alerts?: AlertSink;
   overrides?: Overrides;
   /** Injectable clock / sleep for tests. */
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
 }
 
-export const DEFAULT_CONFIRM_POLLS = 2;
-export const DEFAULT_MIN_CONFIRM_GAP_MS = 60_000;
-export const DEFAULT_FINAL_REFETCH_DELAY_MS = 90_000;
-export const DEFAULT_FINAL_CONFIRM_WINDOW_MIN = 12;
+/** Same-run recheck: wait this long, re-fetch, post only if the play still matches. */
+export const DEFAULT_RECHECK_DELAY_MS = 60_000;
 
 /**
- * What must stay identical between the two sightings. Kicker is compared by
- * first-initial + last name so "J.Myers" vs "Jason Myers" (profile lookup
- * flakiness) doesn't reset the clock; text is not compared because ESPN
- * appends injury notes etc. without changing the ruling.
+ * What must stay identical between detection and the recheck. Kicker is
+ * compared by first-initial + last name so "J.Myers" vs "Jason Myers" (profile
+ * lookup flakiness) doesn't count as a change; text is not compared because
+ * ESPN appends injury notes etc. without changing the ruling.
  */
 export function missFingerprint(miss: MissedKick): string {
   const kicker =
@@ -48,34 +52,36 @@ export function missFingerprint(miss: MissedKick): string {
   return [miss.playId, miss.kickType, miss.playType ?? "", miss.result, kicker].join("|");
 }
 
-/**
- * True when the Worker / bot watch window for this game closes soon, so the
- * next scheduled poll may never come. The Worker dispatches until kickoff +
- * POST_KICKOFF_MIN (285 = 4h + 45m) and the bot watches finals for the same span.
- */
-export function nearWatchWindowEnd(
-  event: ScoreboardEvent,
-  now: number,
-  recentFinalWindowMin: number,
-  finalConfirmWindowMin = DEFAULT_FINAL_CONFIRM_WINDOW_MIN,
-): boolean {
-  const start = Date.parse(event.date || event.competitions?.[0]?.date || "");
-  if (!Number.isFinite(start)) return false;
-  const watchUntil = start + (4 * 60 + recentFinalWindowMin) * 60_000;
-  return now >= watchUntil - finalConfirmWindowMin * 60_000;
-}
-
-interface QueuedMiss {
-  miss: MissedKick;
+interface GameWork {
+  event: ScoreboardEvent;
+  /** New misses waiting for the recheck. */
+  candidates: Map<string, MissedKick>;
+  /** Posted misses that no longer look like misses on this fetch. */
+  suspects: HandledEntry[];
 }
 
 const realSleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
+function playTexts(play?: Play): string[] {
+  if (!play) return [];
+  return [play.text, play.shortText, ...(play.altTexts ?? [])].filter((t): t is string => Boolean(t));
+}
+
+/** Why a play that used to be a miss isn't one in this summary. */
+function whyNotAMiss(summary: GameSummary, playId: string): { why: string; play?: Play } {
+  const play = collectPlays(summary).find((p) => String(p.id) === playId);
+  if (!play) return { why: "the play is no longer in ESPN's play-by-play" };
+  const scoringIds = Array.isArray(summary.scoringPlays)
+    ? new Set(summary.scoringPlays.map((p) => String(p?.id ?? "")).filter(Boolean))
+    : undefined;
+  const reason = nullifiedReason(play, scoringIds);
+  return { why: reason ? `ESPN now shows it as ${reason}` : "ESPN no longer classifies it as a missed kick", play };
+}
+
 export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<PollResult> {
   const now = deps.now ?? Date.now;
   const sleep = deps.sleep ?? realSleep;
-  const confirmPolls = options.confirmPolls ?? DEFAULT_CONFIRM_POLLS;
-  const minGapMs = options.minConfirmGapMs ?? DEFAULT_MIN_CONFIRM_GAP_MS;
+  const recheckDelayMs = options.recheckDelayMs ?? DEFAULT_RECHECK_DELAY_MS;
 
   const board = await deps.espn.getScoreboard();
   const events = (board.events ?? []).filter((event) =>
@@ -95,7 +101,8 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
       posted: 0,
       skippedSeen: 0,
       tweets: [],
-      awaitingConfirmation: [],
+      heldForRecheck: [],
+      erasedAfterPosting: [],
       seasonGamesScanned: 0,
       seasonTallies: [],
     };
@@ -103,6 +110,7 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
 
   const overrides = deps.overrides ?? new Overrides();
   const notifier = deps.notifier ?? new LogNotifier();
+  const alerts = deps.alerts ?? new AlertRouter({ issues: notifier, stateIssues: new LogStateAlerter() });
   for (const o of overrides.alreadyPostedPlays()) {
     if (!deps.store.has(o.playId)) deps.store.markHandled(o.playId, o.eventId, "manual");
   }
@@ -114,9 +122,10 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
   let skippedSeen = 0;
   let posted = 0;
   const held: MissedKick[] = [];
-  const awaiting = new Map<string, MissedKick>();
-  const confirmed: QueuedMiss[] = [];
-  const finalRecheck: Array<{ event: ScoreboardEvent; playIds: Set<string> }> = [];
+  const heldForRecheck: MissedKick[] = [];
+  const erasedAfterPosting: string[] = [];
+  const confirmed: MissedKick[] = [];
+  const work: GameWork[] = [];
 
   const analyze = async (event: ScoreboardEvent, summary: GameSummary): Promise<MissedKick[]> => {
     const game = contextFromEvent(event);
@@ -139,29 +148,7 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
     return misses;
   };
 
-  /** Records one sighting. Returns true when this sighting confirms the miss. */
-  const observe = (miss: MissedKick): boolean => {
-    if (confirmPolls <= 1) return true;
-    const fp = missFingerprint(miss);
-    const pending = deps.store.getPending(miss.playId, miss.eventId);
-    const t = now();
-    if (pending && pending.fingerprint === fp) {
-      const age = t - Date.parse(pending.firstSeenAt);
-      if (age >= minGapMs) return true;
-      return false; // same run or back-to-back runs: wait for a genuinely later poll
-    }
-    if (pending) {
-      console.log("play %s changed between polls (%s → %s); restarting confirmation", miss.playId, pending.fingerprint, fp);
-    }
-    deps.store.setPending({
-      playId: miss.playId,
-      ...(miss.eventId ? { eventId: miss.eventId } : {}),
-      fingerprint: fp,
-      firstSeenAt: new Date(t).toISOString(),
-    });
-    return false;
-  };
-
+  // Pass 1: detect. New misses and posted-but-now-missing plays queue for the recheck.
   await mapPool(events, deps.espn.concurrency, async (event) => {
     const game = contextFromEvent(event);
     let summary = tallies.getSummary(event.id);
@@ -169,16 +156,14 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
       try {
         summary = await deps.espn.getSummary(event.id);
       } catch (err) {
-        // Leave this game's pending sightings alone: no observation happened.
         console.warn("summary failed for %s (%s): %s", event.id, game.shortName, (err as Error).message);
         return;
       }
     }
     const misses = await analyze(event, summary);
-    const present = new Set<string>();
-    const waiting = new Set<string>();
+    const present = new Set(misses.map((m) => m.playId));
+    const item: GameWork = { event, candidates: new Map(), suspects: [] };
     for (const miss of misses) {
-      present.add(miss.playId);
       if (deps.store.has(miss.playId)) {
         skippedSeen += 1;
         continue;
@@ -189,87 +174,107 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
         deps.store.markHandled(miss.playId, miss.eventId, "seeded");
         continue;
       }
-      if (observe(miss)) {
-        // Pending stays until the play is marked handled, so an unknown-kicker
-        // miss that stays unchanged doesn't rewrite state every poll.
-        confirmed.push({ miss });
-      } else {
-        awaiting.set(miss.playId, miss);
-        waiting.add(miss.playId);
+      // Already reported as needing a manual post and still unnamed: nothing new to check.
+      if (
+        miss.kicker === UNKNOWN_KICKER &&
+        (deps.store.notifiedIssue(miss.playId) !== undefined || deps.store.alertRecord("needs_manual_post", miss.playId, miss.eventId))
+      ) {
+        held.push(miss);
+        continue;
       }
+      item.candidates.set(miss.playId, miss);
     }
-    // A miss seen last poll that is gone now (penalty enforced, play deleted,
-    // reclassified) is dropped; if it ever comes back it starts over.
-    for (const p of deps.store.pendingForEvent(event.id)) {
-      if (!present.has(p.playId)) {
-        console.log("play %s (%s) no longer a miss on this poll; dropping pending sighting", p.playId, game.shortName);
-        deps.store.deletePending(p.playId, p.eventId);
-      }
+    // Keep watching what we posted until the game's window closes.
+    for (const entry of deps.store.postedForEvent(event.id)) {
+      if (present.has(entry.playId)) continue;
+      if (deps.store.alertRecord("posted_miss_erased", entry.playId, entry.eventId)) continue;
+      item.suspects.push(entry);
     }
-    if (
-      waiting.size &&
-      confirmPolls > 1 &&
-      !options.allToday &&
-      nearWatchWindowEnd(event, now(), options.recentFinalWindowMin, options.finalConfirmWindowMin)
-    ) {
-      finalRecheck.push({ event, playIds: waiting });
-    }
+    if (item.candidates.size || item.suspects.length) work.push(item);
   });
 
-  // Last poll for a game: there may be no next dispatch, so the second sighting
-  // comes from a fresh re-fetch inside this run.
-  if (finalRecheck.length) {
-    const delay = options.finalRefetchDelayMs ?? DEFAULT_FINAL_REFETCH_DELAY_MS;
-    console.log("watch window closing for %d game(s); re-fetching in %d ms to confirm", finalRecheck.length, delay);
-    await sleep(delay);
-    for (const { event, playIds } of finalRecheck) {
+  // Pass 2: one shared wait, then re-fetch every game that has something to verify.
+  if (work.length) {
+    const count = work.reduce((n, w) => n + w.candidates.size + w.suspects.length, 0);
+    console.log("rechecking %d play(s) in %d game(s) after %d ms", count, work.length, recheckDelayMs);
+    if (recheckDelayMs > 0) await sleep(recheckDelayMs);
+    for (const { event, candidates, suspects } of work) {
       let summary: GameSummary;
       try {
         summary = await deps.espn.getSummary(event.id, { bypassCache: true });
       } catch (err) {
-        console.warn("final re-fetch failed for %s: %s", event.id, (err as Error).message);
+        console.warn("recheck fetch failed for %s: %s; holding %d miss(es) for next poll", event.id, (err as Error).message, candidates.size);
+        heldForRecheck.push(...candidates.values());
         continue;
       }
       const again = new Map((await analyze(event, summary)).map((m) => [m.playId, m]));
-      for (const playId of playIds) {
-        const first = awaiting.get(playId)!;
+
+      for (const [playId, first] of candidates) {
         const second = again.get(playId);
-        if (!second) {
-          deps.store.deletePending(playId, first.eventId);
-          awaiting.delete(playId);
+        if (second && missFingerprint(second) === missFingerprint(first)) {
+          confirmed.push(second);
           continue;
         }
-        if (missFingerprint(second) === missFingerprint(first)) {
-          awaiting.delete(playId);
-          confirmed.push({ miss: second });
-        } else {
-          observe(second); // record the newer version; a later poll (if any) can confirm it
-          awaiting.set(playId, second);
+        const why = second
+          ? `changed on recheck (${missFingerprint(first)} → ${missFingerprint(second)})`
+          : whyNotAMiss(summary, playId).why;
+        console.log("HOLD play %s (%s): %s; re-evaluating next poll", playId, first.matchup, why);
+        heldForRecheck.push(second ?? first);
+      }
+
+      for (const entry of suspects) {
+        if (again.has(entry.playId)) continue; // transient: it's a miss again
+        const snap = entry.snapshot!;
+        const { why, play } = whyNotAMiss(summary, entry.playId);
+        const payload = missAlert(
+          "posted_miss_erased",
+          snap,
+          `The tweeted ${snap.kickType} miss by ${snap.kicker} (${snap.teamAbbr}) at ${snap.quarter} ${snap.clock} in ${snap.matchup} is no longer a miss: ${why}. The tweet was not deleted.`,
+          { tweetId: entry.tweetId, rawTexts: [...playTexts(play), snap.playText, ...(snap.altPlayTexts ?? [])] },
+        );
+        const delivery = await alerts.send(payload);
+        if (delivery.via !== "failed") {
+          deps.store.recordAlert("posted_miss_erased", entry.playId, entry.eventId, {
+            at: new Date(now()).toISOString(),
+            via: delivery.via,
+            ...(delivery.issue ? { issue: delivery.issue.number } : {}),
+          });
+          erasedAfterPosting.push(entry.playId);
         }
       }
     }
   }
 
-  // Confirmed misses → manual-post issue (unknown kicker) or the post queue.
-  const toPost: Array<{ miss: MissedKick; tweet: string; issueRef?: Awaited<ReturnType<MissNotifier["find"]>>; pendingIssue?: number }> = [];
-  for (const { miss } of confirmed) {
+  // Confirmed misses → needs-manual-post alert (unknown kicker) or the post queue.
+  const toPost: Array<{ miss: MissedKick; tweet: string; issueRef?: IssueRef; pendingIssue?: number }> = [];
+  for (const miss of confirmed) {
     // Never guess the kicker: hold the miss and ask Kaleb to post it by hand.
     if (miss.kicker === UNKNOWN_KICKER) {
       held.push(miss);
-      if (deps.store.notifiedIssue(miss.playId) !== undefined) continue;
-      try {
-        const issue = (await notifier.find(miss.playId)) ?? (await notifier.open(miss));
-        deps.store.setNotified(miss.playId, issue.number);
-        if (issue.state === "closed") deps.store.markHandled(miss.playId, miss.eventId, "manual");
-      } catch (err) {
-        console.error("manual-post notification failed for play %s: %s", miss.playId, (err as Error).message);
+      const delivery = await alerts.send(
+        missAlert(
+          "needs_manual_post",
+          miss,
+          `The bot detected a missed ${miss.kickType} in ${miss.matchup} (${miss.quarter} ${miss.clock}) but no ESPN text names the kicker, so it did not tweet it.`,
+        ),
+        { miss },
+      );
+      if (delivery.via === "failed") continue; // retried next poll
+      deps.store.recordAlert("needs_manual_post", miss.playId, miss.eventId, {
+        at: new Date(now()).toISOString(),
+        via: delivery.via,
+        ...(delivery.issue ? { issue: delivery.issue.number } : {}),
+      });
+      if (delivery.issue) {
+        deps.store.setNotified(miss.playId, delivery.issue.number);
+        if (delivery.issue.state === "closed") deps.store.markHandled(miss.playId, miss.eventId, "manual");
       }
       continue;
     }
 
     // Name resolved on a later poll: only tweet if Kaleb hasn't handled the issue.
     const pendingIssue = deps.store.notifiedIssue(miss.playId);
-    let issueRef: Awaited<ReturnType<MissNotifier["find"]>>;
+    let issueRef: IssueRef | undefined;
     if (pendingIssue !== undefined) {
       try {
         issueRef = await notifier.find(miss.playId);
@@ -292,7 +297,7 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
     // Write-ahead: durably claim every play BEFORE posting. If this save fails
     // nothing is posted; if the run dies after posting, the claim is already
     // stored, so the miss can never be posted twice.
-    for (const { miss } of toPost) deps.store.markHandled(miss.playId, miss.eventId, "posting");
+    for (const { miss } of toPost) deps.store.markHandled(miss.playId, miss.eventId, "posting", undefined, snapshotOf(miss));
     if (options.persist) {
       try {
         await deps.store.save({ message: `Claim ${toPost.length} miss(es) before posting` });
@@ -320,15 +325,25 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
           }
         } catch (err) {
           // Don't retry: the request may have reached X. Ask for a manual check instead.
-          console.error("tweet failed for play %s: %s", miss.playId, (err as Error).message);
+          const msg = (err as Error).message;
+          console.error("tweet failed for play %s: %s", miss.playId, msg);
           deps.store.markHandled(miss.playId, miss.eventId, "failed");
-          try {
-            const issue =
-              (await notifier.find(miss.playId)) ??
-              (await notifier.open(miss, `The tweet failed (${(err as Error).message}). Check @NFLKickerMisses; if it is not there, post it by hand.`));
-            deps.store.setNotified(miss.playId, issue.number);
-          } catch (e) {
-            console.error("manual-post notification failed for play %s: %s", miss.playId, (e as Error).message);
+          if (deps.store.alertRecord("tweet_failed", miss.playId, miss.eventId)) continue;
+          const delivery = await alerts.send(
+            missAlert(
+              "tweet_failed",
+              miss,
+              `The tweet for ${miss.kicker}'s missed ${miss.kickType} in ${miss.matchup} (${miss.quarter} ${miss.clock}) failed (${msg}); check the account and post it by hand if it is missing.`,
+            ),
+            { miss },
+          );
+          if (delivery.via !== "failed") {
+            deps.store.recordAlert("tweet_failed", miss.playId, miss.eventId, {
+              at: new Date(now()).toISOString(),
+              via: delivery.via,
+              ...(delivery.issue ? { issue: delivery.issue.number } : {}),
+            });
+            if (delivery.issue) deps.store.setNotified(miss.playId, delivery.issue.number);
           }
         }
       }
@@ -337,7 +352,7 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
 
   if (options.persist && !stateWriteError) {
     try {
-      await deps.store.save({ message: posted ? `Record ${posted} posted miss(es)` : "Update pending sightings" });
+      await deps.store.save({ message: posted ? `Record ${posted} posted miss(es)` : "Update bot state" });
     } catch (err) {
       stateWriteError = (err as Error).message;
       console.error("STATE WRITE FAILED after poll: %s", stateWriteError);
@@ -347,13 +362,14 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
 
   return {
     gamesScanned: events.length,
-    missesFound: newMisses.length + skippedSeen + awaiting.size + held.length,
+    missesFound: newMisses.length + skippedSeen + heldForRecheck.length + held.length,
     newMisses,
     posted,
     skippedSeen,
     tweets,
     heldForManualPost: held,
-    awaitingConfirmation: [...awaiting.values()],
+    heldForRecheck,
+    erasedAfterPosting,
     ...(stateWriteError ? { stateWriteError } : {}),
     seasonGamesScanned: tallies.size,
     seasonTallies: tallies.leaderboard(),
@@ -369,14 +385,14 @@ function shouldAttachSeason(game: GameContext, boardSeasonType?: number): boolea
 
 export function summarizeResult(result: PollResult, mode: string): void {
   console.log(
-    "[%s] scanned %d game(s), %d miss(es) total, %d new, %d posted, %d already seen, %d awaiting confirmation",
+    "[%s] scanned %d game(s), %d miss(es) total, %d new, %d posted, %d already seen, %d held for recheck",
     mode,
     result.gamesScanned,
     result.missesFound,
     result.newMisses.length,
     result.posted,
     result.skippedSeen,
-    result.awaitingConfirmation?.length ?? 0,
+    result.heldForRecheck?.length ?? 0,
   );
   if (result.seasonGamesScanned !== undefined) {
     console.log(

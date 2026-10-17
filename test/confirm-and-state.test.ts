@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildGameContext, detectMissedKicks, nullifiedReason } from "../src/detect.js";
 import type { EspnClient } from "../src/espn.js";
-import { GitHubStateAlerter, LogNotifier, LogStateAlerter } from "../src/notify.js";
+import { GitHubIssueNotifier, GitHubStateAlerter, LogNotifier, LogStateAlerter } from "../src/notify.js";
+import { AlertRouter, missAlert, snapshotOf } from "../src/alerts.js";
 import { Overrides } from "../src/overrides.js";
 import { missFingerprint, pollOnce } from "../src/poll.js";
 import { bootstrapState, runGuardedPoll } from "../src/run.js";
@@ -165,80 +166,92 @@ describe("penalty / No Play / nullified / reversed plays are never misses", () =
   });
 });
 
-describe("two identical sightings before posting", () => {
-  it("never posts a miss that a penalty erases between polls", async () => {
+describe("same-run recheck before posting", () => {
+  it("waits ~60s once, re-fetches, and posts when the play still matches", async () => {
     const h = harness();
     const store = new SeenStore(await tmpFile());
     const { posted, poster } = recorder();
-    let summary = rawMiss();
-    const espn = espnSequence(() => summary, () => event("in", 150, h.clock));
-    const deps = { espn, store, poster, now: h.now, sleep: h.sleep };
-
-    const r1 = await pollOnce(deps, live);
-    expect(r1.awaitingConfirmation?.map((m) => m.playId)).toEqual([MYERS_PLAY]);
-    expect(posted).toEqual([]);
-
-    summary = penaltyErased; // ESPN applies the flag: type 8, "- No Play."
-    h.advance(6);
-    const r2 = await pollOnce(deps, live);
-    h.advance(6);
-    await pollOnce(deps, live);
-    expect(posted).toEqual([]);
-    expect(r2.awaitingConfirmation).toEqual([]);
-    expect(store.getPending(MYERS_PLAY)).toBeUndefined();
+    const calls = { summary: 0, scoreboard: 0 };
+    const slept: number[] = [];
+    const espn = espnSequence(() => rawMiss(), () => event("in", 150, h.clock), calls);
+    const r = await pollOnce({ espn, store, poster, now: h.now, sleep: async (ms) => void slept.push(ms) }, live);
+    expect(slept).toEqual([60_000]);
+    expect(calls.summary).toBe(2); // detection + recheck
+    expect(r.posted).toBe(1);
+    expect(posted[0]).toContain("Jason Myers");
+    // Next poll: already handled, no recheck wait.
+    slept.length = 0;
+    await pollOnce({ espn, store, poster, now: h.now, sleep: async (ms) => void slept.push(ms) }, live);
+    expect(posted).toHaveLength(1);
+    expect(slept).toEqual([]);
   });
 
-  it("never posts a 'No Play' even when it looks the same on both polls", async () => {
+  it("never posts a miss that a penalty erases during the recheck wait", async () => {
     const h = harness();
     const store = new SeenStore(await tmpFile());
     const { posted, poster } = recorder();
+    let n = 0;
+    const espn = espnSequence(() => (n++ === 0 ? rawMiss() : penaltyErased), () => event("in", 150, h.clock));
+    const r1 = await pollOnce({ espn, store, poster, now: h.now, sleep: h.sleep }, live);
+    expect(posted).toEqual([]);
+    expect(r1.heldForRecheck?.map((m) => m.playId)).toEqual([MYERS_PLAY]);
+    h.advance(6);
+    const r2 = await pollOnce({ espn, store, poster, now: h.now, sleep: h.sleep }, live);
+    expect(posted).toEqual([]);
+    expect(r2.heldForRecheck).toEqual([]);
+    expect(store.has(MYERS_PLAY)).toBe(false);
+  });
+
+  it("never posts a 'No Play' even when it looks the same on both fetches", async () => {
+    const h = harness();
+    const store = new SeenStore(await tmpFile());
+    const { posted, poster } = recorder();
+    const slept: number[] = [];
     const espn = espnSequence(noPlayButTypeKept, () => event("in", 150, h.clock));
-    for (let i = 0; i < 3; i++) {
-      await pollOnce({ espn, store, poster, now: h.now }, live);
-      h.advance(6);
-    }
+    await pollOnce({ espn, store, poster, now: h.now, sleep: async (ms) => void slept.push(ms) }, live);
     expect(posted).toEqual([]);
+    expect(slept).toEqual([]); // not even a candidate
   });
 
-  it("restarts confirmation when the play is corrected between polls, then posts the corrected version once", async () => {
+  it("holds a play corrected during the recheck, then posts the corrected version on the next poll", async () => {
     const h = harness();
     const store = new SeenStore(await tmpFile());
     const { posted, poster } = recorder();
-    let summary = rawMiss("Wide Right");
-    const espn = espnSequence(() => summary, () => event("in", 150, h.clock));
-    const deps = { espn, store, poster, now: h.now };
-
-    await pollOnce(deps, live);
-    summary = rawMiss("Wide Left"); // ESPN corrects the result
-    h.advance(6);
-    const r2 = await pollOnce(deps, live);
+    const seq = [rawMiss("Wide Right"), rawMiss("Wide Left")];
+    const espn = espnSequence(() => seq.shift() ?? rawMiss("Wide Left"), () => event("in", 150, h.clock));
+    const r1 = await pollOnce({ espn, store, poster, now: h.now, sleep: h.sleep }, live);
     expect(posted).toEqual([]);
-    expect(r2.awaitingConfirmation?.[0]?.result).toBe("Wide Left");
+    expect(r1.heldForRecheck?.[0]?.result).toBe("Wide Left");
 
     h.advance(6);
-    await pollOnce(deps, live);
+    await pollOnce({ espn, store, poster, now: h.now, sleep: h.sleep }, live);
     expect(posted).toHaveLength(1);
     expect(posted[0]).toContain("Result: Wide Left");
-    expect(posted[0]).toContain("Jason Myers");
-
     h.advance(6);
-    await pollOnce(deps, live);
+    await pollOnce({ espn, store, poster, now: h.now, sleep: h.sleep }, live);
     expect(posted).toHaveLength(1);
     expect(store.handledEntry(MYERS_PLAY, MYERS_EVENT)?.status).toBe("posted");
   });
 
-  it("does not count two back-to-back runs seconds apart as two polls", async () => {
+  it("batches: misses in several games share one wait", async () => {
     const h = harness();
     const store = new SeenStore(await tmpFile());
     const { posted, poster } = recorder();
-    const espn = espnSequence(() => rawMiss(), () => event("in", 150, h.clock));
-    await pollOnce({ espn, store, poster, now: h.now }, live);
-    h.advance(0.25);
-    await pollOnce({ espn, store, poster, now: h.now }, live);
-    expect(posted).toEqual([]);
-    h.advance(6);
-    await pollOnce({ espn, store, poster, now: h.now }, live);
-    expect(posted).toHaveLength(1);
+    const carlson = load("fg-missed-carlson.json");
+    const events: ScoreboardEvent[] = [
+      event("in", 150, h.clock),
+      { ...event("in", 150, h.clock), id: "401872923", shortName: "NO @ DET" },
+    ];
+    const espn = {
+      concurrency: 2,
+      getScoreboard: async () => ({ events }),
+      getSummary: async (id: string) => (id === MYERS_EVENT ? rawMiss() : carlson),
+      getWinProbability: async () => [],
+    } as unknown as EspnClient;
+    const slept: number[] = [];
+    await pollOnce({ espn, store, poster, now: h.now, sleep: async (ms) => void slept.push(ms) }, live);
+    expect(slept).toEqual([60_000]);
+    expect(posted).toHaveLength(2);
   });
 
   it("fingerprint ignores initial-vs-full kicker name but not result or type", () => {
@@ -248,47 +261,71 @@ describe("two identical sightings before posting", () => {
     expect(missFingerprint(base)).not.toBe(missFingerprint({ ...base, playType: "8/" }));
     expect(missFingerprint(base)).not.toBe(missFingerprint({ ...base, kicker: "Jason Sanders" }));
   });
+});
 
-  it("last poll of a game: confirms with an in-run re-fetch so a last-second miss still posts", async () => {
+describe("posted misses stay watched until the window closes", () => {
+  it("alerts once (bot-alert issue) when a posted miss is later erased, and never deletes the tweet", async () => {
     const h = harness();
     const store = new SeenStore(await tmpFile());
     const { posted, poster } = recorder();
-    const calls = { summary: 0, scoreboard: 0 };
-    // Final, 4h40m after kickoff: the Worker stops dispatching at 4h45m.
-    const espn = espnSequence(() => rawMiss(), () => event("post", 280, h.clock), calls);
-    const slept: number[] = [];
-    const r = await pollOnce(
-      { espn, store, poster, now: h.now, sleep: async (ms) => (slept.push(ms), h.sleep(ms)) },
-      live,
-    );
-    expect(slept).toEqual([90_000]);
-    expect(calls.summary).toBeGreaterThanOrEqual(2);
+    const notifier = new LogNotifier();
+    let summary = rawMiss();
+    const espn = espnSequence(() => summary, () => event("in", 150, h.clock));
+    const deps = { espn, store, poster, notifier, now: h.now, sleep: h.sleep };
+    await pollOnce(deps, live);
     expect(posted).toHaveLength(1);
-    expect(r.posted).toBe(1);
+
+    summary = penaltyErased; // ESPN later applies the flag
+    for (let i = 0; i < 3; i++) {
+      h.advance(6);
+      await pollOnce(deps, live);
+    }
+    expect(notifier.alerts).toHaveLength(1);
+    const alert = notifier.alerts[0];
+    expect(alert).toMatchObject({
+      reason: "posted_miss_erased",
+      playId: MYERS_PLAY,
+      kicker: "Jason Myers",
+      kickType: "FG",
+      result: "Wide Right",
+      quarter: "Q3",
+      clock: "2:53",
+      tweetUrl: "https://x.com/i/web/status/1",
+      game: { url: `https://www.espn.com/nfl/game/_/gameId/${MYERS_EVENT}` },
+    });
+    expect(alert.message).toMatch(/penalty/);
+    expect(alert.rawTexts.join(" ")).toMatch(/No Play/);
+    expect(store.alertRecord("posted_miss_erased", MYERS_PLAY, MYERS_EVENT)?.via).toBe("log");
+    expect(posted).toHaveLength(1);
   });
 
-  it("last poll of a game: the re-fetch still blocks a miss the penalty erased", async () => {
-    const h = harness();
-    const store = new SeenStore(await tmpFile());
-    const { posted, poster } = recorder();
-    let n = 0;
-    const espn = espnSequence(
-      () => (n++ === 0 ? rawMiss() : penaltyErased),
-      () => event("post", 280, h.clock),
-    );
-    await pollOnce({ espn, store, poster, now: h.now, sleep: h.sleep }, live);
-    expect(posted).toEqual([]);
-    expect(store.getPending(MYERS_PLAY)).toBeUndefined();
-  });
-
-  it("mid-game polls do not wait for an in-run re-fetch", async () => {
+  it("ignores a posted miss that vanishes on one fetch but is back on the recheck", async () => {
     const h = harness();
     const store = new SeenStore(await tmpFile());
     const { poster } = recorder();
-    const slept: number[] = [];
-    const espn = espnSequence(() => rawMiss(), () => event("in", 120, h.clock));
-    await pollOnce({ espn, store, poster, now: h.now, sleep: async (ms) => void slept.push(ms) }, live);
-    expect(slept).toEqual([]);
+    const notifier = new LogNotifier();
+    const seq: GameSummary[] = [rawMiss(), rawMiss(), penaltyErased, rawMiss()];
+    const espn = espnSequence(() => seq.shift() ?? rawMiss(), () => event("in", 150, h.clock));
+    const deps = { espn, store, poster, notifier, now: h.now, sleep: h.sleep };
+    await pollOnce(deps, live);
+    h.advance(6);
+    await pollOnce(deps, live);
+    expect(notifier.alerts).toEqual([]);
+  });
+
+  it("stops watching once the game's window closes", async () => {
+    const h = harness();
+    const store = new SeenStore(await tmpFile());
+    const { poster } = recorder();
+    const notifier = new LogNotifier();
+    let summary = rawMiss();
+    let kickoffAgo = 150;
+    const espn = espnSequence(() => summary, () => event("post", kickoffAgo, h.clock));
+    await pollOnce({ espn, store, poster, notifier, now: h.now, sleep: h.sleep }, live);
+    summary = penaltyErased;
+    kickoffAgo = 300; // past kickoff + 4h45m
+    await pollOnce({ espn, store, poster, notifier, now: h.now, sleep: h.sleep }, live);
+    expect(notifier.alerts).toEqual([]);
   });
 });
 
@@ -320,7 +357,7 @@ describe("durable handled-plays list", () => {
     const alerter = new LogStateAlerter();
 
     for (let i = 0; i < 3; i++) {
-      const out = await runGuardedPoll({ espn, store: new SeenStore(backend), poster, alerter, now: h.now }, live);
+      const out = await runGuardedPoll({ espn, store: new SeenStore(backend), poster, alerter, now: h.now, sleep: h.sleep }, live);
       expect(out.blocked).toBe(true);
       h.advance(6);
     }
@@ -354,7 +391,7 @@ describe("durable handled-plays list", () => {
     const alerter = new LogStateAlerter();
     for (let i = 0; i < 4; i++) {
       // A fresh SeenStore each time = a fresh runner with no local files.
-      await runGuardedPoll({ espn, store: new SeenStore(backend), poster, alerter, now: h.now }, live);
+      await runGuardedPoll({ espn, store: new SeenStore(backend), poster, alerter, now: h.now, sleep: h.sleep }, live);
       h.advance(6);
     }
     expect(posted).toHaveLength(1);
@@ -370,10 +407,8 @@ describe("durable handled-plays list", () => {
     const espn = espnSequence(() => rawMiss(), () => event("in", 150, h.clock));
     const { posted, poster } = recorder();
     const alerter = new LogStateAlerter();
-    await runGuardedPoll({ espn, store: new SeenStore(backend), poster, alerter, now: h.now }, live);
-    h.advance(6);
     backend.failWrite = new Error("GitHub PUT state: HTTP 409");
-    const out = await runGuardedPoll({ espn, store: new SeenStore(backend), poster, alerter, now: h.now }, live);
+    const out = await runGuardedPoll({ espn, store: new SeenStore(backend), poster, alerter, now: h.now, sleep: h.sleep }, live);
     expect(out.blocked).toBe(true);
     expect(posted).toEqual([]);
     expect(alerter.raised[0]).toMatch(/409/);
@@ -391,7 +426,7 @@ describe("durable handled-plays list", () => {
       },
     };
     const notifier = new LogNotifier();
-    const deps = { espn, store, poster, notifier, now: h.now };
+    const deps = { espn, store, poster, notifier, now: h.now, sleep: h.sleep };
     await pollOnce(deps, live);
     h.advance(6);
     await pollOnce(deps, live);
@@ -421,7 +456,7 @@ describe("durable handled-plays list", () => {
     // And the live poll afterwards never posts the seeded miss.
     const { posted, poster } = recorder();
     for (let i = 0; i < 3; i++) {
-      await runGuardedPoll({ espn: espnSequence(() => rawMiss(), () => event("in", 150, h.clock)), store: new SeenStore(file), poster, alerter: new LogStateAlerter(), now: h.now }, live);
+      await runGuardedPoll({ espn: espnSequence(() => rawMiss(), () => event("in", 150, h.clock)), store: new SeenStore(file), poster, alerter: new LogStateAlerter(), now: h.now, sleep: h.sleep }, live);
       h.advance(6);
     }
     expect(posted).toEqual([]);
@@ -429,13 +464,13 @@ describe("durable handled-plays list", () => {
 });
 
 describe("GitHub branch backend + alert issue", () => {
-  function fakeGitHub(routes: Record<string, (init?: RequestInit) => Response>) {
+  function fakeGitHub(routes: Record<string, (init?: RequestInit, url?: string) => Response>) {
     const seen: Array<{ method: string; url: string; body?: unknown }> = [];
     const fetchImpl = (async (url: string, init?: RequestInit) => {
       const method = init?.method ?? "GET";
       seen.push({ method, url, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const key = Object.keys(routes).find((k) => `${method} ${url}`.includes(k));
-      return key ? routes[key](init) : new Response("{}", { status: 404 });
+      return key ? routes[key](init, url) : new Response("{}", { status: 404 });
     }) as unknown as typeof fetch;
     return { seen, fetchImpl };
   }
@@ -468,6 +503,51 @@ describe("GitHub branch backend + alert issue", () => {
     await expect(down.write({}, "abc", "m")).rejects.toThrow(/409/);
   });
 
+  it("every play alert is one bot-alert issue with reason, game, kicker, team, clock, score, tweet URL and ESPN link", async () => {
+    const created: Array<{ title: string; body: string; labels: string[] }> = [];
+    const gh = fakeGitHub({
+      // Like GitHub, the issue list is filtered by the ?labels= query.
+      "GET https://api.github.com/repos/kalb2/bot/issues?state=all": (_init, url) => {
+        const label = new URL(url!).searchParams.get("labels")!;
+        return json(
+          created
+            .map((c, i) => ({ number: i + 1, state: "open", title: c.title, labels: c.labels }))
+            .filter((c) => c.labels.includes(label)),
+        );
+      },
+      "POST https://api.github.com/repos/kalb2/bot/labels": () => json({}),
+      "POST https://api.github.com/repos/kalb2/bot/issues": (init) => {
+        created.push(JSON.parse(String(init?.body)));
+        return json({ number: created.length });
+      },
+    });
+    const notifier = new GitHubIssueNotifier("kalb2/bot", "t", gh.fetchImpl);
+    const router = new AlertRouter({ issues: notifier, stateIssues: new LogStateAlerter() });
+    const ctx = buildGameContext(MYERS_EVENT, rawMiss(), { eventId: MYERS_EVENT, shortName: "LAC @ SEA", competitors: penaltyErased.header?.competitions?.[0]?.competitors ?? [] });
+    const [miss] = detectMissedKicks(rawMiss(), ctx);
+
+    await router.send(missAlert("posted_miss_erased", snapshotOf(miss), "Erased.", { tweetId: "2106879266273046768" }));
+    await router.send(missAlert("posted_miss_erased", snapshotOf(miss), "Erased again.", { tweetId: "2106879266273046768" }));
+    await router.send(missAlert("tweet_failed", miss, "Tweet failed."), { miss });
+    expect(created).toHaveLength(2); // erased deduped by title search
+    const [erased, failed] = created;
+    expect(erased.labels).toEqual(["bot-alert", "posted-miss-erased"]);
+    expect(failed.labels).toEqual(["bot-alert", "needs-manual-post"]);
+    expect(erased.title).toBe(`[bot-alert] Posted missed FG was erased or reversed: ${miss.matchup} Q3 2:53 [play ${MYERS_PLAY}]`);
+    for (const want of [
+      "`posted_miss_erased`",
+      "Jason Myers",
+      "**Team:** SEA",
+      "Q3 2:53",
+      "**Score:** LAC 13-27 SEA",
+      "https://x.com/i/web/status/2106879266273046768",
+      `https://www.espn.com/nfl/game/_/gameId/${MYERS_EVENT}`,
+    ]) {
+      expect(erased.body).toContain(want);
+    }
+    expect(failed.body).toContain("**Tweet:** not posted");
+  });
+
   it("raises one alert issue (not one per poll) and closes it when state is back", async () => {
     let open: Array<{ number: number }> = [];
     const gh = fakeGitHub({
@@ -485,7 +565,7 @@ describe("GitHub branch backend + alert issue", () => {
     await alerter.raise("boom again");
     const created = gh.seen.filter((r) => r.method === "POST" && r.url.endsWith("/issues"));
     expect(created).toHaveLength(1);
-    expect(created[0].body).toMatchObject({ labels: ["bot-state-unavailable"] });
+    expect(created[0].body).toMatchObject({ labels: ["bot-state-unavailable", "bot-alert"] });
     await alerter.clear();
     expect(gh.seen.some((r) => r.method === "PATCH" && r.url.endsWith("/issues/9"))).toBe(true);
   });
@@ -501,7 +581,7 @@ describe("upgrade transition", () => {
     const { posted, poster } = recorder();
     for (let i = 0; i < 3; i++) {
       await runGuardedPoll(
-        { espn: espnSequence(() => rawMiss(), () => event("in", 150, h.clock)), store: new SeenStore(backend), poster, alerter: new LogStateAlerter(), legacyPath: legacy, now: h.now },
+        { espn: espnSequence(() => rawMiss(), () => event("in", 150, h.clock)), store: new SeenStore(backend), poster, alerter: new LogStateAlerter(), legacyPath: legacy, now: h.now, sleep: h.sleep },
         live,
       );
       h.advance(6);

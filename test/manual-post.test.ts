@@ -79,8 +79,8 @@ async function setup() {
   };
 }
 
-// These tests cover the issue flow, so a single sighting confirms (confirmation has its own tests).
-const opts = { dryRun: false, seedSeen: false, allToday: true, persist: false, recentFinalWindowMin: 45, confirmPolls: 1 };
+// No real 60s recheck wait in tests (the recheck itself still runs).
+const opts = { dryRun: false, seedSeen: false, allToday: true, persist: false, recentFinalWindowMin: 45, recheckDelayMs: 0 };
 
 describe("unknown kicker → manual-post issue, never a tweet", () => {
   it("opens exactly one issue across polls and keeps the miss pending", async () => {

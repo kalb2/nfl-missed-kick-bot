@@ -71,17 +71,12 @@ describe("pollOnce", () => {
       persist: true,
       recentFinalWindowMin: 45,
     };
-    let clock = Date.now();
-    const now = () => clock;
+    const slept: number[] = [];
+    const sleep = async (ms: number) => void slept.push(ms);
 
-    // Poll 1: seen once → nothing posted yet.
-    const sighting = await pollOnce({ espn, store, poster, now }, options);
-    expect(posted).toHaveLength(0);
-    expect(sighting.awaitingConfirmation?.map((m) => m.kicker).sort()).toEqual(["Daniel Carlson", "Spencer Shrader"]);
-
-    // Poll 2 (~6 min later, the real Worker cadence): identical → posted.
-    clock += 6 * 60_000;
-    const first = await pollOnce({ espn, store, poster, now }, options);
+    // One run: detect both, wait once (~60s), re-fetch, then post.
+    const first = await pollOnce({ espn, store, poster, sleep }, options);
+    expect(slept).toEqual([60_000]);
     expect(first.newMisses.map((m) => m.kicker).sort()).toEqual(["Daniel Carlson", "Spencer Shrader"]);
     expect(posted).toHaveLength(2);
     expect(posted).toContain(composeTweet(first.newMisses.find((m) => m.kicker === "Daniel Carlson")!));
@@ -100,8 +95,7 @@ describe("pollOnce", () => {
       ]),
     );
 
-    clock += 6 * 60_000;
-    const second = await pollOnce({ espn, store, poster, now }, options);
+    const second = await pollOnce({ espn, store, poster, sleep }, options);
     expect(second.newMisses).toEqual([]);
     expect(second.skippedSeen).toBe(2);
     expect(posted).toHaveLength(2);
@@ -188,10 +182,10 @@ describe("pollOnce", () => {
 
     const result = await pollOnce(
       { espn, store, poster: { post: async () => ({}) } },
-      { dryRun: true, seedSeen: false, allToday: false, persist: false, recentFinalWindowMin: 45, confirmPolls: 1 },
+      { dryRun: true, seedSeen: false, allToday: false, persist: false, recentFinalWindowMin: 45, recheckDelayMs: 0 },
     );
 
-    expect(wpCalls).toBe(1);
+    expect(wpCalls).toBe(2); // detection + same-run recheck
     expect(result.newMisses[0]?.wpDelta).toBeCloseTo(-0.0435, 4);
     expect(result.tweets[0]).toContain("WP: −4.4%");
   });

@@ -1,3 +1,4 @@
+import { AlertRouter } from "./alerts.js";
 import { loadConfig, type AppConfig } from "./config.js";
 import { EspnClient } from "./espn.js";
 import { summarizeResult } from "./poll.js";
@@ -110,6 +111,8 @@ async function main(): Promise<void> {
   const poster = createPoster(config, dryRun);
   const notifier = createNotifier(dryRun);
   const alerter = createStateAlerter(dryRun);
+  // All alerts are deduplicated GitHub issues labelled bot-alert (no extra secrets).
+  const alerts = new AlertRouter({ issues: notifier, stateIssues: alerter });
 
   const options: PollOptions = {
     dryRun,
@@ -132,6 +135,7 @@ async function main(): Promise<void> {
         poster,
         tallies,
         notifier,
+        alerts,
         overrides,
         alerter,
         // Only meaningful when the handled list lives elsewhere (github backend).
@@ -145,8 +149,11 @@ async function main(): Promise<void> {
       for (const miss of result.heldForManualPost ?? []) {
         console.log("HELD (unknown kicker, needs manual post): play %s %s %s %s", miss.playId, miss.matchup, miss.quarter, miss.clock);
       }
-      for (const miss of result.awaitingConfirmation ?? []) {
-        console.log("AWAITING second sighting: play %s %s %s %s %s", miss.playId, miss.matchup, miss.quarter, miss.clock, miss.kicker);
+      for (const miss of result.heldForRecheck ?? []) {
+        console.log("HELD (changed or erased on recheck, re-evaluated next poll): play %s %s %s %s %s", miss.playId, miss.matchup, miss.quarter, miss.clock, miss.kicker);
+      }
+      for (const playId of result.erasedAfterPosting ?? []) {
+        console.log("ALERTED: posted miss %s was later erased/reversed (tweet not deleted)", playId);
       }
       for (const tweet of result.tweets) console.log("---\n%s", tweet);
     }

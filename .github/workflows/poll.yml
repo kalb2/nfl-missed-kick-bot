@@ -51,8 +51,9 @@ jobs:
     permissions:
       # write: commits the handled-plays list to the bot-state branch (never main).
       contents: write
-      # Opens "needs-manual-post" issues (unknown kicker / failed tweet) and the
-      # "bot-state-unavailable" alert when the handled-plays list can't be loaded.
+      # All bot alerts are deduplicated GitHub issues labelled "bot-alert":
+      # needs_manual_post, tweet_failed, posted_miss_erased, state_unavailable
+      # (closed again on recovery). No other secret is needed.
       issues: write
     steps:
       - uses: actions/checkout@v4

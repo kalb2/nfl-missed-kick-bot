@@ -1,3 +1,4 @@
+import type { AlertReason, AlertVia, MissSnapshot } from "./alerts.js";
 import { FileStateBackend, type StateBackend } from "./state-backend.js";
 
 /** Plenty for several seasons of misses; only misses (not every play) are stored. */
@@ -24,9 +25,18 @@ export interface HandledEntry {
   status: HandledStatus;
   at: string;
   tweetId?: string;
+  /** What was posted, so later polls can detect (and describe) an erased/reversed post. */
+  snapshot?: MissSnapshot;
 }
 
-/** A miss seen on one poll, waiting for an identical second sighting. */
+/** One alert already delivered, keyed "<reason>:<eventId>:<playId>". */
+export interface AlertRecord {
+  at: string;
+  via: AlertVia;
+  issue?: number;
+}
+
+/** Legacy (pre-recheck) pending sighting. No longer written; kept so older state documents still load. */
 export interface PendingEntry {
   playId: string;
   eventId?: string;
@@ -41,6 +51,8 @@ export interface SeenStoreFileV2 {
   pending: Record<string, PendingEntry>;
   /** playId → GitHub issue number for misses held back because the kicker was unknown. */
   notifiedIssues?: Record<string, number>;
+  /** Per play+reason alert dedupe. */
+  alerts?: Record<string, AlertRecord>;
   updatedAt: string;
 }
 
@@ -68,6 +80,7 @@ export class SeenStore {
   private byPlayId = new Set<string>();
   private pending = new Map<string, PendingEntry>();
   private notified = new Map<string, number>();
+  private alerts = new Map<string, AlertRecord>();
   private version: string | undefined;
   private dirty = false;
   private loaded = false;
@@ -98,17 +111,25 @@ export class SeenStore {
     this.markHandled(playId, eventId, status, tweetId);
   }
 
-  markHandled(playId: string, eventId: string | undefined, status: HandledStatus, tweetId?: string): void {
+  markHandled(
+    playId: string,
+    eventId: string | undefined,
+    status: HandledStatus,
+    tweetId?: string,
+    snapshot?: MissSnapshot,
+  ): void {
     const id = String(playId);
     const key = handledKey(id, eventId);
     const prev = this.handled.get(key);
-    if (prev && prev.status === status && prev.tweetId === tweetId) return;
+    if (prev && prev.status === status && prev.tweetId === tweetId && !snapshot) return;
+    const snap = snapshot ?? prev?.snapshot;
     this.handled.set(key, {
       playId: id,
       ...(eventId ?? eventIdFromPlayId(id) ? { eventId: eventId ?? eventIdFromPlayId(id) } : {}),
       status,
       at: new Date().toISOString(),
       ...(tweetId ? { tweetId } : {}),
+      ...(snap ? { snapshot: snap } : {}),
     });
     this.byPlayId.add(id);
     this.pending.delete(key);
@@ -138,6 +159,22 @@ export class SeenStore {
 
   pendingForEvent(eventId: string): PendingEntry[] {
     return [...this.pending.values()].filter((p) => (p.eventId ?? eventIdFromPlayId(p.playId)) === eventId);
+  }
+
+  /** Posted misses (with snapshots) for one game: watched for later erasure. */
+  postedForEvent(eventId: string): HandledEntry[] {
+    return [...this.handled.values()].filter(
+      (e) => e.status === "posted" && e.snapshot && (e.eventId ?? eventIdFromPlayId(e.playId)) === eventId,
+    );
+  }
+
+  alertRecord(reason: AlertReason, playId: string, eventId?: string): AlertRecord | undefined {
+    return this.alerts.get(`${reason}:${handledKey(String(playId), eventId)}`);
+  }
+
+  recordAlert(reason: AlertReason, playId: string, eventId: string | undefined, record: AlertRecord): void {
+    this.alerts.set(`${reason}:${handledKey(String(playId), eventId)}`, record);
+    this.dirty = true;
   }
 
   notifiedIssue(playId: string): number | undefined {
@@ -185,6 +222,7 @@ export class SeenStore {
     this.byPlayId.clear();
     this.pending.clear();
     this.notified.clear();
+    this.alerts.clear();
     this.version = undefined;
     this.dirty = false;
   }
@@ -201,6 +239,9 @@ export class SeenStore {
       }
       for (const [key, entry] of Object.entries(data.pending ?? {})) {
         if (entry && entry.playId && entry.fingerprint) this.pending.set(key, entry);
+      }
+      for (const [key, rec] of Object.entries(data.alerts ?? {})) {
+        if (rec && typeof rec === "object" && rec.at) this.alerts.set(key, rec);
       }
     } else if (Array.isArray(data.seenPlayIds)) {
       const at = new Date().toISOString();
@@ -241,6 +282,7 @@ export class SeenStore {
       // Sightings from games that left the watch window unconfirmed are dropped after a day.
       pending: Object.fromEntries(this.prunedPending()),
       ...(this.notified.size ? { notifiedIssues: Object.fromEntries(this.notified) } : {}),
+      ...(this.alerts.size ? { alerts: Object.fromEntries(this.alerts) } : {}),
       updatedAt: new Date().toISOString(),
     };
   }
