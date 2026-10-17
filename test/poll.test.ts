@@ -71,8 +71,17 @@ describe("pollOnce", () => {
       persist: true,
       recentFinalWindowMin: 45,
     };
+    let clock = Date.now();
+    const now = () => clock;
 
-    const first = await pollOnce({ espn, store, poster }, options);
+    // Poll 1: seen once → nothing posted yet.
+    const sighting = await pollOnce({ espn, store, poster, now }, options);
+    expect(posted).toHaveLength(0);
+    expect(sighting.awaitingConfirmation?.map((m) => m.kicker).sort()).toEqual(["Daniel Carlson", "Spencer Shrader"]);
+
+    // Poll 2 (~6 min later, the real Worker cadence): identical → posted.
+    clock += 6 * 60_000;
+    const first = await pollOnce({ espn, store, poster, now }, options);
     expect(first.newMisses.map((m) => m.kicker).sort()).toEqual(["Daniel Carlson", "Spencer Shrader"]);
     expect(posted).toHaveLength(2);
     expect(posted).toContain(composeTweet(first.newMisses.find((m) => m.kicker === "Daniel Carlson")!));
@@ -91,7 +100,8 @@ describe("pollOnce", () => {
       ]),
     );
 
-    const second = await pollOnce({ espn, store, poster }, options);
+    clock += 6 * 60_000;
+    const second = await pollOnce({ espn, store, poster, now }, options);
     expect(second.newMisses).toEqual([]);
     expect(second.skippedSeen).toBe(2);
     expect(posted).toHaveLength(2);
@@ -178,7 +188,7 @@ describe("pollOnce", () => {
 
     const result = await pollOnce(
       { espn, store, poster: { post: async () => ({}) } },
-      { dryRun: true, seedSeen: false, allToday: false, persist: false, recentFinalWindowMin: 45 },
+      { dryRun: true, seedSeen: false, allToday: false, persist: false, recentFinalWindowMin: 45, confirmPolls: 1 },
     );
 
     expect(wpCalls).toBe(1);

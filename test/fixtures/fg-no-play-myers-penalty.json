@@ -1,0 +1,297 @@
+{
+  "_note": "Trimmed from ESPN summary event 401872977 (LAC @ SEA, 2026-10-04). Play 4018729773227: Myers 53-yd FG No Good wiped by LAC Leverage penalty (No Play). The bot tweeted it on 2026-10-04 before this fix.",
+  "header": {
+    "id": "401872977",
+    "competitions": [
+      {
+        "date": "2026-10-04T20:25Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "26",
+            "homeAway": "home",
+            "score": "30",
+            "team": {
+              "id": "26",
+              "abbreviation": "SEA",
+              "displayName": "Seattle Seahawks",
+              "name": "Seahawks",
+              "location": "Seattle"
+            }
+          },
+          {
+            "id": "24",
+            "homeAway": "away",
+            "score": "23",
+            "team": {
+              "id": "24",
+              "abbreviation": "LAC",
+              "displayName": "Los Angeles Chargers",
+              "name": "Chargers",
+              "location": "Los Angeles"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "24",
+          "abbreviation": "LAC"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4362081",
+                  "displayName": "Cameron Dicker",
+                  "firstName": "Cameron",
+                  "lastName": "Dicker"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "26",
+          "abbreviation": "SEA"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "2473037",
+                  "displayName": "Jason Myers",
+                  "firstName": "Jason",
+                  "lastName": "Myers"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729773187",
+            "sequenceNumber": "318700",
+            "type": {
+              "id": "3",
+              "text": "Pass Incompletion"
+            },
+            "text": "(Shotgun) S.Darnold pass incomplete deep right to R.Shaheed [R.Mickens].",
+            "awayScore": 13,
+            "homeScore": 27,
+            "period": {
+              "number": 3
+            },
+            "clock": {
+              "displayValue": "2:58"
+            },
+            "scoringPlay": false,
+            "priority": false,
+            "modified": "2026-10-07T21:33Z",
+            "wallclock": "2026-10-04T22:44:46Z",
+            "isPenalty": false,
+            "statYardage": 0,
+            "start": {
+              "down": 3,
+              "distance": 8,
+              "yardLine": 65,
+              "yardsToEndzone": 35,
+              "downDistanceText": "3rd & 8 at LAC 35",
+              "shortDownDistanceText": "3rd & 8",
+              "possessionText": "LAC 35",
+              "team": {
+                "id": "26"
+              }
+            },
+            "end": {
+              "down": 4,
+              "distance": 8,
+              "yardLine": 65,
+              "yardsToEndzone": 35,
+              "downDistanceText": "4th & 8 at LAC 35",
+              "shortDownDistanceText": "4th & 8",
+              "possessionText": "LAC 35",
+              "team": {
+                "id": "26"
+              }
+            },
+            "isTurnover": false,
+            "teamParticipants": [
+              {
+                "id": "26",
+                "order": 1,
+                "type": "offense"
+              },
+              {
+                "id": "24",
+                "order": 2,
+                "type": "defense"
+              }
+            ]
+          },
+          {
+            "id": "4018729773227",
+            "sequenceNumber": "322700",
+            "type": {
+              "id": "8",
+              "text": "Penalty",
+              "abbreviation": "PEN"
+            },
+            "text": "J.Myers 53 yard field goal is No Good, Wide Right, Center-C.Stoll, Holder-M.Dickson.PENALTY on LAC-T.Tuipulotu, Leverage, 15 yards, enforced at LAC 35 - No Play.",
+            "awayScore": 13,
+            "homeScore": 27,
+            "period": {
+              "number": 3
+            },
+            "clock": {
+              "displayValue": "2:53"
+            },
+            "scoringPlay": false,
+            "priority": false,
+            "modified": "2026-10-07T21:33Z",
+            "wallclock": "2026-10-04T22:45:32Z",
+            "isPenalty": true,
+            "statYardage": 53,
+            "start": {
+              "down": 4,
+              "distance": 8,
+              "yardLine": 65,
+              "yardsToEndzone": 35,
+              "downDistanceText": "4th & 8 at LAC 35",
+              "shortDownDistanceText": "4th & 8",
+              "possessionText": "LAC 35",
+              "team": {
+                "id": "26"
+              }
+            },
+            "end": {
+              "down": 1,
+              "distance": 10,
+              "yardLine": 80,
+              "yardsToEndzone": 20,
+              "downDistanceText": "1st & 10 at LAC 20",
+              "shortDownDistanceText": "1st & 10",
+              "possessionText": "LAC 20",
+              "team": {
+                "id": "26"
+              }
+            },
+            "penalty": {
+              "yards": 15,
+              "type": {
+                "slug": "leverage",
+                "text": "Leverage"
+              },
+              "status": {
+                "slug": "accepted",
+                "text": "Accepted"
+              }
+            },
+            "isTurnover": false,
+            "teamParticipants": [
+              {
+                "id": "26",
+                "order": 1,
+                "type": "offense"
+              },
+              {
+                "id": "24",
+                "order": 2,
+                "type": "defense"
+              }
+            ]
+          },
+          {
+            "id": "4018729773259",
+            "sequenceNumber": "325900",
+            "type": {
+              "id": "5",
+              "text": "Rush",
+              "abbreviation": "RUSH"
+            },
+            "text": "E.Wilson left tackle to LAC 21 for -1 yards (J.Caldwell).",
+            "awayScore": 13,
+            "homeScore": 27,
+            "period": {
+              "number": 3
+            },
+            "clock": {
+              "displayValue": "2:49"
+            },
+            "scoringPlay": false,
+            "priority": false,
+            "modified": "2026-10-07T21:33Z",
+            "wallclock": "2026-10-04T22:46:43Z",
+            "isPenalty": false,
+            "statYardage": -1,
+            "start": {
+              "down": 1,
+              "distance": 10,
+              "yardLine": 80,
+              "yardsToEndzone": 20,
+              "downDistanceText": "1st & 10 at LAC 20",
+              "shortDownDistanceText": "1st & 10",
+              "possessionText": "LAC 20",
+              "team": {
+                "id": "26"
+              }
+            },
+            "end": {
+              "down": 2,
+              "distance": 11,
+              "yardLine": 79,
+              "yardsToEndzone": 21,
+              "downDistanceText": "2nd & 11 at LAC 21",
+              "shortDownDistanceText": "2nd & 11",
+              "possessionText": "LAC 21",
+              "team": {
+                "id": "26"
+              }
+            },
+            "isTurnover": false,
+            "teamParticipants": [
+              {
+                "id": "26",
+                "order": 1,
+                "type": "offense"
+              },
+              {
+                "id": "24",
+                "order": 2,
+                "type": "defense"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "scoringPlays": []
+}

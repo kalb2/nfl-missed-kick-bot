@@ -23,4 +23,17 @@ describe("poll.yml wake sources", () => {
     expect(pollYml).toMatch(/issues:\s*write/);
     expect(pollYml).toMatch(/GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GITHUB_TOKEN\s*\}\}/);
   });
+
+  it("stores handled plays durably on the bot-state branch (not only the Actions cache)", () => {
+    expect(pollYml).toMatch(/contents:\s*write/);
+    expect(pollYml).toMatch(/STATE_BACKEND:\s*github/);
+    expect(pollYml).toMatch(/STATE_BRANCH:\s*bot-state/);
+    expect(pollYml).toMatch(/STATE_FILE:\s*handled-plays\.json/);
+    expect(pollYml).toMatch(/bootstrap_state:/);
+    expect(pollYml).toMatch(/--bootstrap-state/);
+  });
+
+  it("keeps the live DRY_RUN wiring unchanged", () => {
+    expect(pollYml).toMatch(/dry_run=\$\{\{ vars\.DRY_RUN \|\| 'true' \}\}/);
+  });
 });

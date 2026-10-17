@@ -73,6 +73,13 @@ export interface Play {
   team?: { id?: string; abbreviation?: string };
   /** Other texts ESPN gave for the same play id (e.g. scoringPlays[] wording). */
   altTexts?: string[];
+  /** ESPN sets this on any play that carries a flag (accepted, declined or between downs). */
+  isPenalty?: boolean;
+  penalty?: {
+    yards?: number;
+    type?: { slug?: string; text?: string };
+    status?: { slug?: string; text?: string };
+  };
 }
 
 export interface Competitor {
@@ -185,6 +192,8 @@ export interface MissedKick {
   /** Other ESPN wordings of the same play (e.g. scoringPlays[] copy). */
   altPlayTexts?: string[];
   kickType: KickType;
+  /** ESPN play type id + pointAfterAttempt id, e.g. "60/" or "68/62" (used to confirm a miss is stable). */
+  playType?: string;
   kicker: string;
   athleteId?: string;
   teamAbbr: string;
@@ -217,6 +226,20 @@ export interface PollOptions {
   allToday: boolean;
   persist: boolean;
   recentFinalWindowMin: number;
+  /**
+   * Identical sightings required before posting. Default 2: a miss must look the
+   * same (play id, play type, kick type, result, kicker) on two consecutive polls.
+   */
+  confirmPolls?: number;
+  /** Minimum time between the two sightings (default 60s) so back-to-back runs don't count. */
+  minConfirmGapMs?: number;
+  /**
+   * Near the end of a game's watch window there may be no next poll, so the run
+   * waits this long and re-fetches the summary as the second sighting (default 90s).
+   */
+  finalRefetchDelayMs?: number;
+  /** Minutes before the watch window closes that the in-run re-fetch kicks in (default 12). */
+  finalConfirmWindowMin?: number;
 }
 
 export interface SeasonTallyRow {
@@ -235,6 +258,10 @@ export interface PollResult {
   tweets: string[];
   /** Misses not tweeted because no ESPN text named the kicker. */
   heldForManualPost?: MissedKick[];
+  /** Misses seen once and waiting for an identical second sighting. */
+  awaitingConfirmation?: MissedKick[];
+  /** Set when state could not be saved; nothing was posted after the failure. */
+  stateWriteError?: string;
   seasonGamesScanned?: number;
   seasonTallies?: SeasonTallyRow[];
 }

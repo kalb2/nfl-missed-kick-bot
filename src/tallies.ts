@@ -47,8 +47,14 @@ export interface CachedGameTallies {
   misses: CachedGameMiss[];
 }
 
+/**
+ * Bump to discard old caches. v2: penalty / No Play kicks are no longer misses,
+ * so finished games cached under v1 (which are never refetched) must be rebuilt.
+ */
+export const TALLY_CACHE_VERSION = 2;
+
 export interface TallyStoreFile {
-  version: 1;
+  version: typeof TALLY_CACHE_VERSION;
   seasonYear?: number;
   seasonType: typeof REGULAR_SEASON_TYPE;
   updatedAt: string;
@@ -169,6 +175,10 @@ export class SeasonTallyIndex {
     return this.summaries.get(eventId);
   }
 
+  cachedGames(): Array<{ eventId: string; misses: CachedGameMiss[] }> {
+    return [...this.games.entries()].map(([eventId, game]) => ({ eventId, misses: game.misses }));
+  }
+
   hasGame(eventId: string): boolean {
     return this.games.has(eventId);
   }
@@ -178,7 +188,7 @@ export class SeasonTallyIndex {
     try {
       const raw = await readFile(this.filePath, "utf8");
       const data = JSON.parse(raw) as TallyStoreFile;
-      if (data.version !== 1 || !data.games || typeof data.games !== "object") return;
+      if (data.version !== TALLY_CACHE_VERSION || !data.games || typeof data.games !== "object") return;
       this.seasonYear = data.seasonYear;
       this.games = new Map(Object.entries(data.games));
     } catch (err) {
@@ -191,7 +201,7 @@ export class SeasonTallyIndex {
     if (!this.filePath) return;
     await mkdir(path.dirname(this.filePath), { recursive: true });
     const payload: TallyStoreFile = {
-      version: 1,
+      version: TALLY_CACHE_VERSION,
       seasonYear: this.seasonYear,
       seasonType: REGULAR_SEASON_TYPE,
       updatedAt: new Date().toISOString(),
