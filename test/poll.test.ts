@@ -71,8 +71,12 @@ describe("pollOnce", () => {
       persist: true,
       recentFinalWindowMin: 45,
     };
+    const slept: number[] = [];
+    const sleep = async (ms: number) => void slept.push(ms);
 
-    const first = await pollOnce({ espn, store, poster }, options);
+    // One run: detect both, wait once (~60s), re-fetch, then post.
+    const first = await pollOnce({ espn, store, poster, sleep }, options);
+    expect(slept).toEqual([60_000]);
     expect(first.newMisses.map((m) => m.kicker).sort()).toEqual(["Daniel Carlson", "Spencer Shrader"]);
     expect(posted).toHaveLength(2);
     expect(posted).toContain(composeTweet(first.newMisses.find((m) => m.kicker === "Daniel Carlson")!));
@@ -91,7 +95,7 @@ describe("pollOnce", () => {
       ]),
     );
 
-    const second = await pollOnce({ espn, store, poster }, options);
+    const second = await pollOnce({ espn, store, poster, sleep }, options);
     expect(second.newMisses).toEqual([]);
     expect(second.skippedSeen).toBe(2);
     expect(posted).toHaveLength(2);
@@ -178,10 +182,10 @@ describe("pollOnce", () => {
 
     const result = await pollOnce(
       { espn, store, poster: { post: async () => ({}) } },
-      { dryRun: true, seedSeen: false, allToday: false, persist: false, recentFinalWindowMin: 45 },
+      { dryRun: true, seedSeen: false, allToday: false, persist: false, recentFinalWindowMin: 45, recheckDelayMs: 0 },
     );
 
-    expect(wpCalls).toBe(1);
+    expect(wpCalls).toBe(2); // detection + same-run recheck
     expect(result.newMisses[0]?.wpDelta).toBeCloseTo(-0.0435, 4);
     expect(result.tweets[0]).toContain("WP: −4.4%");
   });

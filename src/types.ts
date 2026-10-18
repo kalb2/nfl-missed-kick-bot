@@ -73,6 +73,13 @@ export interface Play {
   team?: { id?: string; abbreviation?: string };
   /** Other texts ESPN gave for the same play id (e.g. scoringPlays[] wording). */
   altTexts?: string[];
+  /** ESPN sets this on any play that carries a flag (accepted, declined or between downs). */
+  isPenalty?: boolean;
+  penalty?: {
+    yards?: number;
+    type?: { slug?: string; text?: string };
+    status?: { slug?: string; text?: string };
+  };
 }
 
 export interface Competitor {
@@ -185,6 +192,8 @@ export interface MissedKick {
   /** Other ESPN wordings of the same play (e.g. scoringPlays[] copy). */
   altPlayTexts?: string[];
   kickType: KickType;
+  /** ESPN play type id + pointAfterAttempt id, e.g. "60/" or "68/62" (used to confirm a miss is stable). */
+  playType?: string;
   kicker: string;
   athleteId?: string;
   teamAbbr: string;
@@ -217,6 +226,12 @@ export interface PollOptions {
   allToday: boolean;
   persist: boolean;
   recentFinalWindowMin: number;
+  /**
+   * A newly detected miss is re-fetched after this delay in the same run and
+   * posted only if it still matches and isn't erased (default 60s). All
+   * candidates in one run share a single wait.
+   */
+  recheckDelayMs?: number;
 }
 
 export interface SeasonTallyRow {
@@ -235,6 +250,12 @@ export interface PollResult {
   tweets: string[];
   /** Misses not tweeted because no ESPN text named the kicker. */
   heldForManualPost?: MissedKick[];
+  /** Misses that changed or vanished on the same-run recheck; re-evaluated next poll. */
+  heldForRecheck?: MissedKick[];
+  /** Posted misses that ESPN later erased/reversed (alerted once, never auto-deleted). */
+  erasedAfterPosting?: string[];
+  /** Set when state could not be saved; nothing was posted after the failure. */
+  stateWriteError?: string;
   seasonGamesScanned?: number;
   seasonTallies?: SeasonTallyRow[];
 }

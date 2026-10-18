@@ -483,6 +483,7 @@ export function toMissedKick(
     playId: String(play.id),
     eventId: game.eventId,
     kickType,
+    playType: `${play.type?.id ?? ""}/${play.pointAfterAttempt?.id ?? ""}`,
     kicker: resolved.kicker,
     ...(resolved.athleteId ? { athleteId: resolved.athleteId } : {}),
     teamAbbr: team ? competitorAbbr(team) : "UNK",
@@ -540,14 +541,75 @@ export function missesNeedWinProbability(misses: MissedKick[], plays: Play[]): b
   });
 }
 
+const PENALTY_TYPE_ID = "8";
+const NO_PLAY_RE = /\bno\s+play\b/i;
+const NULLIFIED_RE = /\bnullified\b/i;
+const REVERSED_RE = /\breversed\b\.?/gi;
+const REPLAYED_DOWN_RE = /\breplay(?:ed)?\s+the\s+down\b|\bdown\s+(?:will\s+be\s+|was\s+|is\s+)?replayed\b/i;
+/** A kick-miss phrase in play text (drive PBP or scoring-summary wording). */
+const MISS_PHRASE_RE =
+  /(?:field goal|extra point)\s+is\s+(?:No Good|BLOCKED)|\bPAT\s+(?:failed|blocked)\b|\bblocked\b/i;
+const BETWEEN_DOWNS_RE = /enforced\s+between\s+downs/i;
+
+/**
+ * Why a play that *looks* like a miss must never be posted, or undefined when
+ * it stands. ESPN keeps the original kick text when a flag erases the snap:
+ *
+ *   type 8 "Penalty": "J.Myers 53 yard field goal is No Good, Wide Right ...
+ *   PENALTY on LAC-T.Tuipulotu, Leverage, 15 yards, enforced at LAC 35 - No Play."
+ *
+ * The word PENALTY alone is NOT disqualifying: a PAT miss after a TD with an
+ * unsportsmanlike flag "enforced between downs" (Butker 2025, Aubrey 2026) and
+ * declined flags are real misses, so we key off the play type, "No Play",
+ * NULLIFIED, replayed downs, reversed rulings and accepted on-play penalties.
+ */
+export function nullifiedReason(play: Play, scoringPlayIds?: Set<string>): string | undefined {
+  const typeId = String(play.type?.id ?? "");
+  if (typeId === PENALTY_TYPE_ID || /^penalty$/i.test(play.type?.text ?? "")) return "penalty play type";
+  const texts = [play.text, play.shortText, ...(play.altTexts ?? [])].filter(
+    (t): t is string => typeof t === "string" && t.length > 0,
+  );
+  const all = texts.join("\n");
+  if (NO_PLAY_RE.test(all)) return "No Play";
+  if (NULLIFIED_RE.test(all)) return "nullified";
+  if (REPLAYED_DOWN_RE.test(all)) return "down replayed";
+  // "...the play was REVERSED.<corrected play>" — only the text after the last
+  // reversal is the ruling that stands. No miss phrase there → do not post.
+  for (const text of texts) {
+    const matches = [...text.matchAll(REVERSED_RE)];
+    if (!matches.length) continue;
+    const last = matches[matches.length - 1];
+    const after = text.slice((last.index ?? 0) + last[0].length);
+    if (!MISS_PHRASE_RE.test(after)) return "ruling reversed";
+  }
+  // Accepted flag on the kick itself (not carried to the kickoff) replays the try.
+  const status = `${play.penalty?.status?.slug ?? ""} ${play.penalty?.status?.text ?? ""}`;
+  if (play.isPenalty && /accepted/i.test(status) && !BETWEEN_DOWNS_RE.test(all)) {
+    return "accepted penalty on the kick";
+  }
+  // A PAT that rides on a touchdown play only stands while that TD is still a scoring play.
+  if (scoringPlayIds && scoringPlayIds.size > 0 && play.scoringPlay === true && play.id) {
+    if (!scoringPlayIds.has(String(play.id))) return "touchdown no longer in scoringPlays";
+  }
+  return undefined;
+}
+
 export function detectMissedKicks(summary: GameSummary, game: GameContext): MissedKick[] {
   const plays = collectPlays(summary);
   const roster = kickingAthletesFromSummary(summary);
   const points = extractWinProbability(summary);
+  const scoringPlayIds = Array.isArray(summary.scoringPlays)
+    ? new Set(summary.scoringPlays.map((p) => String(p?.id ?? "")).filter(Boolean))
+    : undefined;
   const misses: MissedKick[] = [];
   for (const play of plays) {
     const miss = toMissedKick(play, game, roster);
     if (!miss) continue;
+    const reason = nullifiedReason(play, scoringPlayIds);
+    if (reason) {
+      console.log("skip play %s (%s): %s", miss.playId, game.shortName, reason);
+      continue;
+    }
     if (canAttributeWinProbability(play, miss.kickType)) {
       attachWinProbability(miss, points);
     }

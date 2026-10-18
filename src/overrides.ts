@@ -46,6 +46,12 @@ export class Overrides {
     return this.byId.get(String(playId));
   }
 
+  alreadyPostedPlays(): Array<{ playId: string; eventId?: string }> {
+    return [...this.byId.values()]
+      .filter((p) => p.alreadyPosted)
+      .map((p) => ({ playId: String(p.playId), ...(p.eventId ? { eventId: String(p.eventId) } : {}) }));
+  }
+
   alreadyPostedIds(): string[] {
     return [...this.byId.values()].filter((p) => p.alreadyPosted).map((p) => String(p.playId));
   }

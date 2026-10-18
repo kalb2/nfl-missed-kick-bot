@@ -21,6 +21,15 @@ export interface AppConfig {
   recentFinalWindowMin: number;
   seedSeen: boolean;
   userAgent: string;
+  /**
+   * "github": handled plays live in a JSON file on a dedicated branch (durable;
+   * what poll.yml uses). "file": local JSON at statePath (local runs / tests).
+   */
+  stateBackend: "file" | "github";
+  stateBranch: string;
+  stateFile: string;
+  githubRepo?: string;
+  githubToken?: string;
   twitter: {
     appKey?: string;
     appSecret?: string;
@@ -47,6 +56,11 @@ export function loadConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     statePath: process.env.STATE_PATH || path.join(process.cwd(), ".state", "seen.json"),
     recentFinalWindowMin: intEnv("RECENT_FINAL_WINDOW_MIN", 45),
     seedSeen: boolEnv("SEED_SEEN", false),
+    stateBackend: process.env.STATE_BACKEND === "github" ? "github" : "file",
+    stateBranch: process.env.STATE_BRANCH || "bot-state",
+    stateFile: process.env.STATE_FILE || "handled-plays.json",
+    githubRepo: process.env.GITHUB_REPOSITORY || undefined,
+    githubToken: process.env.GITHUB_TOKEN || undefined,
     userAgent:
       process.env.ESPN_USER_AGENT ||
       // site.api.espn.com is often 403 from cloud IPs; site.web.api accepts a normal browser UA.

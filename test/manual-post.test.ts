@@ -79,7 +79,8 @@ async function setup() {
   };
 }
 
-const opts = { dryRun: false, seedSeen: false, allToday: true, persist: false, recentFinalWindowMin: 45 };
+// No real 60s recheck wait in tests (the recheck itself still runs).
+const opts = { dryRun: false, seedSeen: false, allToday: true, persist: false, recentFinalWindowMin: 45, recheckDelayMs: 0 };
 
 describe("unknown kicker → manual-post issue, never a tweet", () => {
   it("opens exactly one issue across polls and keeps the miss pending", async () => {

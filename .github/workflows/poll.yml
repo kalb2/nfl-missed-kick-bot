@@ -35,6 +35,10 @@ on:
         description: "Include all of today's finished games (useful for a dry-run demo)"
         type: boolean
         default: false
+      bootstrap_state:
+        description: "Create the durable handled-plays list on the bot-state branch (marks every current miss handled; posts nothing). Only does anything if the list is missing."
+        type: boolean
+        default: false
 
 concurrency:
   group: missed-kick-poll
@@ -45,8 +49,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read
-      # Opens a "needs-manual-post" issue when a miss has no named kicker.
+      # write: commits the handled-plays list to the bot-state branch (never main).
+      contents: write
+      # All bot alerts are deduplicated GitHub issues labelled "bot-alert":
+      # needs_manual_post, tweet_failed, posted_miss_erased, state_unavailable
+      # (closed again on recovery). No other secret is needed.
       issues: write
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +65,10 @@ jobs:
 
       - run: npm ci
 
-      - name: Restore seen-play cache
+      # Cache now only holds the season tally cache (rebuildable from ESPN) and
+      # the legacy seen.json that bootstrap imports. The handled-plays list that
+      # prevents re-posts lives on the bot-state branch, not here.
+      - name: Restore tally cache
         uses: actions/cache@v4
         with:
           path: .state
@@ -73,12 +83,14 @@ jobs:
             echo "dry_run=${{ github.event.inputs.dry_run }}" >> "$GITHUB_OUTPUT"
             echo "seed=${{ github.event.inputs.seed }}" >> "$GITHUB_OUTPUT"
             echo "all_today=${{ github.event.inputs.all_today }}" >> "$GITHUB_OUTPUT"
+            echo "bootstrap_state=${{ github.event.inputs.bootstrap_state }}" >> "$GITHUB_OUTPUT"
           else
             # schedule (primary) and repository_dispatch (optional Worker):
             # same live defaults as before the Worker-only change.
             echo "dry_run=${{ vars.DRY_RUN || 'true' }}" >> "$GITHUB_OUTPUT"
             echo "seed=${{ vars.SEED_SEEN || 'false' }}" >> "$GITHUB_OUTPUT"
             echo "all_today=false" >> "$GITHUB_OUTPUT"
+            echo "bootstrap_state=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Poll scoreboard and post new misses
@@ -90,10 +102,19 @@ jobs:
           DRY_RUN: ${{ steps.flags.outputs.dry_run }}
           SEED_SEEN: ${{ steps.flags.outputs.seed }}
           STATE_PATH: .state/seen.json
+          # Durable handled-plays list (game id + play id): a JSON file on the
+          # bot-state branch. If it can't be loaded the bot posts nothing and
+          # opens a bot-state-unavailable issue.
+          STATE_BACKEND: github
+          STATE_BRANCH: bot-state
+          STATE_FILE: handled-plays.json
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           EXTRA=""
           if [ "${{ steps.flags.outputs.all_today }}" = "true" ]; then
             EXTRA="--all-today"
+          fi
+          if [ "${{ steps.flags.outputs.bootstrap_state }}" = "true" ]; then
+            EXTRA="$EXTRA --bootstrap-state"
           fi
           npx tsx src/index.ts once $EXTRA
