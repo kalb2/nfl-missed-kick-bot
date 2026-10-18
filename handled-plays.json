@@ -631,6 +631,28 @@
           "Kenneth Walker III 33 Yd Rush (Harrison Butker PAT Failed)"
         ]
       }
+    },
+    "401873006:4018730063736": {
+      "playId": "4018730063736",
+      "eventId": "401873006",
+      "status": "posting",
+      "at": "2026-10-18T22:57:58.324Z",
+      "snapshot": {
+        "playId": "4018730063736",
+        "eventId": "401873006",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Harrison Butker",
+        "teamAbbr": "KC",
+        "quarter": "Q4",
+        "clock": "11:51",
+        "awayAbbr": "LAC",
+        "homeAbbr": "KC",
+        "awayScore": 6,
+        "homeScore": 19,
+        "matchup": "LAC @ KC",
+        "playText": "H.Butker 52 yard field goal is No Good, Wide Right, Center-J.Winchester, Holder-M.Araiza."
+      }
     }
   },
   "pending": {},
@@ -641,5 +663,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-18T21:04:01.405Z"
+  "updatedAt": "2026-10-18T22:57:58.324Z"
 }
