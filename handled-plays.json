@@ -579,8 +579,33 @@
         "matchup": "BAL @ CLE",
         "playText": " A.Szmyt 48 yard field goal is No Good, Wide Left, Center-R.Sunahara, Holder-C.Bojorquez."
       }
+    },
+    "401872998:4018729984351": {
+      "playId": "4018729984351",
+      "eventId": "401872998",
+      "status": "posting",
+      "at": "2026-10-18T20:15:57.724Z",
+      "snapshot": {
+        "playId": "4018729984351",
+        "eventId": "401872998",
+        "kickType": "PAT",
+        "result": "Wide Right",
+        "kicker": "Ryan Fitzgerald",
+        "teamAbbr": "CAR",
+        "quarter": "Q4",
+        "clock": "6:38",
+        "awayAbbr": "CAR",
+        "homeAbbr": "PHI",
+        "awayScore": 26,
+        "homeScore": 14,
+        "matchup": "CAR @ PHI",
+        "playText": "B.Young pass deep middle to T.Tremble for 19 yards, TOUCHDOWN.PENALTY on CAR-T.Tremble, Taunting, 15 yards, enforced between downs. R.Fitzgerald extra point is No Good, Wide Right, Center-J.Jansen, Holder-S.Martin.",
+        "altPlayTexts": [
+          "Tommy Tremble 19 Yd pass from Bryce Young (Ryan Fitzgerald PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
-  "updatedAt": "2026-10-18T19:46:00.610Z"
+  "updatedAt": "2026-10-18T20:15:57.724Z"
 }
