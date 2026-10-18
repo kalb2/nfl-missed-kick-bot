@@ -484,8 +484,30 @@
         "matchup": "NO @ NYG",
         "playText": "D.Carlson 55 yard field goal is No Good, Wide Left, Center-Z.Wood, Holder-R.Wright."
       }
+    },
+    "401873002:4018730021454": {
+      "playId": "4018730021454",
+      "eventId": "401873002",
+      "status": "posting",
+      "at": "2026-10-18T18:09:57.369Z",
+      "snapshot": {
+        "playId": "4018730021454",
+        "eventId": "401873002",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Chris Boswell",
+        "teamAbbr": "PIT",
+        "quarter": "Q2",
+        "clock": "7:15",
+        "awayAbbr": "PIT",
+        "homeAbbr": "TB",
+        "awayScore": 0,
+        "homeScore": 10,
+        "matchup": "PIT @ TB",
+        "playText": "C.Boswell 48 yard field goal is No Good, Wide Left, Center-C.Kuntz, Holder-C.Johnston."
+      }
     }
   },
   "pending": {},
-  "updatedAt": "2026-10-18T18:04:01.499Z"
+  "updatedAt": "2026-10-18T18:09:57.369Z"
 }
