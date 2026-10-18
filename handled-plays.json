@@ -530,8 +530,33 @@
         "matchup": "BAL @ CLE",
         "playText": "T.Loop 49 yard field goal is No Good, Wide Left, Center-N.Moore, Holder-R.Eckley."
       }
+    },
+    "401873001:4018730013140": {
+      "playId": "4018730013140",
+      "eventId": "401873001",
+      "status": "posting",
+      "at": "2026-10-18T19:27:54.652Z",
+      "snapshot": {
+        "playId": "4018730013140",
+        "eventId": "401873001",
+        "kickType": "PAT",
+        "result": "Wide Left",
+        "kicker": "Andy Borregales",
+        "teamAbbr": "NE",
+        "quarter": "Q4",
+        "clock": "14:10",
+        "awayAbbr": "NYJ",
+        "homeAbbr": "NE",
+        "awayScore": 13,
+        "homeScore": 23,
+        "matchup": "NYJ @ NE",
+        "playText": "(Shotgun) D.Maye pass short right to H.Henry for 7 yards, TOUCHDOWN. A.Borregales extra point is No Good, Wide Left, Center-J.Ashby, Holder-M.Wishnowsky.",
+        "altPlayTexts": [
+          "Hunter Henry 7 Yd pass from Drake Maye (Andy Borregales PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
-  "updatedAt": "2026-10-18T19:16:01.890Z"
+  "updatedAt": "2026-10-18T19:27:54.653Z"
 }
