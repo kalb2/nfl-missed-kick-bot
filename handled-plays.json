@@ -605,8 +605,33 @@
           "Tommy Tremble 19 Yd pass from Bryce Young (Ryan Fitzgerald PAT Failed)"
         ]
       }
+    },
+    "401873006:401873006553": {
+      "playId": "401873006553",
+      "eventId": "401873006",
+      "status": "posting",
+      "at": "2026-10-18T20:46:00.341Z",
+      "snapshot": {
+        "playId": "401873006553",
+        "eventId": "401873006",
+        "kickType": "PAT",
+        "result": "Wide Left",
+        "kicker": "Harrison Butker",
+        "teamAbbr": "KC",
+        "quarter": "Q1",
+        "clock": "7:21",
+        "awayAbbr": "LAC",
+        "homeAbbr": "KC",
+        "awayScore": 0,
+        "homeScore": 9,
+        "matchup": "LAC @ KC",
+        "playText": "(Shotgun) K.Walker up the middle for 33 yards, TOUCHDOWN. H.Butker extra point is No Good, Wide Left, Center-J.Winchester, Holder-M.Araiza.",
+        "altPlayTexts": [
+          "Kenneth Walker III 33 Yd Rush (Harrison Butker PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
-  "updatedAt": "2026-10-18T20:15:59.067Z"
+  "updatedAt": "2026-10-18T20:46:00.341Z"
 }
