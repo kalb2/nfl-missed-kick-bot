@@ -556,8 +556,30 @@
           "Hunter Henry 7 Yd pass from Drake Maye (Andy Borregales PAT Failed)"
         ]
       }
+    },
+    "401872997:4018729973559": {
+      "playId": "4018729973559",
+      "eventId": "401872997",
+      "status": "posting",
+      "at": "2026-10-18T19:45:59.104Z",
+      "snapshot": {
+        "playId": "4018729973559",
+        "eventId": "401872997",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Andre Szmyt",
+        "teamAbbr": "CLE",
+        "quarter": "Q4",
+        "clock": "3:44",
+        "awayAbbr": "BAL",
+        "homeAbbr": "CLE",
+        "awayScore": 10,
+        "homeScore": 10,
+        "matchup": "BAL @ CLE",
+        "playText": " A.Szmyt 48 yard field goal is No Good, Wide Left, Center-R.Sunahara, Holder-C.Bojorquez."
+      }
     }
   },
   "pending": {},
-  "updatedAt": "2026-10-18T19:27:55.950Z"
+  "updatedAt": "2026-10-18T19:45:59.105Z"
 }
