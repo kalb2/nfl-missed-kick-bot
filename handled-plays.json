@@ -438,8 +438,52 @@
       "eventId": "401872961",
       "status": "seeded",
       "at": "2026-10-17T23:54:36.751Z"
+    },
+    "401872999:4018729991390": {
+      "playId": "4018729991390",
+      "eventId": "401872999",
+      "status": "posting",
+      "at": "2026-10-18T18:03:59.746Z",
+      "snapshot": {
+        "playId": "4018729991390",
+        "eventId": "401872999",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Cairo Santos",
+        "teamAbbr": "CHI",
+        "quarter": "Q2",
+        "clock": "7:22",
+        "awayAbbr": "CHI",
+        "homeAbbr": "ATL",
+        "awayScore": 14,
+        "homeScore": 0,
+        "matchup": "CHI @ ATL",
+        "playText": "C.Santos 56 yard field goal is No Good, Wide Left, Center-S.Daly, Holder-T.Taylor."
+      }
+    },
+    "401873000:4018730001436": {
+      "playId": "4018730001436",
+      "eventId": "401873000",
+      "status": "posting",
+      "at": "2026-10-18T18:03:59.746Z",
+      "snapshot": {
+        "playId": "4018730001436",
+        "eventId": "401873000",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Daniel Carlson",
+        "teamAbbr": "NO",
+        "quarter": "Q2",
+        "clock": "6:56",
+        "awayAbbr": "NO",
+        "homeAbbr": "NYG",
+        "awayScore": 0,
+        "homeScore": 7,
+        "matchup": "NO @ NYG",
+        "playText": "D.Carlson 55 yard field goal is No Good, Wide Left, Center-Z.Wood, Holder-R.Wright."
+      }
     }
   },
   "pending": {},
-  "updatedAt": "2026-10-17T23:54:36.760Z"
+  "updatedAt": "2026-10-18T18:03:59.746Z"
 }
