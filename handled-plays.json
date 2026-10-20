@@ -654,6 +654,31 @@
         "matchup": "LAC @ KC",
         "playText": "H.Butker 52 yard field goal is No Good, Wide Right, Center-J.Winchester, Holder-M.Araiza."
       }
+    },
+    "401873008:401873008660": {
+      "playId": "401873008660",
+      "eventId": "401873008",
+      "status": "posting",
+      "at": "2026-10-20T00:47:53.529Z",
+      "snapshot": {
+        "playId": "401873008660",
+        "eventId": "401873008",
+        "kickType": "PAT",
+        "result": "Wide Right",
+        "kicker": "Eddy Pineiro",
+        "teamAbbr": "SF",
+        "quarter": "Q1",
+        "clock": "4:09",
+        "awayAbbr": "WSH",
+        "homeAbbr": "SF",
+        "awayScore": 3,
+        "homeScore": 13,
+        "matchup": "WSH @ SF",
+        "playText": "C.McCaffrey left guard for 1 yard, TOUCHDOWN. E.Pineiro extra point is No Good, Wide Right, Center-J.Weeks, Holder-C.Waitman.",
+        "altPlayTexts": [
+          "Christian McCaffrey 1 Yd Rush (Eddy Pineiro PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
@@ -664,5 +689,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-18T22:57:59.704Z"
+  "updatedAt": "2026-10-20T00:47:53.529Z"
 }
