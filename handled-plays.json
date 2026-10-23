@@ -680,6 +680,28 @@
           "Christian McCaffrey 1 Yd Rush (Eddy Pineiro PAT Failed)"
         ]
       }
+    },
+    "401873010:4018730103496": {
+      "playId": "4018730103496",
+      "eventId": "401873010",
+      "status": "posting",
+      "at": "2026-10-23T02:54:14.710Z",
+      "snapshot": {
+        "playId": "4018730103496",
+        "eventId": "401873010",
+        "kickType": "FG",
+        "result": "Hit Right Upright",
+        "kicker": "Cairo Santos",
+        "teamAbbr": "CHI",
+        "quarter": "Q4",
+        "clock": "8:02",
+        "awayAbbr": "NE",
+        "homeAbbr": "CHI",
+        "awayScore": 21,
+        "homeScore": 27,
+        "matchup": "NE @ CHI",
+        "playText": "C.Santos 53 yard field goal is No Good, Hit Right Upright, Center-S.Daly, Holder-T.Taylor."
+      }
     }
   },
   "pending": {},
@@ -690,5 +712,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-20T00:47:55.258Z"
+  "updatedAt": "2026-10-23T02:54:14.710Z"
 }
