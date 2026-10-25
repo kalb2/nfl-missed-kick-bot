@@ -867,6 +867,50 @@
         "matchup": "IND @ MIN",
         "playText": "W.Reichard 59 yard field goal is BLOCKED (G.Stewart), Center-A.DePaola, Holder-B.Thorson."
       }
+    },
+    "401873013:4018730133372": {
+      "playId": "4018730133372",
+      "eventId": "401873013",
+      "status": "posting",
+      "at": "2026-10-25T19:32:22.948Z",
+      "snapshot": {
+        "playId": "4018730133372",
+        "eventId": "401873013",
+        "kickType": "FG",
+        "result": "Hit Right Upright",
+        "kicker": "Andre Szmyt",
+        "teamAbbr": "CLE",
+        "quarter": "Q4",
+        "clock": "14:09",
+        "awayAbbr": "CLE",
+        "homeAbbr": "TEN",
+        "awayScore": 17,
+        "homeScore": 14,
+        "matchup": "CLE @ TEN",
+        "playText": " A.Szmyt 43 yard field goal is No Good, Hit Right Upright, Center-R.Sunahara, Holder-C.Bojorquez."
+      }
+    },
+    "401873014:4018730143368": {
+      "playId": "4018730143368",
+      "eventId": "401873014",
+      "status": "posting",
+      "at": "2026-10-25T19:32:22.948Z",
+      "snapshot": {
+        "playId": "4018730143368",
+        "eventId": "401873014",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Spencer Shrader",
+        "teamAbbr": "IND",
+        "quarter": "Q4",
+        "clock": "4:27",
+        "awayAbbr": "IND",
+        "homeAbbr": "MIN",
+        "awayScore": 10,
+        "homeScore": 13,
+        "matchup": "IND @ MIN",
+        "playText": "S.Shrader 48 yard field goal is No Good, Wide Right, Center-L.Rhodes, Holder-R.Sanchez."
+      }
     }
   },
   "pending": {},
@@ -877,5 +921,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T19:26:17.035Z"
+  "updatedAt": "2026-10-25T19:32:22.948Z"
 }
