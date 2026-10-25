@@ -749,6 +749,31 @@
         "matchup": "NYG @ HOU",
         "playText": "D.Zvada 56 yard field goal is No Good, Wide Right, Center-B.Mann, Holder-J.Stout."
       }
+    },
+    "401873017:4018730171195": {
+      "playId": "4018730171195",
+      "eventId": "401873017",
+      "status": "posting",
+      "at": "2026-10-25T17:56:14.057Z",
+      "snapshot": {
+        "playId": "4018730171195",
+        "eventId": "401873017",
+        "kickType": "PAT",
+        "result": "Hit Right Upright",
+        "kicker": "Nick Folk",
+        "teamAbbr": "ATL",
+        "quarter": "Q2",
+        "clock": "8:47",
+        "awayAbbr": "SF",
+        "homeAbbr": "ATL",
+        "awayScore": 14,
+        "homeScore": 9,
+        "matchup": "SF @ ATL",
+        "playText": "C.Levin and K.Hinton reported in as eligible.  M.Penix pass short left to N.Muse for 1 yard, TOUCHDOWN. N.Folk extra point is No Good, Hit Right Upright, Center-L.McCullough, Holder-J.Bailey.",
+        "altPlayTexts": [
+          "Nick Muse 1 Yd pass from Michael Penix Jr. (Nick Folk PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
@@ -759,5 +784,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T17:44:22.013Z"
+  "updatedAt": "2026-10-25T17:56:14.057Z"
 }
