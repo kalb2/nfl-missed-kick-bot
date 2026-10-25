@@ -913,6 +913,31 @@
         "matchup": "IND @ MIN",
         "playText": "S.Shrader 48 yard field goal is No Good, Wide Right, Center-L.Rhodes, Holder-R.Sanchez."
       }
+    },
+    "401873017:4018730173739": {
+      "playId": "4018730173739",
+      "eventId": "401873017",
+      "status": "posting",
+      "at": "2026-10-25T19:50:16.191Z",
+      "snapshot": {
+        "playId": "4018730173739",
+        "eventId": "401873017",
+        "kickType": "PAT",
+        "result": "Wide Left",
+        "kicker": "Eddy Pineiro",
+        "teamAbbr": "SF",
+        "quarter": "Q4",
+        "clock": "5:05",
+        "awayAbbr": "SF",
+        "homeAbbr": "ATL",
+        "awayScore": 20,
+        "homeScore": 26,
+        "matchup": "SF @ ATL",
+        "playText": "B.Purdy pass short left to K.Juszczyk for 1 yard, TOUCHDOWN. E.Pineiro extra point is No Good, Wide Left, Center-J.Weeks, Holder-C.Waitman.",
+        "altPlayTexts": [
+          "Kyle Juszczyk 1 Yd pass from Brock Purdy (Eddy Pineiro PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
@@ -923,5 +948,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T19:32:24.376Z"
+  "updatedAt": "2026-10-25T19:50:16.191Z"
 }
