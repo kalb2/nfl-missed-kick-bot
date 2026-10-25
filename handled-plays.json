@@ -1008,6 +1008,28 @@
         "matchup": "TB @ CAR",
         "playText": "Darren Waller 50 Yd pass from Bryce Young (Ryan Fitzgerald PAT blocked)"
       }
+    },
+    "401873020:4018730203900": {
+      "playId": "4018730203900",
+      "eventId": "401873020",
+      "status": "posting",
+      "at": "2026-10-25T23:19:09.716Z",
+      "snapshot": {
+        "playId": "4018730203900",
+        "eventId": "401873020",
+        "kickType": "FG",
+        "result": "Blocked",
+        "kicker": "Trey Smack",
+        "teamAbbr": "GB",
+        "quarter": "Q4",
+        "clock": "3:25",
+        "awayAbbr": "GB",
+        "homeAbbr": "DET",
+        "awayScore": 17,
+        "homeScore": 17,
+        "matchup": "GB @ DET",
+        "playText": "T.Smack 35 yard field goal is BLOCKED (D.Wonnum), Center-M.Orzech, Holder-D.Whelan."
+      }
     }
   },
   "pending": {},
@@ -1018,5 +1040,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T20:56:23.231Z"
+  "updatedAt": "2026-10-25T23:19:09.717Z"
 }
