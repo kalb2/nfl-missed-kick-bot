@@ -985,6 +985,28 @@
         "matchup": "LAR @ LV",
         "playText": "M.Gay 51 yard field goal is No Good, Wide Left, Center-A.Ward, Holder-A.Cole."
       }
+    },
+    "401873018:4018730181260": {
+      "playId": "4018730181260",
+      "eventId": "401873018",
+      "status": "posting",
+      "at": "2026-10-25T20:56:21.829Z",
+      "snapshot": {
+        "playId": "4018730181260",
+        "eventId": "401873018",
+        "kickType": "PAT",
+        "result": "Blocked",
+        "kicker": "Ryan Fitzgerald",
+        "teamAbbr": "CAR",
+        "quarter": "Q2",
+        "clock": "9:09",
+        "awayAbbr": "TB",
+        "homeAbbr": "CAR",
+        "awayScore": 17,
+        "homeScore": 6,
+        "matchup": "TB @ CAR",
+        "playText": "Darren Waller 50 Yd pass from Bryce Young (Ryan Fitzgerald PAT blocked)"
+      }
     }
   },
   "pending": {},
@@ -995,5 +1017,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T20:44:11.506Z"
+  "updatedAt": "2026-10-25T20:56:21.830Z"
 }
