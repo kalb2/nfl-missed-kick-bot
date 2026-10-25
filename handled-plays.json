@@ -939,6 +939,28 @@
           "Kyle Juszczyk 1 Yd pass from Brock Purdy (Eddy Pineiro PAT Failed)"
         ]
       }
+    },
+    "401873020:401873020332": {
+      "playId": "401873020332",
+      "eventId": "401873020",
+      "status": "posting",
+      "at": "2026-10-25T20:38:19.283Z",
+      "snapshot": {
+        "playId": "401873020332",
+        "eventId": "401873020",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Trey Smack",
+        "teamAbbr": "GB",
+        "quarter": "Q1",
+        "clock": "10:26",
+        "awayAbbr": "GB",
+        "homeAbbr": "DET",
+        "awayScore": 0,
+        "homeScore": 0,
+        "matchup": "GB @ DET",
+        "playText": "T.Smack 26 yard field goal is No Good, Wide Right, Center-M.Orzech, Holder-D.Whelan."
+      }
     }
   },
   "pending": {},
@@ -949,5 +971,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T19:50:17.486Z"
+  "updatedAt": "2026-10-25T20:38:19.284Z"
 }
