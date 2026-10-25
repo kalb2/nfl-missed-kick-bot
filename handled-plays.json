@@ -726,6 +726,28 @@
         "matchup": "PIT VS NO",
         "playText": "D.Carlson 52 yard field goal is No Good, Wide Right, Center-Z.Wood, Holder-R.Wright."
       }
+    },
+    "401873016:401873016864": {
+      "playId": "401873016864",
+      "eventId": "401873016",
+      "status": "posting",
+      "at": "2026-10-25T17:44:20.808Z",
+      "snapshot": {
+        "playId": "401873016864",
+        "eventId": "401873016",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Dominic Zvada",
+        "teamAbbr": "NYG",
+        "quarter": "Q1",
+        "clock": "1:23",
+        "awayAbbr": "NYG",
+        "homeAbbr": "HOU",
+        "awayScore": 7,
+        "homeScore": 3,
+        "matchup": "NYG @ HOU",
+        "playText": "D.Zvada 56 yard field goal is No Good, Wide Right, Center-B.Mann, Holder-J.Stout."
+      }
     }
   },
   "pending": {},
@@ -736,5 +758,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T16:02:26.575Z"
+  "updatedAt": "2026-10-25T17:44:20.808Z"
 }
