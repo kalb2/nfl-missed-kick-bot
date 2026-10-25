@@ -962,6 +962,28 @@
         "matchup": "GB @ DET",
         "playText": "T.Smack 26 yard field goal is No Good, Wide Right, Center-M.Orzech, Holder-D.Whelan."
       }
+    },
+    "401873021:401873021382": {
+      "playId": "401873021382",
+      "eventId": "401873021",
+      "status": "posting",
+      "at": "2026-10-25T20:44:10.349Z",
+      "snapshot": {
+        "playId": "401873021382",
+        "eventId": "401873021",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Matt Gay",
+        "teamAbbr": "LV",
+        "quarter": "Q1",
+        "clock": "10:53",
+        "awayAbbr": "LAR",
+        "homeAbbr": "LV",
+        "awayScore": 0,
+        "homeScore": 0,
+        "matchup": "LAR @ LV",
+        "playText": "M.Gay 51 yard field goal is No Good, Wide Left, Center-A.Ward, Holder-A.Cole."
+      }
     }
   },
   "pending": {},
@@ -972,5 +994,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T20:38:20.767Z"
+  "updatedAt": "2026-10-25T20:44:10.350Z"
 }
