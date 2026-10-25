@@ -798,6 +798,28 @@
         "matchup": "NYG @ HOU",
         "playText": "D.Zvada 44 yard field goal is No Good, Wide Right, Center-B.Mann, Holder-J.Stout."
       }
+    },
+    "401873015:4018730152116": {
+      "playId": "4018730152116",
+      "eventId": "401873015",
+      "status": "posting",
+      "at": "2026-10-25T18:44:16.000Z",
+      "snapshot": {
+        "playId": "4018730152116",
+        "eventId": "401873015",
+        "kickType": "FG",
+        "result": "Hit Right Upright",
+        "kicker": "Jason Sanders",
+        "teamAbbr": "NYJ",
+        "quarter": "Q3",
+        "clock": "10:07",
+        "awayAbbr": "MIA",
+        "homeAbbr": "NYJ",
+        "awayScore": 21,
+        "homeScore": 7,
+        "matchup": "MIA @ NYJ",
+        "playText": " J.Sanders 40 yard field goal is No Good, Hit Right Upright, Center-T.Hennessy, Holder-A.McNamara."
+      }
     }
   },
   "pending": {},
@@ -808,5 +830,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T18:38:16.524Z"
+  "updatedAt": "2026-10-25T18:44:16.000Z"
 }
