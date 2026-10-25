@@ -703,6 +703,28 @@
         "matchup": "NE @ CHI",
         "playText": "C.Santos 53 yard field goal is No Good, Hit Right Upright, Center-S.Daly, Holder-T.Taylor."
       }
+    },
+    "401873011:4018730113326": {
+      "playId": "4018730113326",
+      "eventId": "401873011",
+      "status": "posting",
+      "at": "2026-10-25T16:02:25.077Z",
+      "snapshot": {
+        "playId": "4018730113326",
+        "eventId": "401873011",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Daniel Carlson",
+        "teamAbbr": "NO",
+        "quarter": "Q4",
+        "clock": "9:32",
+        "awayAbbr": "PIT",
+        "homeAbbr": "NO",
+        "awayScore": 16,
+        "homeScore": 10,
+        "matchup": "PIT VS NO",
+        "playText": "D.Carlson 52 yard field goal is No Good, Wide Right, Center-Z.Wood, Holder-R.Wright."
+      }
     }
   },
   "pending": {},
@@ -713,5 +735,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-23T02:54:16.042Z"
+  "updatedAt": "2026-10-25T16:02:25.077Z"
 }
