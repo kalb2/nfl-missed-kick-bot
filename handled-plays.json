@@ -844,6 +844,28 @@
         "matchup": "IND @ MIN",
         "playText": "S.Shrader 56 yard field goal is No Good, Wide Left, Center-L.Rhodes, Holder-R.Sanchez."
       }
+    },
+    "401873014:4018730143185": {
+      "playId": "4018730143185",
+      "eventId": "401873014",
+      "status": "posting",
+      "at": "2026-10-25T19:26:15.836Z",
+      "snapshot": {
+        "playId": "4018730143185",
+        "eventId": "401873014",
+        "kickType": "FG",
+        "result": "Blocked",
+        "kicker": "Will Reichard",
+        "teamAbbr": "MIN",
+        "quarter": "Q4",
+        "clock": "8:38",
+        "awayAbbr": "IND",
+        "homeAbbr": "MIN",
+        "awayScore": 10,
+        "homeScore": 13,
+        "matchup": "IND @ MIN",
+        "playText": "W.Reichard 59 yard field goal is BLOCKED (G.Stewart), Center-A.DePaola, Holder-B.Thorson."
+      }
     }
   },
   "pending": {},
@@ -854,5 +876,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T19:02:16.055Z"
+  "updatedAt": "2026-10-25T19:26:15.836Z"
 }
