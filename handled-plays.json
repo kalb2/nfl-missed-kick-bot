@@ -821,6 +821,28 @@
         "matchup": "MIA @ NYJ",
         "playText": " J.Sanders 40 yard field goal is No Good, Hit Right Upright, Center-T.Hennessy, Holder-A.McNamara."
       }
+    },
+    "401873014:4018730142600": {
+      "playId": "4018730142600",
+      "eventId": "401873014",
+      "status": "posting",
+      "at": "2026-10-25T19:02:14.675Z",
+      "snapshot": {
+        "playId": "4018730142600",
+        "eventId": "401873014",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Spencer Shrader",
+        "teamAbbr": "IND",
+        "quarter": "Q3",
+        "clock": "2:19",
+        "awayAbbr": "IND",
+        "homeAbbr": "MIN",
+        "awayScore": 10,
+        "homeScore": 6,
+        "matchup": "IND @ MIN",
+        "playText": "S.Shrader 56 yard field goal is No Good, Wide Left, Center-L.Rhodes, Holder-R.Sanchez."
+      }
     }
   },
   "pending": {},
@@ -831,5 +853,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T18:44:17.483Z"
+  "updatedAt": "2026-10-25T19:02:14.675Z"
 }
