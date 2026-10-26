@@ -1031,6 +1031,28 @@
         "matchup": "GB @ DET",
         "playText": "T.Smack 35 yard field goal is BLOCKED (D.Wonnum), Center-M.Orzech, Holder-D.Whelan."
       }
+    },
+    "401873022:4018730222098": {
+      "playId": "4018730222098",
+      "eventId": "401873022",
+      "status": "posting",
+      "at": "2026-10-26T01:50:15.376Z",
+      "snapshot": {
+        "playId": "4018730222098",
+        "eventId": "401873022",
+        "kickType": "FG",
+        "result": "Short",
+        "kicker": "Harrison Butker",
+        "teamAbbr": "KC",
+        "quarter": "Q2",
+        "clock": "0:01",
+        "awayAbbr": "KC",
+        "homeAbbr": "SEA",
+        "awayScore": 0,
+        "homeScore": 10,
+        "matchup": "KC @ SEA",
+        "playText": "H.Butker 58 yard field goal is No Good, Short, Center-J.Winchester, Holder-M.Araiza."
+      }
     }
   },
   "pending": {},
@@ -1041,5 +1063,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-25T23:19:11.124Z"
+  "updatedAt": "2026-10-26T01:50:15.376Z"
 }
