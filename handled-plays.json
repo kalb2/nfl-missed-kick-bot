@@ -1077,6 +1077,31 @@
         "matchup": "KC @ SEA",
         "playText": "H.Butker 45 yard field goal is No Good, Wide Right, Center-J.Winchester, Holder-M.Araiza."
       }
+    },
+    "401873023:401873023666": {
+      "playId": "401873023666",
+      "eventId": "401873023",
+      "status": "posting",
+      "at": "2026-10-30T00:41:40.036Z",
+      "snapshot": {
+        "playId": "401873023666",
+        "eventId": "401873023",
+        "kickType": "PAT",
+        "result": "Hit Left Upright",
+        "kicker": "Trey Smack",
+        "teamAbbr": "GB",
+        "quarter": "Q1",
+        "clock": "5:08",
+        "awayAbbr": "CAR",
+        "homeAbbr": "GB",
+        "awayScore": 3,
+        "homeScore": 6,
+        "matchup": "CAR @ GB",
+        "playText": "(Shotgun) J.Love pass short middle to T.Kraft for 12 yards, TOUCHDOWN. T.Smack extra point is No Good, Hit Left Upright, Center-M.Orzech, Holder-D.Whelan.",
+        "altPlayTexts": [
+          "Tucker Kraft 12 Yd pass from Jordan Love (Trey Smack PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
@@ -1087,5 +1112,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-26T02:50:13.581Z"
+  "updatedAt": "2026-10-30T00:41:40.037Z"
 }
