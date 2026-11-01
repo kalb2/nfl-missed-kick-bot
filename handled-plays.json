@@ -1267,6 +1267,28 @@
           "Michael Wilson 13 Yd pass from Gardner Minshew II (Chad Ryland PAT Failed)"
         ]
       }
+    },
+    "401873034:4018730341561": {
+      "playId": "4018730341561",
+      "eventId": "401873034",
+      "status": "posting",
+      "at": "2026-11-01T22:31:27.550Z",
+      "snapshot": {
+        "playId": "4018730341561",
+        "eventId": "401873034",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Andy Borregales",
+        "teamAbbr": "NE",
+        "quarter": "Q2",
+        "clock": "2:24",
+        "awayAbbr": "NE",
+        "homeAbbr": "MIA",
+        "awayScore": 3,
+        "homeScore": 6,
+        "matchup": "NE @ MIA",
+        "playText": "A.Borregales 40 yard field goal is No Good, Wide Right, Center-J.Ashby, Holder-M.Wishnowsky."
+      }
     }
   },
   "pending": {},
@@ -1277,5 +1299,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-01T21:25:28.649Z"
+  "updatedAt": "2026-11-01T22:31:27.550Z"
 }
