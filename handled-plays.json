@@ -1218,6 +1218,28 @@
         "matchup": "ARI @ DAL",
         "playText": "B.Aubrey 61 yard field goal is No Good, Wide Right, Center-T.Sieg, Holder-B.Anger."
       }
+    },
+    "401873030:4018730302581": {
+      "playId": "4018730302581",
+      "eventId": "401873030",
+      "status": "posting",
+      "at": "2026-11-01T20:01:26.451Z",
+      "snapshot": {
+        "playId": "4018730302581",
+        "eventId": "401873030",
+        "kickType": "FG",
+        "result": "Hit Left Upright",
+        "kicker": "Jake Bates",
+        "teamAbbr": "DET",
+        "quarter": "Q3",
+        "clock": "9:54",
+        "awayAbbr": "MIN",
+        "homeAbbr": "DET",
+        "awayScore": 7,
+        "homeScore": 6,
+        "matchup": "MIN @ DET",
+        "playText": "J.Bates 46 yard field goal is No Good, Hit Left Upright, Center-H.Hatten, Holder-J.Fox."
+      }
     }
   },
   "pending": {},
@@ -1228,5 +1250,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-01T19:37:27.757Z"
+  "updatedAt": "2026-11-01T20:01:26.451Z"
 }
