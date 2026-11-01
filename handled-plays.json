@@ -1241,6 +1241,31 @@
         "matchup": "MIN @ DET",
         "playText": "J.Bates 46 yard field goal is No Good, Hit Left Upright, Center-H.Hatten, Holder-J.Fox."
       }
+    },
+    "401873024:4018730244667": {
+      "playId": "4018730244667",
+      "eventId": "401873024",
+      "status": "posting",
+      "at": "2026-11-01T21:25:27.340Z",
+      "snapshot": {
+        "playId": "4018730244667",
+        "eventId": "401873024",
+        "kickType": "PAT",
+        "result": "Wide Left",
+        "kicker": "Chad Ryland",
+        "teamAbbr": "ARI",
+        "quarter": "Q4",
+        "clock": "0:06",
+        "awayAbbr": "ARI",
+        "homeAbbr": "DAL",
+        "awayScore": 30,
+        "homeScore": 30,
+        "matchup": "ARI @ DAL",
+        "playText": "(Shotgun) G.Minshew pass short middle to Mi.Wilson for 13 yards, TOUCHDOWN. C.Ryland extra point is No Good, Wide Left, Center-C.Kreiter, Holder-B.Gillikin.",
+        "altPlayTexts": [
+          "Michael Wilson 13 Yd pass from Gardner Minshew II (Chad Ryland PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
@@ -1251,5 +1276,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-01T20:01:27.716Z"
+  "updatedAt": "2026-11-01T21:25:27.340Z"
 }
