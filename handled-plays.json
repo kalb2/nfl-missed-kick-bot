@@ -1172,6 +1172,28 @@
         "matchup": "CLE @ PIT",
         "playText": " C.Boswell 57 yard field goal is No Good, Wide Left, Center-C.Kuntz, Holder-C.Johnston."
       }
+    },
+    "401873026:4018730261755": {
+      "playId": "4018730261755",
+      "eventId": "401873026",
+      "status": "posting",
+      "at": "2026-11-01T19:13:27.087Z",
+      "snapshot": {
+        "playId": "4018730261755",
+        "eventId": "401873026",
+        "kickType": "FG",
+        "result": "Hit Left Upright",
+        "kicker": "Tyler Loop",
+        "teamAbbr": "BAL",
+        "quarter": "Q2",
+        "clock": "7:41",
+        "awayAbbr": "BAL",
+        "homeAbbr": "BUF",
+        "awayScore": 7,
+        "homeScore": 13,
+        "matchup": "BAL @ BUF",
+        "playText": " T.Loop 34 yard field goal is No Good, Hit Left Upright, Center-N.Moore, Holder-R.Eckley."
+      }
     }
   },
   "pending": {},
@@ -1182,5 +1204,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-01T18:19:27.801Z"
+  "updatedAt": "2026-11-01T19:13:27.087Z"
 }
