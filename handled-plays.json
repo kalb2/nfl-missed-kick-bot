@@ -1103,6 +1103,50 @@
           "Tucker Kraft 12 Yd pass from Jordan Love (Trey Smack PAT Failed)"
         ]
       }
+    },
+    "401873030:401873030150": {
+      "playId": "401873030150",
+      "eventId": "401873030",
+      "status": "posting",
+      "at": "2026-11-01T18:13:26.058Z",
+      "snapshot": {
+        "playId": "401873030150",
+        "eventId": "401873030",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Will Reichard",
+        "teamAbbr": "MIN",
+        "quarter": "Q1",
+        "clock": "13:12",
+        "awayAbbr": "MIN",
+        "homeAbbr": "DET",
+        "awayScore": 0,
+        "homeScore": 0,
+        "matchup": "MIN @ DET",
+        "playText": "W.Reichard 57 yard field goal is No Good, Wide Right, Center-A.DePaola, Holder-B.Thorson."
+      }
+    },
+    "401873025:401873025276": {
+      "playId": "401873025276",
+      "eventId": "401873025",
+      "status": "posting",
+      "at": "2026-11-01T18:13:26.058Z",
+      "snapshot": {
+        "playId": "401873025276",
+        "eventId": "401873025",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Nick Folk",
+        "teamAbbr": "ATL",
+        "quarter": "Q1",
+        "clock": "10:00",
+        "awayAbbr": "ATL",
+        "homeAbbr": "TB",
+        "awayScore": 0,
+        "homeScore": 0,
+        "matchup": "ATL @ TB",
+        "playText": "N.Folk 53 yard field goal is No Good, Wide Left, Center-L.McCullough, Holder-J.Bailey."
+      }
     }
   },
   "pending": {},
@@ -1113,5 +1157,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-10-30T00:41:41.189Z"
+  "updatedAt": "2026-11-01T18:13:26.058Z"
 }
