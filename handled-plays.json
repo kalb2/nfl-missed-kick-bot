@@ -1149,6 +1149,28 @@
         "matchup": "ATL @ TB",
         "playText": "N.Folk 53 yard field goal is No Good, Wide Left, Center-L.McCullough, Holder-J.Bailey."
       }
+    },
+    "401873027:401873027411": {
+      "playId": "401873027411",
+      "eventId": "401873027",
+      "status": "posting",
+      "at": "2026-11-01T18:19:26.579Z",
+      "snapshot": {
+        "playId": "401873027411",
+        "eventId": "401873027",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Chris Boswell",
+        "teamAbbr": "PIT",
+        "quarter": "Q1",
+        "clock": "11:19",
+        "awayAbbr": "CLE",
+        "homeAbbr": "PIT",
+        "awayScore": 0,
+        "homeScore": 0,
+        "matchup": "CLE @ PIT",
+        "playText": " C.Boswell 57 yard field goal is No Good, Wide Left, Center-C.Kuntz, Holder-C.Johnston."
+      }
     }
   },
   "pending": {},
@@ -1159,5 +1181,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-01T18:13:27.450Z"
+  "updatedAt": "2026-11-01T18:19:26.579Z"
 }
