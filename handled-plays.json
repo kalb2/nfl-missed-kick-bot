@@ -1195,6 +1195,28 @@
         "matchup": "BAL @ BUF",
         "playText": " T.Loop 34 yard field goal is No Good, Hit Left Upright, Center-N.Moore, Holder-R.Eckley."
       }
+    },
+    "401873024:4018730242217": {
+      "playId": "4018730242217",
+      "eventId": "401873024",
+      "status": "posting",
+      "at": "2026-11-01T19:37:26.407Z",
+      "snapshot": {
+        "playId": "4018730242217",
+        "eventId": "401873024",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Brandon Aubrey",
+        "teamAbbr": "DAL",
+        "quarter": "Q2",
+        "clock": "0:04",
+        "awayAbbr": "ARI",
+        "homeAbbr": "DAL",
+        "awayScore": 3,
+        "homeScore": 14,
+        "matchup": "ARI @ DAL",
+        "playText": "B.Aubrey 61 yard field goal is No Good, Wide Right, Center-T.Sieg, Holder-B.Anger."
+      }
     }
   },
   "pending": {},
@@ -1205,5 +1227,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-01T19:13:28.484Z"
+  "updatedAt": "2026-11-01T19:37:26.408Z"
 }
