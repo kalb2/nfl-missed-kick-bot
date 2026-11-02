@@ -1336,6 +1336,28 @@
         "matchup": "KC @ DEN",
         "playText": "H.Butker 54 yard field goal is No Good, Wide Right, Center-J.Winchester, Holder-M.Araiza."
       }
+    },
+    "401873035:401873035315": {
+      "playId": "401873035315",
+      "eventId": "401873035",
+      "status": "posting",
+      "at": "2026-11-02T01:37:27.509Z",
+      "snapshot": {
+        "playId": "401873035315",
+        "eventId": "401873035",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Drew Stevens",
+        "teamAbbr": "WSH",
+        "quarter": "Q1",
+        "clock": "12:14",
+        "awayAbbr": "PHI",
+        "homeAbbr": "WSH",
+        "awayScore": 0,
+        "homeScore": 0,
+        "matchup": "PHI @ WSH",
+        "playText": "D.Stevens 55 yard field goal is No Good, Wide Right, Center-T.Ott, Holder-T.Way."
+      }
     }
   },
   "pending": {},
@@ -1346,5 +1368,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-02T00:25:28.768Z"
+  "updatedAt": "2026-11-02T01:37:27.510Z"
 }
