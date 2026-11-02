@@ -1313,6 +1313,28 @@
         "matchup": "NE @ MIA",
         "playText": "Z.Gonzalez 43 yard field goal is No Good, Wide Left, Center-T.Addington, Holder-B.Pinion."
       }
+    },
+    "401873033:4018730334207": {
+      "playId": "4018730334207",
+      "eventId": "401873033",
+      "status": "posting",
+      "at": "2026-11-02T00:25:27.186Z",
+      "snapshot": {
+        "playId": "4018730334207",
+        "eventId": "401873033",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Harrison Butker",
+        "teamAbbr": "KC",
+        "quarter": "Q4",
+        "clock": "2:36",
+        "awayAbbr": "KC",
+        "homeAbbr": "DEN",
+        "awayScore": 24,
+        "homeScore": 21,
+        "matchup": "KC @ DEN",
+        "playText": "H.Butker 54 yard field goal is No Good, Wide Right, Center-J.Winchester, Holder-M.Araiza."
+      }
     }
   },
   "pending": {},
@@ -1323,5 +1345,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-02T00:13:29.446Z"
+  "updatedAt": "2026-11-02T00:25:27.187Z"
 }
