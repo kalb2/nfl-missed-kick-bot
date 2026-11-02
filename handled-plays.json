@@ -1290,6 +1290,28 @@
         "matchup": "NE @ MIA",
         "playText": "A.Borregales 40 yard field goal is No Good, Wide Right, Center-J.Ashby, Holder-M.Wishnowsky."
       }
+    },
+    "401873034:4018730343676": {
+      "playId": "4018730343676",
+      "eventId": "401873034",
+      "status": "posting",
+      "at": "2026-11-02T00:13:27.943Z",
+      "snapshot": {
+        "playId": "4018730343676",
+        "eventId": "401873034",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Zane Gonzalez",
+        "teamAbbr": "MIA",
+        "quarter": "Q4",
+        "clock": "6:45",
+        "awayAbbr": "NE",
+        "homeAbbr": "MIA",
+        "awayScore": 24,
+        "homeScore": 13,
+        "matchup": "NE @ MIA",
+        "playText": "Z.Gonzalez 43 yard field goal is No Good, Wide Left, Center-T.Addington, Holder-B.Pinion."
+      }
     }
   },
   "pending": {},
@@ -1300,5 +1322,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-01T22:31:29.051Z"
+  "updatedAt": "2026-11-02T00:13:27.943Z"
 }
