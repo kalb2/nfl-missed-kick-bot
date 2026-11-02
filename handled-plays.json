@@ -1359,6 +1359,28 @@
         "matchup": "PHI @ WSH",
         "playText": "D.Stevens 55 yard field goal is No Good, Wide Right, Center-T.Ott, Holder-T.Way."
       }
+    },
+    "401873035:4018730353640": {
+      "playId": "4018730353640",
+      "eventId": "401873035",
+      "status": "posting",
+      "at": "2026-11-02T04:01:26.122Z",
+      "snapshot": {
+        "playId": "4018730353640",
+        "eventId": "401873035",
+        "kickType": "FG",
+        "result": "Hit Left Upright",
+        "kicker": "Jake Elliott",
+        "teamAbbr": "PHI",
+        "quarter": "Q4",
+        "clock": "9:01",
+        "awayAbbr": "PHI",
+        "homeAbbr": "WSH",
+        "awayScore": 10,
+        "homeScore": 16,
+        "matchup": "PHI @ WSH",
+        "playText": "J.Elliott 41 yard field goal is No Good, Hit Left Upright, Center-R.Underwood, Holder-B.Mann."
+      }
     }
   },
   "pending": {},
@@ -1369,5 +1391,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-02T01:37:28.854Z"
+  "updatedAt": "2026-11-02T04:01:26.122Z"
 }
