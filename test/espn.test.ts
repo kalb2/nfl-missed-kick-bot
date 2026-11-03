@@ -44,7 +44,7 @@ describe("isWatchableGame", () => {
     ).toBe(false);
   });
 
-  it("watches a final only within kickoff + 4h + window", () => {
+  it("watches a final through kickoff + 6h and not after", () => {
     const start = Date.now() - 3 * 60 * 60 * 1000;
     const ev = event({
       id: "3",
@@ -52,7 +52,8 @@ describe("isWatchableGame", () => {
       status: { type: { state: "post", completed: true } },
     });
     expect(isWatchableGame(ev, Date.now(), 45)).toBe(true);
-    expect(isWatchableGame(ev, start + (5 * 60 + 30) * 60 * 1000, 45)).toBe(false);
+    expect(isWatchableGame(ev, start + (5 * 60 + 30) * 60 * 1000, 45)).toBe(true);
+    expect(isWatchableGame(ev, start + (6 * 60 + 1) * 60 * 1000, 45)).toBe(false);
   });
 
   it("allToday includes today's finals and skips upcoming", () => {

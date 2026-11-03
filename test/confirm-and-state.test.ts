@@ -351,7 +351,7 @@ describe("posted misses stay watched until the window closes", () => {
     const espn = espnSequence(() => summary, () => event("post", kickoffAgo, h.clock));
     await pollOnce({ espn, store, poster, notifier, now: h.now, sleep: h.sleep }, live);
     summary = penaltyErased;
-    kickoffAgo = 300; // past kickoff + 4h45m
+    kickoffAgo = 370; // past kickoff + 6h
     await pollOnce({ espn, store, poster, notifier, now: h.now, sleep: h.sleep }, live);
     expect(notifier.alerts).toEqual([]);
   });

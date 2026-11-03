@@ -109,6 +109,9 @@ jobs:
           STATE_BRANCH: bot-state
           STATE_FILE: handled-plays.json
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Public worker status. Set repository variable SCHEDULER_STATUS_URL=off to skip.
+          # The check opens one bot-alert issue; it never tweets and never dispatches.
+          SCHEDULER_STATUS_URL: ${{ vars.SCHEDULER_STATUS_URL || 'https://nfl-missed-kick-scheduler.k24corp.workers.dev/status' }}
         run: |
           EXTRA=""
           if [ "${{ steps.flags.outputs.all_today }}" = "true" ]; then

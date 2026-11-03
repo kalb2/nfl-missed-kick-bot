@@ -68,3 +68,9 @@ export interface GitHubDispatcher {
 
 export const SLATE_KEY = "slate";
 export const LAST_DISPATCH_KEY = "lastDispatchAt";
+/** Set when an ESPN refresh throws or returns an empty board over a live slate. Cleared on success. */
+export const LAST_REFRESH_ERROR_KEY = "lastRefreshError";
+/** ISO time of the last refresh attempt (success or failure), used to back off dense ticks. */
+export const LAST_REFRESH_ATTEMPT_KEY = "lastRefreshAttemptAt";
+/** Set when repository_dispatch fails. Cleared on the next success. */
+export const LAST_DISPATCH_ERROR_KEY = "lastDispatchError";
