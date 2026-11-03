@@ -1,0 +1,184 @@
+{
+  "_note": "Week 8 2026 CAR @ GB. Trey Smack extra point No Good, Hit Left Upright. pointAfterAttempt id 62.",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401873023",
+  "header": {
+    "id": "401873023",
+    "competitions": [
+      {
+        "date": "2026-10-30T00:15Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "9",
+            "homeAway": "home",
+            "score": "27",
+            "team": {
+              "id": "9",
+              "abbreviation": "GB",
+              "displayName": "Green Bay Packers",
+              "name": "Packers",
+              "location": "Green Bay"
+            }
+          },
+          {
+            "id": "29",
+            "homeAway": "away",
+            "score": "19",
+            "team": {
+              "id": "29",
+              "abbreviation": "CAR",
+              "displayName": "Carolina Panthers",
+              "name": "Panthers",
+              "location": "Carolina"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "401873023666",
+            "type": {
+              "id": "67",
+              "text": "Passing Touchdown",
+              "abbreviation": "TD"
+            },
+            "text": "(Shotgun) J.Love pass short middle to T.Kraft for 12 yards, TOUCHDOWN. T.Smack extra point is No Good, Hit Left Upright, Center-M.Orzech, Holder-D.Whelan.",
+            "awayScore": 3,
+            "homeScore": 6,
+            "period": {
+              "number": 1
+            },
+            "clock": {
+              "displayValue": "5:08"
+            },
+            "scoringPlay": true,
+            "teamParticipants": [
+              {
+                "id": "9",
+                "type": "offense"
+              },
+              {
+                "id": "29",
+                "type": "defense"
+              }
+            ],
+            "statYardage": 12,
+            "pointAfterAttempt": {
+              "id": 62,
+              "text": "Extra Point Missed",
+              "abbreviation": "Extra Point Missed",
+              "value": 0
+            },
+            "isPenalty": false,
+            "start": {
+              "down": 3,
+              "distance": 8,
+              "yardLine": 88,
+              "yardsToEndzone": 12,
+              "downDistanceText": "3rd & 8 at CAR 12",
+              "shortDownDistanceText": "3rd & 8",
+              "possessionText": "CAR 12",
+              "team": {
+                "id": "9"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "scoringPlays": [
+    {
+      "id": "401873023666",
+      "type": {
+        "id": "67",
+        "text": "Passing Touchdown",
+        "abbreviation": "TD"
+      },
+      "text": "Tucker Kraft 12 Yd pass from Jordan Love (Trey Smack PAT Failed)",
+      "awayScore": 3,
+      "homeScore": 6,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 308,
+        "displayValue": "5:08"
+      }
+    }
+  ],
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.6421,
+      "tiePercentage": 0,
+      "playId": "401873023641"
+    },
+    {
+      "homeWinPercentage": 0.7174,
+      "tiePercentage": 0,
+      "playId": "401873023666"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "29",
+          "abbreviation": "CAR"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4568263",
+                  "displayName": "Ryan Fitzgerald",
+                  "firstName": "Ryan",
+                  "lastName": "Fitzgerald"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "9",
+          "abbreviation": "GB"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4869461",
+                  "displayName": "Trey Smack",
+                  "firstName": "Trey",
+                  "lastName": "Smack"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

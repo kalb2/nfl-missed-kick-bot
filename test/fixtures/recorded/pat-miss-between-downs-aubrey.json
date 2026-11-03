@@ -1,0 +1,195 @@
+{
+  "_note": "Week 1 2026 DAL @ NYG. Brandon Aubrey PAT No Good, Wide Right, after taunting enforced between downs. The try still counts.",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401872930",
+  "header": {
+    "id": "401872930",
+    "competitions": [
+      {
+        "date": "2026-09-14T00:20Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "19",
+            "homeAway": "home",
+            "score": "28",
+            "team": {
+              "id": "19",
+              "abbreviation": "NYG",
+              "displayName": "New York Giants",
+              "name": "Giants",
+              "location": "New York"
+            }
+          },
+          {
+            "id": "6",
+            "homeAway": "away",
+            "score": "20",
+            "team": {
+              "id": "6",
+              "abbreviation": "DAL",
+              "displayName": "Dallas Cowboys",
+              "name": "Cowboys",
+              "location": "Dallas"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729303720",
+            "type": {
+              "id": "67",
+              "text": "Passing Touchdown",
+              "abbreviation": "TD"
+            },
+            "text": "(Shotgun) D.Prescott pass short left to J.Williams for 17 yards, TOUCHDOWN. ** Injury Update: NYG-G.Newsome has returned to the game. PENALTY on DAL-J.Williams, Taunting, 15 yards, enforced between downs. B.Aubrey extra point is No Good, Wide Right, Center-T.Sieg, Holder-B.Anger.",
+            "awayScore": 20,
+            "homeScore": 28,
+            "period": {
+              "number": 4
+            },
+            "clock": {
+              "displayValue": "5:21"
+            },
+            "scoringPlay": true,
+            "teamParticipants": [
+              {
+                "id": "6",
+                "type": "offense"
+              },
+              {
+                "id": "19",
+                "type": "defense"
+              }
+            ],
+            "statYardage": 17,
+            "pointAfterAttempt": {
+              "id": 62,
+              "text": "Extra Point Missed",
+              "abbreviation": "Extra Point Missed",
+              "value": 0
+            },
+            "isPenalty": true,
+            "penalty": {
+              "yards": 15,
+              "type": {
+                "slug": "taunting",
+                "text": "Taunting"
+              },
+              "status": {
+                "slug": "accepted",
+                "text": "Accepted"
+              }
+            },
+            "start": {
+              "down": 1,
+              "distance": 10,
+              "yardLine": 17,
+              "yardsToEndzone": 17,
+              "downDistanceText": "1st & 10 at NYG 17",
+              "shortDownDistanceText": "1st & 10",
+              "possessionText": "NYG 17",
+              "team": {
+                "id": "6"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "scoringPlays": [
+    {
+      "id": "4018729303720",
+      "type": {
+        "id": "67",
+        "text": "Passing Touchdown",
+        "abbreviation": "TD"
+      },
+      "text": "Javonte Williams 17 Yd pass from Dak Prescott (Brandon Aubrey PAT Failed)",
+      "awayScore": 20,
+      "homeScore": 28,
+      "period": {
+        "number": 4
+      },
+      "clock": {
+        "value": 321,
+        "displayValue": "5:21"
+      }
+    }
+  ],
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.947,
+      "tiePercentage": 0,
+      "playId": "4018729303679"
+    },
+    {
+      "homeWinPercentage": 0.8932,
+      "tiePercentage": 0,
+      "playId": "4018729303720"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "6",
+          "abbreviation": "DAL"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "3953687",
+                  "displayName": "Brandon Aubrey",
+                  "firstName": "Brandon",
+                  "lastName": "Aubrey"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "19",
+          "abbreviation": "NYG"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "5082424",
+                  "displayName": "Dominic Zvada",
+                  "firstName": "Dominic",
+                  "lastName": "Zvada"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

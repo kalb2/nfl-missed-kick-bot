@@ -1,0 +1,184 @@
+{
+  "_note": "Week 1 2026 CHI @ CAR. Ryan Fitzgerald extra point Blocked. pointAfterAttempt id 43 on the touchdown play.",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401872661",
+  "header": {
+    "id": "401872661",
+    "competitions": [
+      {
+        "date": "2026-09-13T17:00Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "29",
+            "homeAway": "home",
+            "score": "37",
+            "team": {
+              "id": "29",
+              "abbreviation": "CAR",
+              "displayName": "Carolina Panthers",
+              "name": "Panthers",
+              "location": "Carolina"
+            }
+          },
+          {
+            "id": "3",
+            "homeAway": "away",
+            "score": "59",
+            "team": {
+              "id": "3",
+              "abbreviation": "CHI",
+              "displayName": "Chicago Bears",
+              "name": "Bears",
+              "location": "Chicago"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018726614523",
+            "type": {
+              "id": "67",
+              "text": "Passing Touchdown",
+              "abbreviation": "TD"
+            },
+            "text": "(No Huddle, Shotgun) B.Young pass short left to J.Coker for 8 yards, TOUCHDOWN. R.Fitzgerald extra point is Blocked (D.Odeyingbo), Center-J.Jansen, Holder-S.Martin.",
+            "awayScore": 52,
+            "homeScore": 37,
+            "period": {
+              "number": 4
+            },
+            "clock": {
+              "displayValue": "4:00"
+            },
+            "scoringPlay": true,
+            "teamParticipants": [
+              {
+                "id": "29",
+                "type": "offense"
+              },
+              {
+                "id": "3",
+                "type": "defense"
+              }
+            ],
+            "statYardage": 8,
+            "pointAfterAttempt": {
+              "id": 43,
+              "text": "Blocked PAT",
+              "abbreviation": "Blocked PAT",
+              "value": 0
+            },
+            "isPenalty": false,
+            "start": {
+              "down": 2,
+              "distance": 8,
+              "yardLine": 92,
+              "yardsToEndzone": 8,
+              "downDistanceText": "2nd & Goal at CHI 8",
+              "shortDownDistanceText": "2nd & Goal",
+              "possessionText": "CHI 8",
+              "team": {
+                "id": "29"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "scoringPlays": [
+    {
+      "id": "4018726614523",
+      "type": {
+        "id": "67",
+        "text": "Passing Touchdown",
+        "abbreviation": "TD"
+      },
+      "text": "Jalen Coker 8 Yd pass from Bryce Young (Ryan Fitzgerald PAT blocked)",
+      "awayScore": 52,
+      "homeScore": 37,
+      "period": {
+        "number": 4
+      },
+      "clock": {
+        "value": 240,
+        "displayValue": "4:00"
+      }
+    }
+  ],
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.0016,
+      "tiePercentage": 0,
+      "playId": "4018726614495"
+    },
+    {
+      "homeWinPercentage": 0.0031,
+      "tiePercentage": 0,
+      "playId": "4018726614523"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "3",
+          "abbreviation": "CHI"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "17427",
+                  "displayName": "Cairo Santos",
+                  "firstName": "Cairo",
+                  "lastName": "Santos"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "29",
+          "abbreviation": "CAR"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4568263",
+                  "displayName": "Ryan Fitzgerald",
+                  "firstName": "Ryan",
+                  "lastName": "Fitzgerald"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

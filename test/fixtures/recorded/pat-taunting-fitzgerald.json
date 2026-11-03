@@ -1,0 +1,195 @@
+{
+  "_note": "Week 6 2026 CAR @ PHI. Scoring summary only: Tommy Tremble TD (Ryan Fitzgerald PAT failed). Structured penalty is accepted taunting, 15 yards, and the text never says 'enforced between downs'. The TD remained a scoring play and the try result is recorded.",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401872998",
+  "header": {
+    "id": "401872998",
+    "competitions": [
+      {
+        "date": "2026-10-18T17:00Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "21",
+            "homeAway": "home",
+            "score": "14",
+            "team": {
+              "id": "21",
+              "abbreviation": "PHI",
+              "displayName": "Philadelphia Eagles",
+              "name": "Eagles",
+              "location": "Philadelphia"
+            }
+          },
+          {
+            "id": "29",
+            "homeAway": "away",
+            "score": "25",
+            "team": {
+              "id": "29",
+              "abbreviation": "CAR",
+              "displayName": "Carolina Panthers",
+              "name": "Panthers",
+              "location": "Carolina"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729984351",
+            "type": {
+              "id": "67",
+              "text": "Passing Touchdown",
+              "abbreviation": "TD"
+            },
+            "text": "Tommy Tremble 19 Yd pass from Bryce Young (Ryan Fitzgerald PAT failed)",
+            "awayScore": 25,
+            "homeScore": 14,
+            "period": {
+              "number": 4
+            },
+            "clock": {
+              "displayValue": "6:33"
+            },
+            "scoringPlay": true,
+            "teamParticipants": [
+              {
+                "id": "29",
+                "type": "offense"
+              },
+              {
+                "id": "21",
+                "type": "defense"
+              }
+            ],
+            "statYardage": 19,
+            "pointAfterAttempt": {
+              "id": 62,
+              "text": "Extra Point Missed",
+              "abbreviation": "Extra Point Missed",
+              "value": 0
+            },
+            "isPenalty": true,
+            "penalty": {
+              "yards": 15,
+              "type": {
+                "slug": "taunting",
+                "text": "Taunting"
+              },
+              "status": {
+                "slug": "accepted",
+                "text": "Accepted"
+              }
+            },
+            "start": {
+              "down": 1,
+              "distance": 10,
+              "yardLine": 19,
+              "yardsToEndzone": 19,
+              "downDistanceText": "1st & 10 at PHI 19",
+              "shortDownDistanceText": "1st & 10",
+              "possessionText": "PHI 19",
+              "team": {
+                "id": "29"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "scoringPlays": [
+    {
+      "id": "4018729984351",
+      "type": {
+        "id": "67",
+        "text": "Passing Touchdown",
+        "abbreviation": "TD"
+      },
+      "text": "Tommy Tremble 19 Yd pass from Bryce Young (Ryan Fitzgerald PAT failed)",
+      "awayScore": 25,
+      "homeScore": 14,
+      "period": {
+        "number": 4
+      },
+      "clock": {
+        "value": 393,
+        "displayValue": "6:33"
+      }
+    }
+  ],
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.0442,
+      "tiePercentage": 0,
+      "playId": "4018729984402"
+    },
+    {
+      "homeWinPercentage": 0.0343,
+      "tiePercentage": 0,
+      "playId": "4018729984351"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "29",
+          "abbreviation": "CAR"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4568263",
+                  "displayName": "Ryan Fitzgerald",
+                  "firstName": "Ryan",
+                  "lastName": "Fitzgerald"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "21",
+          "abbreviation": "PHI"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "3050478",
+                  "displayName": "Jake Elliott",
+                  "firstName": "Jake",
+                  "lastName": "Elliott"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
