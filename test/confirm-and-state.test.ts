@@ -150,6 +150,34 @@ describe("penalty / No Play / nullified / reversed plays are never misses", () =
     expect(
       nullifiedReason(fg("X.Kicker 40 yard field goal is No Good.", { isPenalty: true, penalty: { status: { slug: "accepted" } } })),
     ).toBe("accepted penalty on the kick");
+    // Fitzgerald 2026: taunting on the TD, scoring summary never says "between downs". The try still counts.
+    const fitzgerald: Play = {
+      id: "4018729984351",
+      type: { id: "67", text: "Passing Touchdown" },
+      scoringPlay: true,
+      isPenalty: true,
+      penalty: { yards: 15, type: { text: "Taunting" }, status: { slug: "accepted", text: "Accepted" } },
+      pointAfterAttempt: { id: 62, text: "Extra Point Missed" },
+      text: "Tommy Tremble 19 Yd pass from Bryce Young (Ryan Fitzgerald PAT failed)",
+    };
+    expect(nullifiedReason(fitzgerald, new Set(["4018729984351"]))).toBeUndefined();
+    // Same TD, but the kick itself was wiped.
+    expect(
+      nullifiedReason(
+        { ...fitzgerald, text: `${fitzgerald.text} - No Play.` },
+        new Set(["4018729984351"]),
+      ),
+    ).toBe("No Play");
+    // A standalone extra point is the kick, so an accepted flag drops it.
+    expect(
+      nullifiedReason({
+        id: "pat-itself",
+        type: { id: "62", text: "Extra Point Missed" },
+        isPenalty: true,
+        penalty: { status: { slug: "accepted" } },
+        text: "R.Fitzgerald extra point is No Good, Wide Right.",
+      }),
+    ).toBe("accepted penalty on the kick");
     // Butker 2025: TD + unsportsmanlike "enforced between downs" + PAT No Good → real miss.
     const butker: Play = {
       id: "4017729203761",

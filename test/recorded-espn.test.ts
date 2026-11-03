@@ -242,7 +242,87 @@ describe("recorded 2026 ESPN plays", () => {
     expect(stevensPlay.type?.text).toBe("Interception Return Touchdown");
     expect(stevensPlay.text).toMatch(/enforced between downs/i);
     const stevens = only(load("recorded/pat-miss-between-downs-stevens.json"));
-    expect(stevens).toMatchObject({ kickType: "PAT", result: "Wide Left", kicker: "Drew Stevens" });
+    expect(stevens).toMatchObject({
+      kickType: "PAT",
+      result: "Wide Left",
+      kicker: "Drew Stevens",
+      teamAbbr: "WSH",
+    });
+  });
+
+  it("counts a PAT when taunting is on the touchdown and the text never says between downs", () => {
+    const summary = load("recorded/pat-taunting-fitzgerald.json");
+    const play = drivePlay(summary);
+    expect(play.text).toBe("Tommy Tremble 19 Yd pass from Bryce Young (Ryan Fitzgerald PAT failed)");
+    expect(play.penalty?.type?.text).toBe("Taunting");
+    expect(String(play.pointAfterAttempt?.id)).toBe("62");
+    expect(play.text).not.toMatch(/between downs/i);
+    const miss = withSeason(only(summary), 0, 1);
+    expect(miss).toMatchObject({ kickType: "PAT", kicker: "Ryan Fitzgerald", teamAbbr: "CAR", result: "No Good" });
+    const tweet = composeTweet(miss);
+    expect(tweet.startsWith("❌ Missed PAT")).toBe(true);
+    expect(tweet.split("\n").at(-1)).toBe("#KeepPounding #FlyEaglesFly");
+  });
+
+  it("credits return-touchdown PATs to the scoring team, hashtag first", () => {
+    const stevens = withSeason(only(load("recorded/pat-miss-between-downs-stevens.json")), 0, 1);
+    expect(stevens).toMatchObject({ kicker: "Drew Stevens", teamAbbr: "WSH", result: "Wide Left" });
+    const stevensTweet = composeTweet(stevens);
+    expect(stevensTweet).toContain("Kicker: Drew Stevens (WSH)");
+    expect(stevensTweet).not.toContain("(SEA)");
+    expect(stevensTweet.split("\n").at(-1)).toBe("#RaiseHail #Seahawks");
+
+    const carlson = withSeason(only(load("recorded/pat-fumble-return-carlson.json")), 0, 1);
+    expect(carlson).toMatchObject({ kicker: "Daniel Carlson", teamAbbr: "NO", result: "Wide Left" });
+    const carlsonTweet = composeTweet(carlson);
+    expect(carlsonTweet).toContain("Kicker: Daniel Carlson (NO)");
+    expect(carlsonTweet).not.toContain("(MIN)");
+    expect(carlsonTweet.split("\n").at(-1)).toBe("#Saints #Skol");
+  });
+
+  it("credits a punt-return PAT to the defense when the boxscore has no kicker", () => {
+    const summary: GameSummary = {
+      header: {
+        id: "punt-return",
+        competitions: [
+          {
+            competitors: [
+              { id: "1", homeAway: "away", team: { id: "1", abbreviation: "GB", displayName: "Green Bay Packers" } },
+              { id: "2", homeAway: "home", team: { id: "2", abbreviation: "CHI", displayName: "Chicago Bears" } },
+            ],
+          },
+        ],
+      },
+      drives: {
+        previous: [
+          {
+            plays: [
+              {
+                id: "punt-return-pat",
+                type: { id: "34", text: "Punt Return Touchdown" },
+                text: "Punt returned 80 yards for a touchdown. C.Santos extra point is No Good, Wide Left.",
+                teamParticipants: [
+                  { id: "2", type: "defense" },
+                  { id: "1", type: "offense" },
+                ],
+                pointAfterAttempt: { id: 62, text: "Extra Point Missed" },
+                period: { number: 2 },
+                clock: { displayValue: "1:00" },
+                awayScore: 0,
+                homeScore: 6,
+                scoringPlay: true,
+              },
+            ],
+          },
+        ],
+      },
+      scoringPlays: [{ id: "punt-return-pat", scoringPlay: true }],
+    };
+    const miss = withSeason(only(summary), 0, 1);
+    expect(miss).toMatchObject({ kicker: "C.Santos", teamAbbr: "CHI", kickType: "PAT", result: "Wide Left" });
+    expect(composeTweet(miss).split("\n").at(-1)).toBe("#DaBears #GoPackGo");
+    expect(composeTweet(miss)).toContain("Kicker: C.Santos (CHI)");
+    expect(composeTweet(miss)).not.toContain("(GB)");
   });
 
   it("formats the tweet from the recorded plays", () => {
@@ -530,49 +610,5 @@ describe("poll behavior on recorded plays (no X, no GitHub)", () => {
     );
     const result = await poster.post("❌ Missed FG\nKicker: Test (HOU)");
     expect(result.id).toBe("dry-run");
-  });
-});
-
-describe("known bugs against recorded 2026 plays (expected failures)", () => {
-  // Week 6 CAR @ PHI, play 4018729984351. ESPN's only text is the scoring summary
-  // "Tommy Tremble 19 Yd pass from Bryce Young (Ryan Fitzgerald PAT failed)" plus a
-  // structured accepted taunting penalty (15 yards). The TD stayed in scoringPlays
-  // and the try result is recorded, but the text never says "enforced between downs",
-  // so nullifiedReason treats it as an accepted penalty on the kick and the bot
-  // drops a real PAT miss. Not fixed here.
-  it.fails("counts Fitzgerald's PAT failed when taunting on the TD has no between-downs phrase", () => {
-    const summary = load("recorded/pat-taunting-fitzgerald.json");
-    const play = drivePlay(summary);
-    expect(play.text).toBe("Tommy Tremble 19 Yd pass from Bryce Young (Ryan Fitzgerald PAT failed)");
-    expect(play.penalty?.type?.text).toBe("Taunting");
-    expect(String(play.pointAfterAttempt?.id)).toBe("62");
-    const misses = detect(summary);
-    expect(misses).toHaveLength(1);
-    expect(misses[0]).toMatchObject({ kickType: "PAT", kicker: "Ryan Fitzgerald", teamAbbr: "CAR" });
-  });
-
-  // Return touchdowns keep teamParticipants type "offense" as the team that snapped
-  // the ball. The bot tweets that team. Drew Stevens kicked for WSH after a pick-six
-  // (SEA @ WSH, play 4018729554262) and Daniel Carlson kicked for NO after a fumble
-  // return (MIN @ NO, play 4018729872643). Both tweets name the right kicker and the
-  // wrong team. Not fixed here.
-  it.fails("attributes Drew Stevens's pick-six PAT to WSH, the team that kicked", () => {
-    const miss = withSeason(only(load("recorded/pat-miss-between-downs-stevens.json")), 0, 1);
-    expect(miss.kicker).toBe("Drew Stevens");
-    expect(miss.teamAbbr).toBe("WSH");
-    const tweet = composeTweet(miss);
-    expect(tweet).toContain("Kicker: Drew Stevens (WSH)");
-    expect(tweet).toContain("#RaiseHail");
-    expect(tweet).not.toContain("(SEA)");
-  });
-
-  it.fails("attributes Daniel Carlson's fumble-return PAT to NO, the team that kicked", () => {
-    const miss = withSeason(only(load("recorded/pat-fumble-return-carlson.json")), 0, 1);
-    expect(miss.kicker).toBe("Daniel Carlson");
-    expect(miss.teamAbbr).toBe("NO");
-    const tweet = composeTweet(miss);
-    expect(tweet).toContain("Kicker: Daniel Carlson (NO)");
-    expect(tweet).toContain("#Saints");
-    expect(tweet).not.toContain("(MIN)");
   });
 });
