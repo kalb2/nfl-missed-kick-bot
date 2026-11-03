@@ -13,6 +13,8 @@
     "dry-run": "tsx src/index.ts dry-run",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:board": "python3 -m unittest discover -s board/tests -v",
+    "board": "bash board/regenerate.sh",
     "typecheck": "tsc --noEmit"
   },
   "license": "MIT",
