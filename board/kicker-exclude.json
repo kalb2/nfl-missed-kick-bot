@@ -1,0 +1,12 @@
+{
+  "_doc": "Kickers left OFF the season miss-leaders board (released / unattached). Read by rescan.py (viewA_top10) and regenerate.sh (board rows). Match is by athleteId when present, else case-insensitive full name. Their misses still count in season totals/allKickers (flagged excluded:true); they just don't take a board slot. Remove an entry if the kicker signs with a team again.",
+  "exclude": [
+    {
+      "kicker": "Harrison Mevis",
+      "athleteId": "4574716",
+      "lastTeam": "LAR",
+      "reason": "Cut Wk 5 - unattached",
+      "added": "2026-10-20"
+    }
+  ]
+}

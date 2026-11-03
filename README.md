@@ -80,6 +80,16 @@ These endpoints are **undocumented public JSON**. ESPN can change or rate-limit 
 
 If `summary.drives` is empty or the site summary fails, it unwraps `gamepackageJSON` from the CDN feed, then the core `/plays` list (same play objects, `$ref`-heavy). Alternate feeds are skipped when the summary already has drives — one extra request per game only when needed.
 
+## Season miss leaders graphic
+
+`board/` rebuilds the weekly top-10 graphic (missed FG + missed PAT, blocks included) from ESPN play-by-play. Logos live in `board/logos/`. One command writes the PNG, a JSON summary, and a suggested caption, and does not post anywhere:
+
+```bash
+bash board/regenerate.sh
+```
+
+Run it by hand, or use **Actions → Season miss leaders board** (`workflow_dispatch` only). That workflow uploads the PNG as an artifact. It does not tweet and it does not touch the poll. See [`board/README.md`](board/README.md).
+
 ## Setup
 
 Requires **Node.js 20+**.

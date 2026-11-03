@@ -1,0 +1,64 @@
+name: Season miss leaders board
+
+# Manual only. Builds the season-miss-leaders PNG and uploads it as an
+# artifact. It does not post to X, does not call the poll workflow, and
+# does not read any credentials. The owner downloads the artifact and
+# uploads the image.
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_week:
+        description: "Last regular-season week to include. Blank uses the Tuesday auto week."
+        required: false
+        type: string
+        default: ""
+      show_pct:
+        description: "Show the season FG/PAT percentage line"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: season-miss-leaders
+  cancel-in-progress: false
+
+jobs:
+  board:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Chrome and the board font
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-liberation wget ca-certificates
+          wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get install -y /tmp/chrome.deb
+
+      - name: Render the board
+        env:
+          RESCAN_MAX_WEEK: ${{ inputs.max_week }}
+          SHOW_PCT: ${{ inputs.show_pct && '1' || '0' }}
+        run: |
+          if [ -z "$RESCAN_MAX_WEEK" ]; then unset RESCAN_MAX_WEEK; fi
+          bash board/regenerate.sh
+
+      - name: Upload the PNG, summary, and suggested post
+        uses: actions/upload-artifact@v4
+        with:
+          name: season-miss-leaders
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            board/out/season-miss-leaders-top10.png
+            board/out/season-miss-leaders.json
+            board/out/season-miss-all.json
+            board/out/suggested-post.txt

@@ -1,4 +1,7 @@
 node_modules/
+board/out/
+__pycache__/
+*.pyc
 dist/
 .env
 .state/
