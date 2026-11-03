@@ -1382,6 +1382,31 @@
         "matchup": "PHI @ WSH",
         "playText": "J.Elliott 41 yard field goal is No Good, Hit Left Upright, Center-R.Underwood, Holder-B.Mann."
       }
+    },
+    "401873036:4018730361939": {
+      "playId": "4018730361939",
+      "eventId": "401873036",
+      "status": "posting",
+      "at": "2026-11-03T02:41:26.367Z",
+      "snapshot": {
+        "playId": "4018730361939",
+        "eventId": "401873036",
+        "kickType": "PAT",
+        "result": "Wide Left",
+        "kicker": "Jason Myers",
+        "teamAbbr": "SEA",
+        "quarter": "Q2",
+        "clock": "0:30",
+        "awayAbbr": "CHI",
+        "homeAbbr": "SEA",
+        "awayScore": 13,
+        "homeScore": 9,
+        "matchup": "CHI @ SEA",
+        "playText": "(Shotgun) S.Darnold pass deep left to J.Smith-Njigba for 43 yards, TOUCHDOWN. J.Myers extra point is No Good, Wide Left, Center-C.Stoll, Holder-M.Dickson.",
+        "altPlayTexts": [
+          "Jaxon Smith-Njigba 43 Yd pass from Sam Darnold (Jason Myers PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
@@ -1392,5 +1417,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-02T04:01:27.620Z"
+  "updatedAt": "2026-11-03T02:41:26.368Z"
 }
