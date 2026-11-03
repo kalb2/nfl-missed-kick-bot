@@ -6,9 +6,9 @@ interface __BaseEnv_Env {
 	GITHUB_REPO: "nfl-missed-kick-bot";
 	GITHUB_EVENT_TYPE: "nfl-poll";
 	PRE_KICKOFF_MIN: "30";
-	POST_KICKOFF_MIN: "285";
+	POST_KICKOFF_MIN: "360";
 	DISPATCH_COOLDOWN_MIN: "5";
-	SLATE_MAX_AGE_HOURS: "168";
+	SLATE_MAX_AGE_HOURS: "48";
 	REFRESH_MIN_INTERVAL_HOURS: "6";
 	LOOKAHEAD_DAYS: "16";
 	ESPN_USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";

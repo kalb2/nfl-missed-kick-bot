@@ -72,6 +72,33 @@ export function parseSlate(raw: string | null): Slate | undefined {
   }
 }
 
+/**
+ * Combine a freshly fetched slate with the one already in KV.
+ * An empty ESPN board must not erase upcoming games (a partial or error page).
+ * Games the new board omitted are kept until their old kickoff leaves the window,
+ * so a short board cannot drop a kickoff. The same id always takes the new kickoff.
+ */
+export function applySlateRefresh(
+  previous: Slate | undefined,
+  next: Slate,
+  nowMs: number,
+  postKickoffMs: number,
+): { slate: Slate; kept: number } | { rejected: string } {
+  const upcoming = (previous?.games ?? []).filter((game) => {
+    const kickoff = parseKickoffMs(game.kickoff);
+    return kickoff !== undefined && kickoff + postKickoffMs >= nowMs;
+  });
+  if (next.games.length === 0 && upcoming.length > 0) {
+    return {
+      rejected: `ESPN returned no games; kept the previous slate (${upcoming.length} still upcoming or in window)`,
+    };
+  }
+  const incoming = new Set(next.games.map((game) => game.id));
+  const kept = upcoming.filter((game) => !incoming.has(game.id));
+  const games = [...next.games, ...kept].sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  return { slate: { ...next, games }, kept: kept.length };
+}
+
 export function shouldRefreshSlate(
   slate: Slate | undefined,
   nowMs: number,

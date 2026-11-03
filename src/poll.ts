@@ -1,4 +1,4 @@
-import { missAlert, snapshotOf, type AlertSink } from "./alerts.js";
+import { missAlert, snapshotOf, type AlertSink, type MissSnapshot } from "./alerts.js";
 import { AlertRouter } from "./alerts.js";
 import { composeTweet } from "./compose.js";
 import {
@@ -39,6 +39,14 @@ export interface PollDeps {
 export const DEFAULT_RECHECK_DELAY_MS = 60_000;
 
 /**
+ * A `posting` claim older than this was left by a run that stopped after the
+ * write-ahead save (job timeout is 10 minutes). Do not tweet again — the post
+ * may have gone out — but do open a tweet_failed alert. The next poll would
+ * otherwise skip the play forever with no notification.
+ */
+export const STUCK_POSTING_MS = 15 * 60_000;
+
+/**
  * What must stay identical between detection and the recheck. Kicker is
  * compared by first-initial + last name so "J.Myers" vs "Jason Myers" (profile
  * lookup flakiness) doesn't count as a change; text is not compared because
@@ -62,6 +70,88 @@ interface GameWork {
 
 const realSleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
+function snapshotFromEntry(entry: HandledEntry): MissSnapshot {
+  if (entry.snapshot) return entry.snapshot;
+  return {
+    playId: entry.playId,
+    ...(entry.eventId ? { eventId: entry.eventId } : {}),
+    kickType: "FG",
+    result: "",
+    kicker: UNKNOWN_KICKER,
+    teamAbbr: "",
+    quarter: "",
+    clock: "",
+    awayAbbr: "",
+    homeAbbr: "",
+    matchup: entry.eventId ?? "unknown game",
+    playText: "",
+  };
+}
+
+function missFromEntry(entry: HandledEntry): MissedKick {
+  const snap = snapshotFromEntry(entry);
+  return {
+    playId: snap.playId,
+    ...(snap.eventId ? { eventId: snap.eventId } : {}),
+    kickType: snap.kickType,
+    result: snap.result,
+    kicker: snap.kicker,
+    teamAbbr: snap.teamAbbr,
+    teamName: snap.teamAbbr,
+    quarter: snap.quarter,
+    clock: snap.clock,
+    awayAbbr: snap.awayAbbr,
+    homeAbbr: snap.homeAbbr,
+    ...(snap.awayScore !== undefined ? { awayScore: snap.awayScore } : {}),
+    ...(snap.homeScore !== undefined ? { homeScore: snap.homeScore } : {}),
+    matchup: snap.matchup,
+    playText: snap.playText,
+    ...(snap.altPlayTexts?.length ? { altPlayTexts: snap.altPlayTexts } : {}),
+  };
+}
+
+/** Alert once for write-ahead claims whose run never recorded posted or failed. Never tweets them. */
+async function recoverAbandonedPostings(deps: PollDeps, alerts: AlertSink, nowMs: number): Promise<void> {
+  for (const entry of deps.store.handledEntries()) {
+    if (entry.status !== "posting") continue;
+    const at = Date.parse(entry.at);
+    if (Number.isFinite(at) && nowMs - at < STUCK_POSTING_MS) continue;
+    if (deps.store.alertRecord("tweet_failed", entry.playId, entry.eventId)) {
+      deps.store.markHandled(entry.playId, entry.eventId, "failed");
+      continue;
+    }
+    const snap = snapshotFromEntry(entry);
+    const miss = missFromEntry(entry);
+    const delivery = await alerts.send(
+      missAlert(
+        "tweet_failed",
+        snap,
+        `The bot claimed ${snap.kicker}'s missed ${snap.kickType} in ${snap.matchup} (${snap.quarter} ${snap.clock}) before posting, then the run stopped without recording success or failure. It will not retry, because the tweet may already have gone out. Check the account and post it by hand if it is missing.`,
+      ),
+      { miss },
+    );
+    if (delivery.via === "failed") continue;
+    deps.store.recordAlert("tweet_failed", entry.playId, entry.eventId, {
+      at: new Date(nowMs).toISOString(),
+      via: delivery.via,
+      ...(delivery.issue ? { issue: delivery.issue.number } : {}),
+    });
+    deps.store.markHandled(entry.playId, entry.eventId, "failed");
+  }
+}
+
+async function saveIfDirty(deps: PollDeps, options: PollOptions, message: string): Promise<string | undefined> {
+  if (!options.persist || !deps.store.isDirty) return undefined;
+  try {
+    await deps.store.save({ message });
+    return undefined;
+  } catch (err) {
+    const messageText = (err as Error).message;
+    console.error("STATE WRITE FAILED: %s", messageText);
+    return messageText;
+  }
+}
+
 function playTexts(play?: Play): string[] {
   if (!play) return [];
   return [play.text, play.shortText, ...(play.altTexts ?? [])].filter((t): t is string => Boolean(t));
@@ -82,6 +172,10 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
   const now = deps.now ?? Date.now;
   const sleep = deps.sleep ?? realSleep;
   const recheckDelayMs = options.recheckDelayMs ?? DEFAULT_RECHECK_DELAY_MS;
+  const notifier = deps.notifier ?? new LogNotifier();
+  const alerts = deps.alerts ?? new AlertRouter({ issues: notifier, stateIssues: new LogStateAlerter() });
+
+  await recoverAbandonedPostings(deps, alerts, now());
 
   const board = await deps.espn.getScoreboard();
   const events = (board.events ?? []).filter((event) =>
@@ -94,6 +188,7 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
   // summaries when the scoreboard has nothing in the watch window.
   if (events.length === 0) {
     console.log("No in-progress or recently finished games; exiting after scoreboard.");
+    const stateWriteError = await saveIfDirty(deps, options, "Record abandoned posting claims");
     return {
       gamesScanned: 0,
       missesFound: 0,
@@ -103,14 +198,13 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
       tweets: [],
       heldForRecheck: [],
       erasedAfterPosting: [],
+      ...(stateWriteError ? { stateWriteError } : {}),
       seasonGamesScanned: 0,
       seasonTallies: [],
     };
   }
 
   const overrides = deps.overrides ?? new Overrides();
-  const notifier = deps.notifier ?? new LogNotifier();
-  const alerts = deps.alerts ?? new AlertRouter({ issues: notifier, stateIssues: new LogStateAlerter() });
   for (const o of overrides.alreadyPostedPlays()) {
     if (!deps.store.has(o.playId)) deps.store.markHandled(o.playId, o.eventId, "manual");
   }

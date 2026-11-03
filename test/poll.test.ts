@@ -1,9 +1,10 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import type { AlertPayload } from "../src/alerts.js";
 import { composeTweet } from "../src/compose.js";
 import { EspnClient } from "../src/espn.js";
 import { pollOnce } from "../src/poll.js";
@@ -202,5 +203,109 @@ describe("pollOnce", () => {
     );
     expect(result.missesFound).toBe(0);
     expect(result.tweets).toEqual([]);
+  });
+
+  it("opens one tweet_failed alert for an abandoned posting claim and does not tweet it", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "missed-kick-"));
+    dirs.push(dir);
+    const file = path.join(dir, "seen.json");
+    const playId = "4018729231674";
+    const entry = {
+      playId,
+      eventId: "401872923",
+      status: "posting",
+      at: new Date(Date.now() - 20 * 60_000).toISOString(),
+      snapshot: {
+        playId,
+        eventId: "401872923",
+        kickType: "FG",
+        result: "Wide Right",
+        kicker: "Daniel Carlson",
+        teamAbbr: "NO",
+        quarter: "Q4",
+        clock: "0:02",
+        awayAbbr: "NO",
+        homeAbbr: "DET",
+        matchup: "NO @ DET",
+        playText: "D.Carlson 62 yard field goal is No Good, Wide Right.",
+      },
+    };
+    await writeFile(
+      file,
+      JSON.stringify({ version: 2, handled: { [`401872923:${playId}`]: entry }, pending: {}, updatedAt: new Date().toISOString() }),
+    );
+    const store = new SeenStore(file);
+    await store.load();
+    const posted: string[] = [];
+    const sent: AlertPayload[] = [];
+    const espn = mockEspn({}, []);
+    const deps = {
+      espn,
+      store,
+      poster: {
+        post: async (text: string) => {
+          posted.push(text);
+          return { id: "1" };
+        },
+      },
+      alerts: {
+        send: async (payload: AlertPayload) => {
+          sent.push(payload);
+          return { via: "log" as const };
+        },
+      },
+    };
+    const options = { dryRun: false, seedSeen: false, allToday: false, persist: true, recentFinalWindowMin: 45 };
+    await pollOnce(deps, options);
+    expect(posted).toEqual([]);
+    expect(sent.map((payload) => payload.reason)).toEqual(["tweet_failed"]);
+    expect(sent[0]?.message).toMatch(/will not retry/);
+    expect(store.handledEntry(playId, "401872923")?.status).toBe("failed");
+
+    await pollOnce(deps, options);
+    expect(sent).toHaveLength(1);
+    expect(posted).toEqual([]);
+  });
+
+  it("leaves a fresh posting claim alone", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "missed-kick-"));
+    dirs.push(dir);
+    const file = path.join(dir, "seen.json");
+    const playId = "4018729231674";
+    await writeFile(
+      file,
+      JSON.stringify({
+        version: 2,
+        handled: {
+          [`401872923:${playId}`]: {
+            playId,
+            eventId: "401872923",
+            status: "posting",
+            at: new Date(Date.now() - 5 * 60_000).toISOString(),
+          },
+        },
+        pending: {},
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+    const store = new SeenStore(file);
+    await store.load();
+    const sent: string[] = [];
+    await pollOnce(
+      {
+        espn: mockEspn({}, []),
+        store,
+        poster: { post: async () => ({ id: "1" }) },
+        alerts: {
+          send: async (payload: AlertPayload) => {
+            sent.push(payload.reason);
+            return { via: "log" as const };
+          },
+        },
+      },
+      { dryRun: false, seedSeen: false, allToday: false, persist: true, recentFinalWindowMin: 45 },
+    );
+    expect(sent).toEqual([]);
+    expect(store.handledEntry(playId, "401872923")?.status).toBe("posting");
   });
 });

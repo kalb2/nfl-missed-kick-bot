@@ -6,6 +6,7 @@ import { createNotifier, createStateAlerter } from "./notify.js";
 import { Overrides } from "./overrides.js";
 import { bootstrapState, runGuardedPoll } from "./run.js";
 import { FileStateBackend, GitHubBranchStateBackend, type StateBackend } from "./state-backend.js";
+import { checkSchedulerHealth, createSchedulerAlerter } from "./scheduler-health.js";
 import { SeenStore } from "./store.js";
 import { SeasonTallyIndex, tallyPathFromStatePath } from "./tallies.js";
 import { createPoster } from "./twitter.js";
@@ -159,6 +160,13 @@ async function main(): Promise<void> {
     }
     return !outcome.blocked;
   };
+
+  if (args.command === "once") {
+    // Best-effort. A status-page failure must not block polling or tweeting.
+    await checkSchedulerHealth({ dryRun, alerter: createSchedulerAlerter(dryRun) }).catch((err) => {
+      console.warn("scheduler health check failed: %s", (err as Error).message);
+    });
+  }
 
   if (args.command === "loop") {
     console.log("Polling every %d ms. Ctrl+C to stop.", config.pollIntervalMs);

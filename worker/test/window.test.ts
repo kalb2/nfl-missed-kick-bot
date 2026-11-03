@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { testConfig } from "../src/config.js";
 import type { Slate, StoredGame } from "../src/types.js";
 import {
+  applySlateRefresh,
   gamesInWindow,
   hasRemainingKickoff,
   isInLiveWindow,
@@ -85,12 +86,20 @@ describe("shouldRefreshSlate", () => {
     expect(shouldRefreshSlate(undefined, now, config)).toEqual({ refresh: true, reason: "slate-empty" });
   });
 
-  it("refreshes when older than 7 days", () => {
+  it("refreshes when older than 48 hours even if a kickoff remains", () => {
     const stored = slate({
-      refreshedAt: new Date(now - 8 * 24 * 3_600_000).toISOString(),
+      refreshedAt: new Date(now - 49 * 3_600_000).toISOString(),
       games: [game("1", "2026-09-20T17:00:00.000Z")],
     });
     expect(shouldRefreshSlate(stored, now, config).reason).toBe("slate-stale");
+  });
+
+  it("leaves a slate younger than 48 hours with a future kickoff alone", () => {
+    const stored = slate({
+      refreshedAt: new Date(now - 24 * 3_600_000).toISOString(),
+      games: [game("1", "2026-09-20T17:00:00.000Z")],
+    });
+    expect(shouldRefreshSlate(stored, now, config)).toEqual({ refresh: false, reason: "slate-fresh" });
   });
 
   it("refreshes when the next kickoff is gone and backoff elapsed", () => {
@@ -120,6 +129,57 @@ describe("shouldRefreshSlate", () => {
       games: [game("1", "2026-09-20T17:00:00.000Z")],
     });
     expect(shouldRefreshSlate(stored, now, config)).toEqual({ refresh: false, reason: "slate-fresh" });
+  });
+});
+
+describe("applySlateRefresh", () => {
+  const now = Date.parse("2026-11-03T15:00:00.000Z");
+  const post = 360 * 60_000;
+
+  it("rejects an empty board when upcoming games are already stored", () => {
+    const previous: Slate = {
+      refreshedAt: "2026-11-01T17:44:10.000Z",
+      source: "espn-scoreboard",
+      games: [game("tnf", "2026-11-06T01:15:00.000Z", "LV @ DEN")],
+    };
+    const next: Slate = { refreshedAt: "2026-11-03T15:00:00.000Z", source: "espn-scoreboard", games: [] };
+    expect(applySlateRefresh(previous, next, now, post)).toEqual({
+      rejected: "ESPN returned no games; kept the previous slate (1 still upcoming or in window)",
+    });
+  });
+
+  it("keeps an omitted future game and takes a new kickoff for the same id", () => {
+    const previous: Slate = {
+      refreshedAt: "2026-11-01T17:44:10.000Z",
+      source: "espn-scoreboard",
+      games: [
+        game("a", "2026-11-08T18:00:00.000Z", "NO @ CIN"),
+        game("b", "2026-11-09T01:20:00.000Z", "KC @ BUF"),
+      ],
+    };
+    const next: Slate = {
+      refreshedAt: "2026-11-03T15:00:00.000Z",
+      source: "espn-scoreboard",
+      games: [game("b", "2026-11-09T01:30:00.000Z", "KC @ BUF")],
+    };
+    const applied = applySlateRefresh(previous, next, now, post);
+    expect("rejected" in applied).toBe(false);
+    if ("rejected" in applied) return;
+    expect(applied.kept).toBe(1);
+    expect(applied.slate.games.map((row) => `${row.id}@${row.kickoff}`)).toEqual([
+      "a@2026-11-08T18:00:00.000Z",
+      "b@2026-11-09T01:30:00.000Z",
+    ]);
+  });
+});
+
+describe("default live window", () => {
+  it("keeps a kickoff inside the window 5 hours after the scheduled start", () => {
+    const config = testConfig();
+    const kickoff = "2026-11-26T18:00:00.000Z";
+    const fiveHours = Date.parse(kickoff) + 5 * 60 * 60_000;
+    expect(gamesInWindow([game("ot", kickoff, "CHI @ DET")], fiveHours, config).map((row) => row.id)).toEqual(["ot"]);
+    expect(isInLiveWindow(kickoff, Date.parse(kickoff) + config.postKickoffMs + 1, config.preKickoffMs, config.postKickoffMs)).toBe(false);
   });
 });
 

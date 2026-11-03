@@ -150,7 +150,7 @@ ESPN scoreboard
   (not required; no Cloudflare credentials needed to poll)
 ```
 
-1. **`poll.yml` cron is the primary wake.** It fires every 5 minutes Thursday–Monday UTC, plus Tuesday 00:00–07:59 UTC so late MNF that is still Monday evening in America/Denver stays covered. That window includes TNF, Friday/Saturday slates (internationals, Christmas), Sunday, and MNF. Tuesday after 08:00 UTC and all Wednesday have no Actions cron.
+1. **`poll.yml` is registered every 5 minutes Thursday–Monday UTC**, plus Tuesday 00:00–07:59 UTC so late MNF that is still Monday evening in America/Denver stays covered. That window includes TNF, Friday/Saturday slates (internationals, Christmas), Sunday, and MNF. Tuesday after 08:00 UTC and all Wednesday have no Actions cron. GitHub often starts that cron hours late. On Sunday 2026-11-01 the schedule fired 5 times and the worker's `repository_dispatch` fired 65 times, about every 6 minutes. Treat the worker as the thing that actually polls during games.
 2. Each cron run hits the ESPN scoreboard. If nothing is in-progress or recently finished, the bot **exits after that one call** — no season-tally refresh, no per-game summaries.
 3. The Worker in [`worker/`](worker/) is kept in-tree as an **optional** later wake: it can store ESPN kickoffs in KV and `repository_dispatch` `nfl-poll` only while a game is in a live window. It is **not** required for the bot to run. Publish it with **Actions → Deploy Cloudflare Worker → Run workflow** once `CLOUDFLARE_API_TOKEN` and `WORKER_GITHUB_PAT` are set.
 4. Tweets stay in the TypeScript bot. The Worker never talks to X.
@@ -190,15 +190,15 @@ Cloudflare cron is UTC. Operator timezone for reading the table is America/Denve
 | --- | --- | --- | --- |
 | `*/2 * * * THU,FRI,SAT,SUN,MON` | every 2 min Thu–Mon | Wed 5–6 PM through Mon evening | Read KV; dispatch if a kickoff is in the live window |
 | `*/2 0-7 * * TUE` | every 2 min Tue 00:00–07:59 | Mon ~5–6 PM through ~12–1 AM Tue | Same tick — late MNF / OT still Monday local |
-| `0 15 * * TUE,WED` | 15:00 Tue and Wed | ~8–9 AM | Refresh slate if empty / stale / next kickoff missing. **No dispatch.** |
+| `0 15 * * TUE,WED` | 15:00 Tue and Wed | ~8–9 AM | Always refresh the slate from ESPN. **No dispatch.** |
 
 There is **no** `*/2 * * * *` all-week cron. Tuesday after 08:00 UTC and all of Wednesday are refresh-only (the 15:00 job), not dense ticks.
 
 ### When the Worker dispatches
 
-- **Yes (dense tick only):** at least one stored kickoff is inside `[kickoff − 30m, kickoff + 4h45m]` **and** it has not dispatched in the last 5 minutes.
+- **Yes (dense tick only):** at least one stored kickoff is inside `[kickoff − 30m, kickoff + 6h]` **and** it has not dispatched in the last 5 minutes.
 - **No:** empty window → return immediately (KV read only). Midweek refresh cron never dispatches.
-- **Refresh ESPN** (not every tick): slate missing/empty, `refreshedAt` older than 168 hours, or every stored kickoff is past the post-window *and* the last refresh was at least 6 hours ago (backoff so offseason does not hammer ESPN). The Tue/Wed 15:00 cron is what keeps KV current over the idle midweek.
+- **Refresh ESPN** (not every tick): slate missing/empty, `refreshedAt` older than 48 hours, or every stored kickoff is past the post-window *and* the last refresh was at least 6 hours ago (backoff so offseason does not hammer ESPN). A failed refresh keeps the previous slate, records `lastRefreshError` on `/status`, and dense ticks wait 6 hours before trying ESPN again. The Tue/Wed 15:00 cron **always** refreshes, even when future kickoffs are still stored.
 
 `poll.yml` concurrency group `missed-kick-poll` still serializes overlapping Actions runs.
 
@@ -311,9 +311,9 @@ GitHub token permissions:
 | `GITHUB_REPO` | `nfl-missed-kick-bot` | Repo name for dispatch |
 | `GITHUB_EVENT_TYPE` | `nfl-poll` | `repository_dispatch` type (`poll.yml` listens for this) |
 | `PRE_KICKOFF_MIN` | `30` | Minutes before kickoff to start waking Actions |
-| `POST_KICKOFF_MIN` | `285` | Minutes after kickoff to keep waking (4h + 45m) |
+| `POST_KICKOFF_MIN` | `360` | Minutes after kickoff to keep waking (6h, covers delay and overtime) |
 | `DISPATCH_COOLDOWN_MIN` | `5` | Minimum minutes between dispatches |
-| `SLATE_MAX_AGE_HOURS` | `168` | ESPN refresh at least weekly (flex updates) |
+| `SLATE_MAX_AGE_HOURS` | `48` | Dense ticks resync when the slate is older than this (flex updates). Tue/Wed 15:00 UTC always refreshes. |
 | `REFRESH_MIN_INTERVAL_HOURS` | `6` | Backoff when the slate has no remaining kickoff |
 | `LOOKAHEAD_DAYS` | `16` | Extra ESPN weeks to prefetch on refresh |
 | `ESPN_USER_AGENT` | browser UA | Same idea as the bot; `site.api` often 403s from cloud IPs |
@@ -370,7 +370,7 @@ See [`.env.example`](.env.example).
 | `STATE_PATH` | `.state/seen.json` | Local handled-plays list for `STATE_BACKEND=file` (season tallies live beside it as `tallies.json`) |
 | `STATE_BACKEND` | `file` | `github` = handled plays in `STATE_FILE` on `STATE_BRANCH` (poll.yml) |
 | `STATE_BRANCH` / `STATE_FILE` | `bot-state` / `handled-plays.json` | Durable state location for `STATE_BACKEND=github` |
-| `RECENT_FINAL_WINDOW_MIN` | `45` | Extra time after a ~4h game |
+| `RECENT_FINAL_WINDOW_MIN` | `45` | Added to a 5h15 base so finished games stay watched until kickoff + 6h |
 | `SEED_SEEN` | `false` | Record misses, do not tweet |
 | `ESPN_USER_AGENT` | bot UA | Override if ESPN blocks |
 
@@ -402,7 +402,7 @@ MIT
 
 **Posting delay.** Polls come from the Worker: a `*/2` cron with a 5-minute dispatch cooldown, which Actions run history shows as one poll every **~6 minutes** during games (median 6.0, worst 7.0 across Oct 6–16, 2026). The `*/5` Actions cron fires only every 1–4 hours. A miss is therefore tweeted **about 60–65 seconds after the poll that first sees it** (the wait plus one re-fetch), i.e. roughly 1–8 minutes after ESPN publishes it, depending on where it lands in the 6-minute poll cycle. Because the check happens inside the same run, a miss on the last play of a game posts even if no later poll comes.
 
-**Posted misses stay watched.** Every poll re-checks the misses it already tweeted for any game still in its watch window (kickoff + 4h45m). If one is no longer a miss, the run waits for the same recheck. If it is still gone, the bot opens one `posted_miss_erased` alert issue. It never deletes the tweet.
+**Posted misses stay watched.** Every poll re-checks the misses it already tweeted for any game still in its watch window (kickoff + 6h, and any game ESPN still marks in progress). If one is no longer a miss, the run waits for the same recheck. If it is still gone, the bot opens one `posted_miss_erased` alert issue. It never deletes the tweet.
 
 **Alerts are GitHub issues.** Every alert is one deduplicated issue labelled **`bot-alert`**, plus a reason label. The title reads `[bot-alert] <what happened>: <matchup> <quarter> <clock> [play <id>]`. The body lists reason, game, kicker, team, kick/result, quarter/clock, score, tweet URL, ESPN link, play id and raw ESPN texts. Dedupe is per play + reason in bot-state (`alerts`), plus a title search so a rebuilt state doesn't re-open. No new secrets are needed: the workflow's `GITHUB_TOKEN` has `issues: write`.
 
@@ -413,12 +413,13 @@ MIT
 | `posted_miss_erased` | `bot-alert`, `posted-miss-erased` | a tweeted miss was later erased/reversed |
 | `state_unavailable` | `bot-alert`, `bot-state-unavailable` | handled-plays list can't be loaded/saved (posting paused) |
 | `state_recovered` | (closes the state issue with a comment) | list loads again |
+| scheduler | `bot-alert`, `scheduler-unhealthy` | worker status shows a stale slate (72h+), a refresh/dispatch error, or a live window with no recent dispatch. Closed when status looks healthy. One issue; no tweet. |
 
 If an issue can't be opened, the run logs a red `::error::` annotation with the full alert and retries on the next poll.
 
 **Durable handled-plays list.** Handled misses (`<game id>:<play id>` → posted / posting / failed / seeded / manual, with a snapshot of what was tweeted) plus per-play alert dedupe live in `handled-plays.json` on the **`bot-state` branch**. poll.yml commits to it through the GitHub contents API with the built-in `GITHUB_TOKEN` (`contents: write`). It survives Actions cache eviction, runner restarts and Worker redeploys, and every change is a commit you can read or revert. The Actions cache now only holds the season tally cache (rebuildable from ESPN).
 
-- **Write-ahead.** Before tweeting, the run commits the play as `posting`. If that commit fails, nothing is posted. If the run dies after posting, the claim is already stored, so a miss can never be posted twice. A tweet that errors is marked `failed` and opens a `tweet_failed` alert issue instead of being retried, because the request may have gone out.
+- **Write-ahead.** Before tweeting, the run commits the play as `posting`. If that commit fails, nothing is posted. If the run dies after posting, the claim is already stored, so a miss can never be posted twice. A tweet that errors is marked `failed` and opens a `tweet_failed` alert issue instead of being retried, because the request may have gone out. A `posting` claim still unfinished after 15 minutes opens the same alert and is marked `failed`; it is not tweeted again.
 - **Fail closed.** If the list can't be loaded (missing branch/file, API error, bad JSON, missing token), the run fetches and posts **nothing**, fails red, and opens one `bot-state-unavailable` alert issue. That issue closes itself when the list loads again. A missing list is never treated as "nothing handled yet".
 - **Bootstrap / restore.** Run **Actions → Poll ESPN and tweet misses → Run workflow** with `bootstrap_state` checked. It creates the `bot-state` branch if needed and marks as handled: every regular-season miss ESPN currently shows, every miss in games from the last ~36h, the old cache `seen.json`, and `alreadyPosted` overrides. It posts nothing and refuses to overwrite an existing list.
 - **Dry runs** (`dry_run` input / `DRY_RUN=true`) read the durable list but never write it, so a demo run can't swallow a live miss.

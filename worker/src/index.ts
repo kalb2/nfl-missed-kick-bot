@@ -1,6 +1,15 @@
 import { configFromEnv } from "./config.js";
 import { dispatchRepositoryEvent, publicErrorMessage } from "./github.js";
-import { handleScheduled, loadLastDispatchAt, loadSlate, logTick, refreshStoredSlate, runTick } from "./scheduler.js";
+import {
+  handleScheduled,
+  loadLastDispatchAt,
+  loadLastDispatchError,
+  loadLastRefreshError,
+  loadSlate,
+  logTick,
+  refreshStoredSlate,
+  runTick,
+} from "./scheduler.js";
 import type { SchedulerDeps } from "./scheduler.js";
 import type { TickResult } from "./types.js";
 import { gamesInWindow, nextKickoffIso } from "./window.js";
@@ -52,18 +61,26 @@ export function unhandledErrorResponse(error: unknown): Response {
 async function statusPayload(env: Env, nowMs: number): Promise<Record<string, unknown>> {
   const config = configFromEnv(env);
   const slate = await loadSlate(env.SLATE);
-  const lastDispatchAt = await loadLastDispatchAt(env.SLATE);
+  const [lastDispatchAt, lastRefreshError, lastDispatchError] = await Promise.all([
+    loadLastDispatchAt(env.SLATE),
+    loadLastRefreshError(env.SLATE),
+    loadLastDispatchError(env.SLATE),
+  ]);
   const live = slate ? gamesInWindow(slate.games, nowMs, config) : [];
+  const refreshedMs = slate?.refreshedAt ? Date.parse(slate.refreshedAt) : NaN;
   return {
     ok: true,
     now: new Date(nowMs).toISOString(),
     zoneNote: "Kickoffs are UTC ISO. Operator timezone for docs is America/Denver.",
     tweets: false,
     refreshedAt: slate?.refreshedAt ?? null,
+    slateAgeHours: Number.isFinite(refreshedMs) ? Math.round(((nowMs - refreshedMs) / 3_600_000) * 10) / 10 : null,
     gameCount: slate?.games.length ?? 0,
     live: live.map((game) => ({ id: game.id, name: game.name, kickoff: game.kickoff })),
     nextKickoff: slate ? (nextKickoffIso(slate.games, nowMs) ?? null) : null,
     lastDispatchAt: lastDispatchAt ?? null,
+    lastRefreshError: lastRefreshError ?? null,
+    lastDispatchError: lastDispatchError ?? null,
     hasGithubToken: Boolean(config.githubToken),
     github: `${config.githubOwner}/${config.githubRepo}`,
     eventType: config.githubEventType,
