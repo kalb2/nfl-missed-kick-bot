@@ -1,0 +1,169 @@
+{
+  "_note": "Week 6 2026 BAL @ CLE. Andre Szmyt 42-yard FG blocked, then Defensive Offside enforced — No Play. Must not be tweeted.",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401872997",
+  "header": {
+    "id": "401872997",
+    "competitions": [
+      {
+        "date": "2026-10-18T17:00Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "5",
+            "homeAway": "home",
+            "score": "13",
+            "team": {
+              "id": "5",
+              "abbreviation": "CLE",
+              "displayName": "Cleveland Browns",
+              "name": "Browns",
+              "location": "Cleveland"
+            }
+          },
+          {
+            "id": "33",
+            "homeAway": "away",
+            "score": "10",
+            "team": {
+              "id": "33",
+              "abbreviation": "BAL",
+              "displayName": "Baltimore Ravens",
+              "name": "Ravens",
+              "location": "Baltimore"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729974017",
+            "type": {
+              "id": "8",
+              "text": "Penalty",
+              "abbreviation": "PEN"
+            },
+            "text": "A.Szmyt 42 yard field goal is BLOCKED (K.Martin), Center-R.Sunahara, Holder-C.Bojorquez, RECOVERED by BLT-T.Jones at BLT 23.PENALTY on BLT-K.Martin, Defensive Offside, 5 yards, enforced at BLT 23 - No Play.",
+            "awayScore": 10,
+            "homeScore": 10,
+            "period": {
+              "number": 4
+            },
+            "clock": {
+              "displayValue": "0:02"
+            },
+            "scoringPlay": false,
+            "teamParticipants": [
+              {
+                "id": "5",
+                "type": "offense"
+              },
+              {
+                "id": "33",
+                "type": "defense"
+              }
+            ],
+            "statYardage": 0,
+            "isPenalty": true,
+            "penalty": {
+              "yards": 5,
+              "type": {
+                "slug": "defensive-offside",
+                "text": "Defensive Offside"
+              },
+              "status": {
+                "slug": "accepted",
+                "text": "Accepted"
+              }
+            },
+            "start": {
+              "down": 4,
+              "distance": 4,
+              "yardLine": 77,
+              "yardsToEndzone": 23,
+              "downDistanceText": "4th & 4 at BAL 23",
+              "shortDownDistanceText": "4th & 4",
+              "possessionText": "BAL 23",
+              "team": {
+                "id": "5"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.9078,
+      "tiePercentage": 0,
+      "playId": "4018729974003"
+    },
+    {
+      "homeWinPercentage": 0.939,
+      "tiePercentage": 0,
+      "playId": "4018729974017"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "33",
+          "abbreviation": "BAL"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4697745",
+                  "displayName": "Tyler Loop",
+                  "firstName": "Tyler",
+                  "lastName": "Loop"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "5",
+          "abbreviation": "CLE"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4258620",
+                  "displayName": "Andre Szmyt",
+                  "firstName": "Andre",
+                  "lastName": "Szmyt"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

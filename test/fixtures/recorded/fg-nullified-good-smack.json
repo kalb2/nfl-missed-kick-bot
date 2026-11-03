@@ -1,0 +1,169 @@
+{
+  "_note": "Week 1 2026 GB @ MIN. Tristan Smack 40-yard FG GOOD, NULLIFIED by penalty, No Play. Not a miss.",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401872927",
+  "header": {
+    "id": "401872927",
+    "competitions": [
+      {
+        "date": "2026-09-13T20:25Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "16",
+            "homeAway": "home",
+            "score": "39",
+            "team": {
+              "id": "16",
+              "abbreviation": "MIN",
+              "displayName": "Minnesota Vikings",
+              "name": "Vikings",
+              "location": "Minnesota"
+            }
+          },
+          {
+            "id": "9",
+            "homeAway": "away",
+            "score": "22",
+            "team": {
+              "id": "9",
+              "abbreviation": "GB",
+              "displayName": "Green Bay Packers",
+              "name": "Packers",
+              "location": "Green Bay"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729273259",
+            "type": {
+              "id": "8",
+              "text": "Penalty",
+              "abbreviation": "PEN"
+            },
+            "text": "T.Smack 40 yard field goal is GOOD, NULLIFIED by Penalty, Center-M.Orzech, Holder-D.Whelan.PENALTY on MIN-D.Turner, Defensive Offside, 5 yards, enforced at MIN 22 - No Play.",
+            "awayScore": 22,
+            "homeScore": 17,
+            "period": {
+              "number": 4
+            },
+            "clock": {
+              "displayValue": "13:21"
+            },
+            "scoringPlay": false,
+            "teamParticipants": [
+              {
+                "id": "9",
+                "type": "offense"
+              },
+              {
+                "id": "16",
+                "type": "defense"
+              }
+            ],
+            "statYardage": 40,
+            "isPenalty": true,
+            "penalty": {
+              "yards": 5,
+              "type": {
+                "slug": "defensive-offside",
+                "text": "Defensive Offside"
+              },
+              "status": {
+                "slug": "accepted",
+                "text": "Accepted"
+              }
+            },
+            "start": {
+              "down": 4,
+              "distance": 6,
+              "yardLine": 22,
+              "yardsToEndzone": 22,
+              "downDistanceText": "4th & 6 at MIN 22",
+              "shortDownDistanceText": "4th & 6",
+              "possessionText": "MIN 22",
+              "team": {
+                "id": "9"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.1856,
+      "tiePercentage": 0,
+      "playId": "4018729273236"
+    },
+    {
+      "homeWinPercentage": 0.1775,
+      "tiePercentage": 0,
+      "playId": "4018729273259"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "9",
+          "abbreviation": "GB"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4869461",
+                  "displayName": "Trey Smack",
+                  "firstName": "Trey",
+                  "lastName": "Smack"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "16",
+          "abbreviation": "MIN"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4567104",
+                  "displayName": "Will Reichard",
+                  "firstName": "Will",
+                  "lastName": "Reichard"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,184 @@
+{
+  "_note": "Week 5 2026 MIN @ NO. Daniel Carlson PAT after a Saints fumble-return touchdown. ESPN marks offense as the pre-snap team (MIN), not the defense that scored and kicked.",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401872987",
+  "header": {
+    "id": "401872987",
+    "competitions": [
+      {
+        "date": "2026-10-11T17:00Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "18",
+            "homeAway": "home",
+            "score": "13",
+            "team": {
+              "id": "18",
+              "abbreviation": "NO",
+              "displayName": "New Orleans Saints",
+              "name": "Saints",
+              "location": "New Orleans"
+            }
+          },
+          {
+            "id": "16",
+            "homeAway": "away",
+            "score": "23",
+            "team": {
+              "id": "16",
+              "abbreviation": "MIN",
+              "displayName": "Minnesota Vikings",
+              "name": "Vikings",
+              "location": "Minnesota"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729872643",
+            "type": {
+              "id": "39",
+              "text": "Fumble Return Touchdown",
+              "abbreviation": "TD"
+            },
+            "text": "(Shotgun) K.Murray pass short left to M.Price to NO 12 for 7 yards (M.Emerson; P.Werner). FUMBLES (M.Emerson), RECOVERED by NO-J.Sanker at NO 13. J.Sanker for 87 yards, TOUCHDOWN. D.Carlson extra point is No Good, Wide Left, Center-C.Adomitis, Holder-R.Wright.",
+            "awayScore": 13,
+            "homeScore": 13,
+            "period": {
+              "number": 3
+            },
+            "clock": {
+              "displayValue": "2:34"
+            },
+            "scoringPlay": true,
+            "teamParticipants": [
+              {
+                "id": "18",
+                "type": "defense"
+              },
+              {
+                "id": "16",
+                "type": "offense"
+              }
+            ],
+            "statYardage": 87,
+            "pointAfterAttempt": {
+              "id": 62,
+              "text": "Extra Point Missed",
+              "abbreviation": "Extra Point Missed",
+              "value": 0
+            },
+            "isPenalty": false,
+            "start": {
+              "down": 3,
+              "distance": 15,
+              "yardLine": 19,
+              "yardsToEndzone": 19,
+              "downDistanceText": "3rd & 15 at NO 19",
+              "shortDownDistanceText": "3rd & 15",
+              "possessionText": "NO 19",
+              "team": {
+                "id": "16"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "scoringPlays": [
+    {
+      "id": "4018729872643",
+      "type": {
+        "id": "39",
+        "text": "Fumble Return Touchdown",
+        "abbreviation": "TD"
+      },
+      "text": "Jonas Sanker 87 Yd Fumble Return (Daniel Carlson PAT Failed)",
+      "awayScore": 13,
+      "homeScore": 13,
+      "period": {
+        "number": 3
+      },
+      "clock": {
+        "value": 154,
+        "displayValue": "2:34"
+      }
+    }
+  ],
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.1754,
+      "tiePercentage": 0,
+      "playId": "4018729872620"
+    },
+    {
+      "homeWinPercentage": 0.495,
+      "tiePercentage": 0,
+      "playId": "4018729872643"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "16",
+          "abbreviation": "MIN"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4567104",
+                  "displayName": "Will Reichard",
+                  "firstName": "Will",
+                  "lastName": "Reichard"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "18",
+          "abbreviation": "NO"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "3051909",
+                  "displayName": "Daniel Carlson",
+                  "firstName": "Daniel",
+                  "lastName": "Carlson"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

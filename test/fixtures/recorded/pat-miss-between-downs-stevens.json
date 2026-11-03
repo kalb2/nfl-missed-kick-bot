@@ -1,0 +1,195 @@
+{
+  "_note": "Week 3 2026 SEA @ WSH. Drew Stevens PAT No Good, Wide Left, on an interception-return TD with unsportsmanlike conduct enforced between downs. The try counts. ESPN marks offense as the pre-snap team (SEA), not the defense that scored and kicked.",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401872955",
+  "header": {
+    "id": "401872955",
+    "competitions": [
+      {
+        "date": "2026-09-27T17:00Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "28",
+            "homeAway": "home",
+            "score": "33",
+            "team": {
+              "id": "28",
+              "abbreviation": "WSH",
+              "displayName": "Washington Commanders",
+              "name": "Commanders",
+              "location": "Washington"
+            }
+          },
+          {
+            "id": "26",
+            "homeAway": "away",
+            "score": "31",
+            "team": {
+              "id": "26",
+              "abbreviation": "SEA",
+              "displayName": "Seattle Seahawks",
+              "name": "Seahawks",
+              "location": "Seattle"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729554262",
+            "type": {
+              "id": "36",
+              "text": "Interception Return Touchdown",
+              "abbreviation": "TD"
+            },
+            "text": "S.Darnold pass short middle intended for A.Barner INTERCEPTED by K.Medrano at 50. K.Medrano for 50 yards, TOUCHDOWN.PENALTY on WAS, Unsportsmanlike Conduct, 15 yards, enforced between downs. D.Stevens extra point is No Good, Wide Left, Center-T.Ott, Holder-T.Way.",
+            "awayScore": 24,
+            "homeScore": 33,
+            "period": {
+              "number": 4
+            },
+            "clock": {
+              "displayValue": "3:57"
+            },
+            "scoringPlay": true,
+            "teamParticipants": [
+              {
+                "id": "28",
+                "type": "defense"
+              },
+              {
+                "id": "26",
+                "type": "offense"
+              }
+            ],
+            "statYardage": 50,
+            "pointAfterAttempt": {
+              "id": 62,
+              "text": "Extra Point Missed",
+              "abbreviation": "Extra Point Missed",
+              "value": 0
+            },
+            "isPenalty": true,
+            "penalty": {
+              "yards": 15,
+              "type": {
+                "slug": "unsportsmanlike-conduct",
+                "text": "Unsportsmanlike Conduct"
+              },
+              "status": {
+                "slug": "accepted",
+                "text": "Accepted"
+              }
+            },
+            "start": {
+              "down": 2,
+              "distance": 15,
+              "yardLine": 49,
+              "yardsToEndzone": 49,
+              "downDistanceText": "2nd & 15 at WSH 49",
+              "shortDownDistanceText": "2nd & 15",
+              "possessionText": "WSH 49",
+              "team": {
+                "id": "26"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "scoringPlays": [
+    {
+      "id": "4018729554262",
+      "type": {
+        "id": "36",
+        "text": "Interception Return Touchdown",
+        "abbreviation": "TD"
+      },
+      "text": "Kain Medrano 50 Yd Interception Return (Drew Stevens PAT Failed)",
+      "awayScore": 24,
+      "homeScore": 33,
+      "period": {
+        "number": 4
+      },
+      "clock": {
+        "value": 237,
+        "displayValue": "3:57"
+      }
+    }
+  ],
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.6309,
+      "tiePercentage": 0,
+      "playId": "4018729554236"
+    },
+    {
+      "homeWinPercentage": 0.9719,
+      "tiePercentage": 0,
+      "playId": "4018729554262"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "26",
+          "abbreviation": "SEA"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "2473037",
+                  "displayName": "Jason Myers",
+                  "firstName": "Jason",
+                  "lastName": "Myers"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "28",
+          "abbreviation": "WSH"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "5081335",
+                  "displayName": "Drew Stevens",
+                  "firstName": "Drew",
+                  "lastName": "Stevens"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

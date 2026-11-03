@@ -207,28 +207,42 @@ export function fullNameFromAthlete(athlete?: AthleteRef): string | undefined {
   return undefined;
 }
 
-export function kickingAthletesFromSummary(summary: GameSummary): AthleteRef[] {
-  const out: AthleteRef[] = [];
+export interface KickingRosterEntry {
+  athlete: AthleteRef;
+  teamId?: string;
+  teamAbbr?: string;
+}
+
+/** Boxscore kicking athletes, kept with the team they kick for. */
+export function kickingRosterFromSummary(summary: GameSummary): KickingRosterEntry[] {
+  const out: KickingRosterEntry[] = [];
   const seen = new Set<string>();
   const players = summary.boxscore?.players;
   if (!Array.isArray(players)) return out;
 
-  const add = (athlete?: AthleteRef): void => {
-    if (!athlete) return;
-    const id = athleteIdFromRef(athlete);
-    const key = id || fullNameFromAthlete(athlete) || athlete.displayName;
-    if (!key || seen.has(key)) return;
-    seen.add(key);
-    out.push(athlete);
-  };
-
   for (const team of players as BoxscorePlayers[]) {
     for (const group of team.statistics ?? []) {
       if ((group.name ?? "").toLowerCase() !== "kicking") continue;
-      for (const row of group.athletes ?? []) add(row.athlete);
+      for (const row of group.athletes ?? []) {
+        const athlete = row.athlete;
+        if (!athlete) continue;
+        const id = athleteIdFromRef(athlete);
+        const key = id || fullNameFromAthlete(athlete) || athlete.displayName;
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+          athlete,
+          ...(team.team?.id ? { teamId: String(team.team.id) } : {}),
+          ...(team.team?.abbreviation ? { teamAbbr: team.team.abbreviation } : {}),
+        });
+      }
     }
   }
   return out;
+}
+
+export function kickingAthletesFromSummary(summary: GameSummary): AthleteRef[] {
+  return kickingRosterFromSummary(summary).map((row) => row.athlete);
 }
 
 export function kickerAthleteFromPlay(play: Play): AthleteRef | undefined {
@@ -397,18 +411,59 @@ function competitorName(c: Competitor): string {
   return c.team?.displayName || c.team?.name || competitorAbbr(c);
 }
 
+function competitorById(competitors: Competitor[], id?: string): Competitor | undefined {
+  if (!id) return undefined;
+  return competitors.find((c) => c.id === id || c.team?.id === id);
+}
+
+function competitorByAbbr(competitors: Competitor[], abbr?: string): Competitor | undefined {
+  if (!abbr) return undefined;
+  const key = abbr.trim().toUpperCase();
+  return competitors.find((c) => competitorAbbr(c).toUpperCase() === key);
+}
+
+/** Interception, fumble, punt, and kickoff returns. ESPN still labels the snapping team "offense". */
+export function isReturnTouchdown(play: Play): boolean {
+  return /return\s+touchdown/i.test(play.type?.text ?? "");
+}
+
 export function teamFromPlay(play: Play, competitors: Competitor[]): Competitor | undefined {
   const offenseId =
     play.teamParticipants?.find((p) => p.type === "offense")?.id ||
     play.start?.team?.id ||
     play.team?.id;
-  if (offenseId) {
-    const match = competitors.find(
-      (c) => c.id === offenseId || c.team?.id === offenseId,
+  return competitorById(competitors, offenseId);
+}
+
+/**
+ * On a return touchdown the scoring team kicked the PAT. Prefer that kicker's
+ * boxscore team; otherwise the defense participant (the team that scored).
+ */
+export function teamForKick(
+  play: Play,
+  kickType: KickType,
+  competitors: Competitor[],
+  resolved: { kicker: string; athleteId?: string },
+  roster: KickingRosterEntry[] = [],
+): Competitor | undefined {
+  const offense = teamFromPlay(play, competitors);
+  if (kickType !== "PAT" || !isReturnTouchdown(play)) return offense;
+
+  if (resolved.kicker && resolved.kicker !== "Unknown kicker") {
+    const match = matchKickerAthlete(
+      resolved.kicker,
+      resolved.athleteId,
+      roster.map((row) => row.athlete),
     );
-    if (match) return match;
+    const row = match ? roster.find((entry) => entry.athlete === match) : undefined;
+    const fromKicker = row
+      ? competitorById(competitors, row.teamId) ?? competitorByAbbr(competitors, row.teamAbbr)
+      : undefined;
+    if (fromKicker) return fromKicker;
   }
-  return undefined;
+
+  const defenseId = play.teamParticipants?.find((p) => (p.type ?? "").toLowerCase() === "defense")?.id;
+  return competitorById(competitors, defenseId) ?? offense;
 }
 
 export function buildGameContext(
@@ -467,15 +522,16 @@ export function toMissedKick(
   play: Play,
   game: GameContext,
   roster: AthleteRef[] = [],
+  kickingRoster: KickingRosterEntry[] = [],
 ): MissedKick | null {
   const kickType = classifyMiss(play);
   if (!kickType || !play.id) return null;
 
   const text = play.text || play.shortText || "";
-  const team = teamFromPlay(play, game.competitors);
+  const resolved = resolveKickerName(play, kickType, roster);
+  const team = teamForKick(play, kickType, game.competitors, resolved, kickingRoster);
   const home = game.competitors.find((c) => c.homeAway === "home");
   const away = game.competitors.find((c) => c.homeAway === "away");
-  const resolved = resolveKickerName(play, kickType, roster);
 
   const altTexts = (play.altTexts ?? []).filter((t) => t && t !== text);
   return {
@@ -558,10 +614,12 @@ const BETWEEN_DOWNS_RE = /enforced\s+between\s+downs/i;
  *   type 8 "Penalty": "J.Myers 53 yard field goal is No Good, Wide Right ...
  *   PENALTY on LAC-T.Tuipulotu, Leverage, 15 yards, enforced at LAC 35 - No Play."
  *
- * The word PENALTY alone is NOT disqualifying: a PAT miss after a TD with an
- * unsportsmanlike flag "enforced between downs" (Butker 2025, Aubrey 2026) and
- * declined flags are real misses, so we key off the play type, "No Play",
- * NULLIFIED, replayed downs, reversed rulings and accepted on-play penalties.
+ * The word PENALTY alone is NOT disqualifying. A flag on the touchdown
+ * (taunting, unsportsmanlike, enforced between downs or on the kickoff) does
+ * not erase a PAT whose result is still recorded. Skip an accepted flag only
+ * when it is on the kick itself: a field goal, or a standalone extra-point
+ * play. No Play, NULLIFIED, a penalty play type, a replayed down, or a
+ * reversed ruling still drop the kick.
  */
 export function nullifiedReason(play: Play, scoringPlayIds?: Set<string>): string | undefined {
   const typeId = String(play.type?.id ?? "");
@@ -582,9 +640,12 @@ export function nullifiedReason(play: Play, scoringPlayIds?: Set<string>): strin
     const after = text.slice((last.index ?? 0) + last[0].length);
     if (!MISS_PHRASE_RE.test(after)) return "ruling reversed";
   }
-  // Accepted flag on the kick itself (not carried to the kickoff) replays the try.
+  // Accepted flag on the kick itself (not a dead-ball flag on the TD) replays the try.
   const status = `${play.penalty?.status?.slug ?? ""} ${play.penalty?.status?.text ?? ""}`;
-  if (play.isPenalty && /accepted/i.test(status) && !BETWEEN_DOWNS_RE.test(all)) {
+  const typeText = play.type?.text ?? "";
+  const kickIsThisPlay =
+    classifyMiss(play) !== "PAT" || typeId === PAT_MISS_TYPE_ID || /^extra point missed$/i.test(typeText);
+  if (play.isPenalty && /accepted/i.test(status) && !BETWEEN_DOWNS_RE.test(all) && kickIsThisPlay) {
     return "accepted penalty on the kick";
   }
   // A PAT that rides on a touchdown play only stands while that TD is still a scoring play.
@@ -596,14 +657,15 @@ export function nullifiedReason(play: Play, scoringPlayIds?: Set<string>): strin
 
 export function detectMissedKicks(summary: GameSummary, game: GameContext): MissedKick[] {
   const plays = collectPlays(summary);
-  const roster = kickingAthletesFromSummary(summary);
+  const kickingRoster = kickingRosterFromSummary(summary);
+  const roster = kickingRoster.map((row) => row.athlete);
   const points = extractWinProbability(summary);
   const scoringPlayIds = Array.isArray(summary.scoringPlays)
     ? new Set(summary.scoringPlays.map((p) => String(p?.id ?? "")).filter(Boolean))
     : undefined;
   const misses: MissedKick[] = [];
   for (const play of plays) {
-    const miss = toMissedKick(play, game, roster);
+    const miss = toMissedKick(play, game, roster, kickingRoster);
     if (!miss) continue;
     const reason = nullifiedReason(play, scoringPlayIds);
     if (reason) {

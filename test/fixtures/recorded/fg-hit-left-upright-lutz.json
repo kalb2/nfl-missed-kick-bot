@@ -1,0 +1,158 @@
+{
+  "_note": "Week 3 2026 LAR @ DEN. Wil Lutz 43-yard FG No Good, Hit Left Upright.",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401872962",
+  "header": {
+    "id": "401872962",
+    "competitions": [
+      {
+        "date": "2026-09-28T00:20Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "7",
+            "homeAway": "home",
+            "score": "30",
+            "team": {
+              "id": "7",
+              "abbreviation": "DEN",
+              "displayName": "Denver Broncos",
+              "name": "Broncos",
+              "location": "Denver"
+            }
+          },
+          {
+            "id": "14",
+            "homeAway": "away",
+            "score": "26",
+            "team": {
+              "id": "14",
+              "abbreviation": "LAR",
+              "displayName": "Los Angeles Rams",
+              "name": "Rams",
+              "location": "Los Angeles"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "401872962949",
+            "type": {
+              "id": "60",
+              "text": "Field Goal Missed",
+              "abbreviation": "FGM"
+            },
+            "text": "W.Lutz 43 yard field goal is No Good, Hit Left Upright, Center-M.Fraboni, Holder-J.Crawshaw.",
+            "awayScore": 7,
+            "homeScore": 0,
+            "period": {
+              "number": 1
+            },
+            "clock": {
+              "displayValue": "1:23"
+            },
+            "scoringPlay": false,
+            "teamParticipants": [
+              {
+                "id": "14",
+                "type": "defense"
+              },
+              {
+                "id": "7",
+                "type": "offense"
+              }
+            ],
+            "statYardage": 43,
+            "isPenalty": false,
+            "start": {
+              "down": 4,
+              "distance": 6,
+              "yardLine": 75,
+              "yardsToEndzone": 25,
+              "downDistanceText": "4th & 6 at LAR 25",
+              "shortDownDistanceText": "4th & 6",
+              "possessionText": "LAR 25",
+              "team": {
+                "id": "7"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.2493,
+      "tiePercentage": 0,
+      "playId": "401872962926"
+    },
+    {
+      "homeWinPercentage": 0.2004,
+      "tiePercentage": 0,
+      "playId": "401872962949"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "14",
+          "abbreviation": "LAR"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4574716",
+                  "displayName": "Harrison Mevis",
+                  "firstName": "Harrison",
+                  "lastName": "Mevis"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "7",
+          "abbreviation": "DEN"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "2985659",
+                  "displayName": "Wil Lutz",
+                  "firstName": "Wil",
+                  "lastName": "Lutz"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

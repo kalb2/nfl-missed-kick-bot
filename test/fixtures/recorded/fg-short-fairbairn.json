@@ -1,0 +1,158 @@
+{
+  "_note": "Week 2 2026 CIN @ HOU. Ka'imi Fairbairn 58-yard FG, No Good, Short. site.api.espn.com summary.",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401872934",
+  "header": {
+    "id": "401872934",
+    "competitions": [
+      {
+        "date": "2026-09-20T17:00Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "34",
+            "homeAway": "home",
+            "score": "6",
+            "team": {
+              "id": "34",
+              "abbreviation": "HOU",
+              "displayName": "Houston Texans",
+              "name": "Texans",
+              "location": "Houston"
+            }
+          },
+          {
+            "id": "4",
+            "homeAway": "away",
+            "score": "20",
+            "team": {
+              "id": "4",
+              "abbreviation": "CIN",
+              "displayName": "Cincinnati Bengals",
+              "name": "Bengals",
+              "location": "Cincinnati"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729342846",
+            "type": {
+              "id": "60",
+              "text": "Field Goal Missed",
+              "abbreviation": "FGM"
+            },
+            "text": "K.Fairbairn 58 yard field goal is No Good, Short, Center-A.Brinkman, Holder-K.Kroeger.",
+            "awayScore": 10,
+            "homeScore": 3,
+            "period": {
+              "number": 3
+            },
+            "clock": {
+              "displayValue": "7:33"
+            },
+            "scoringPlay": false,
+            "teamParticipants": [
+              {
+                "id": "4",
+                "type": "defense"
+              },
+              {
+                "id": "34",
+                "type": "offense"
+              }
+            ],
+            "statYardage": 58,
+            "isPenalty": false,
+            "start": {
+              "down": 4,
+              "distance": 1,
+              "yardLine": 60,
+              "yardsToEndzone": 40,
+              "downDistanceText": "4th & 1 at CIN 40",
+              "shortDownDistanceText": "4th & 1",
+              "possessionText": "CIN 40",
+              "team": {
+                "id": "34"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.291,
+      "tiePercentage": 0,
+      "playId": "4018729342824"
+    },
+    {
+      "homeWinPercentage": 0.2407,
+      "tiePercentage": 0,
+      "playId": "4018729342846"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "4",
+          "abbreviation": "CIN"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4360234",
+                  "displayName": "Evan McPherson",
+                  "firstName": "Evan",
+                  "lastName": "McPherson"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "34",
+          "abbreviation": "HOU"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "2971573",
+                  "displayName": "Ka'imi Fairbairn",
+                  "firstName": "Ka'imi",
+                  "lastName": "Fairbairn"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
