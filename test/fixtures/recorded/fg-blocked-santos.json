@@ -1,0 +1,158 @@
+{
+  "_note": "Week 2 2026 MIN @ CHI. Cairo Santos 23-yard FG BLOCKED. ESPN type id 18 Blocked Field Goal (not 60).",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401872937",
+  "header": {
+    "id": "401872937",
+    "competitions": [
+      {
+        "date": "2026-09-20T17:00Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "3",
+            "homeAway": "home",
+            "score": "3",
+            "team": {
+              "id": "3",
+              "abbreviation": "CHI",
+              "displayName": "Chicago Bears",
+              "name": "Bears",
+              "location": "Chicago"
+            }
+          },
+          {
+            "id": "16",
+            "homeAway": "away",
+            "score": "9",
+            "team": {
+              "id": "16",
+              "abbreviation": "MIN",
+              "displayName": "Minnesota Vikings",
+              "name": "Vikings",
+              "location": "Minnesota"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729373475",
+            "type": {
+              "id": "18",
+              "text": "Blocked Field Goal",
+              "abbreviation": "BFG"
+            },
+            "text": "C.Santos 23 yard field goal is BLOCKED (I.Rodgers), Center-B.Gardner, Holder-T.Taylor, recovered by CHI-T.Taylor at MIN 12.",
+            "awayScore": 6,
+            "homeScore": 3,
+            "period": {
+              "number": 4
+            },
+            "clock": {
+              "displayValue": "6:26"
+            },
+            "scoringPlay": false,
+            "teamParticipants": [
+              {
+                "id": "16",
+                "type": "defense"
+              },
+              {
+                "id": "3",
+                "type": "offense"
+              }
+            ],
+            "statYardage": 0,
+            "isPenalty": false,
+            "start": {
+              "down": 4,
+              "distance": 5,
+              "yardLine": 95,
+              "yardsToEndzone": 5,
+              "downDistanceText": "4th & Goal at MIN 5",
+              "shortDownDistanceText": "4th & Goal",
+              "possessionText": "MIN 5",
+              "team": {
+                "id": "3"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.5284,
+      "tiePercentage": 0,
+      "playId": "4018729373452"
+    },
+    {
+      "homeWinPercentage": 0.39,
+      "tiePercentage": 0,
+      "playId": "4018729373475"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "16",
+          "abbreviation": "MIN"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4567104",
+                  "displayName": "Will Reichard",
+                  "firstName": "Will",
+                  "lastName": "Reichard"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "3",
+          "abbreviation": "CHI"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "17427",
+                  "displayName": "Cairo Santos",
+                  "firstName": "Cairo",
+                  "lastName": "Santos"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

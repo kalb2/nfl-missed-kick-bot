@@ -326,7 +326,7 @@ Three workflows:
 
 | Workflow | When | What |
 | --- | --- | --- |
-| `ci.yml` | push / PR | root tests + Worker tests + `wrangler deploy --dry-run` |
+| `ci.yml` | pull request | root tests + Worker tests + coverage + `wrangler deploy --dry-run` |
 | `poll.yml` | **cron (primary)** + optional Worker `repository_dispatch` (`nfl-poll`) + manual | one poll; handled plays on the `bot-state` branch, tally cache in `.state/tallies.json` |
 | `deploy-worker.yml` | **manual** (Actions → Deploy Cloudflare Worker → Run workflow) | `wrangler deploy` + set Worker secret `GITHUB_TOKEN` from `WORKER_GITHUB_PAT` |
 
