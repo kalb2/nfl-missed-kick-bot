@@ -1,0 +1,158 @@
+{
+  "_note": "Week 3 2026 BAL vs DAL. Brandon Aubrey 59-yard FG BLOCKED. ESPN type id 18 Blocked Field Goal. Paired with his Week 1 PAT miss for season-tally math.",
+  "_source": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=401872960",
+  "header": {
+    "id": "401872960",
+    "competitions": [
+      {
+        "date": "2026-09-27T20:25Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        },
+        "competitors": [
+          {
+            "id": "6",
+            "homeAway": "home",
+            "score": "31",
+            "team": {
+              "id": "6",
+              "abbreviation": "DAL",
+              "displayName": "Dallas Cowboys",
+              "name": "Cowboys",
+              "location": "Dallas"
+            }
+          },
+          {
+            "id": "33",
+            "homeAway": "away",
+            "score": "34",
+            "team": {
+              "id": "33",
+              "abbreviation": "BAL",
+              "displayName": "Baltimore Ravens",
+              "name": "Ravens",
+              "location": "Baltimore"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "drives": {
+    "previous": [
+      {
+        "plays": [
+          {
+            "id": "4018729602716",
+            "type": {
+              "id": "18",
+              "text": "Blocked Field Goal",
+              "abbreviation": "BFG"
+            },
+            "text": " B.Aubrey 59 yard field goal is BLOCKED (K.Jackson), Center-T.Sieg, Holder-B.Anger.",
+            "awayScore": 17,
+            "homeScore": 13,
+            "period": {
+              "number": 3
+            },
+            "clock": {
+              "displayValue": "6:07"
+            },
+            "scoringPlay": false,
+            "teamParticipants": [
+              {
+                "id": "33",
+                "type": "defense"
+              },
+              {
+                "id": "6",
+                "type": "offense"
+              }
+            ],
+            "statYardage": 0,
+            "isPenalty": false,
+            "start": {
+              "down": 4,
+              "distance": 6,
+              "yardLine": 59,
+              "yardsToEndzone": 41,
+              "downDistanceText": "4th & 6 at BAL 41",
+              "shortDownDistanceText": "4th & 6",
+              "possessionText": "BAL 41",
+              "team": {
+                "id": "6"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "winprobability": [
+    {
+      "homeWinPercentage": 0.3263,
+      "tiePercentage": 0,
+      "playId": "4018729602691"
+    },
+    {
+      "homeWinPercentage": 0.2698,
+      "tiePercentage": 0,
+      "playId": "4018729602716"
+    }
+  ],
+  "boxscore": {
+    "players": [
+      {
+        "team": {
+          "id": "33",
+          "abbreviation": "BAL"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "4697745",
+                  "displayName": "Tyler Loop",
+                  "firstName": "Tyler",
+                  "lastName": "Loop"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "6",
+          "abbreviation": "DAL"
+        },
+        "statistics": [
+          {
+            "name": "kicking",
+            "athletes": [
+              {
+                "athlete": {
+                  "id": "3953687",
+                  "displayName": "Brandon Aubrey",
+                  "firstName": "Brandon",
+                  "lastName": "Aubrey"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

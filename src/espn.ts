@@ -362,7 +362,14 @@ export function contextFromEvent(event: ScoreboardEvent): GameContext {
   };
 }
 
-/** Typical NFL game length (~4h) plus a short post-game window. */
+/**
+ * Base watch after scheduled kickoff, before `recentFinalWindowMin` is added.
+ * 5h15 + the default 45m post-game window = 6h, matching the worker's
+ * POST_KICKOFF_MIN. In-progress games are watched with no cutoff (delays, OT).
+ */
+export const GAME_WATCH_BASE_MIN = 315;
+
+/** Typical NFL game length, plus a short post-game window. Long games stay watched while ESPN still says they are in progress. */
 export function isWatchableGame(
   event: ScoreboardEvent,
   now = Date.now(),
@@ -386,7 +393,7 @@ export function isWatchableGame(
   if (state === "pre") return false;
   if (state === "post" || status?.completed) {
     if (!Number.isFinite(start)) return false;
-    const watchUntil = start + (4 * 60 + recentFinalWindowMin) * 60_000;
+    const watchUntil = start + (GAME_WATCH_BASE_MIN + recentFinalWindowMin) * 60_000;
     return now <= watchUntil;
   }
   return false;

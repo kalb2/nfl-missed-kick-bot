@@ -8,7 +8,7 @@ const PENDING_TTL_MS = 24 * 60 * 60_000;
 export type HandledStatus =
   /** Tweet succeeded. */
   | "posted"
-  /** Durably claimed right before posting. If a run dies here we never retry (at-most-once). */
+  /** Durably claimed right before posting. A later poll does not retry the tweet; it opens a tweet_failed alert once the claim is older than STUCK_POSTING_MS. */
   | "posting"
   /** X rejected/failed the post; a needs-manual-post issue is opened instead of retrying. */
   | "failed"

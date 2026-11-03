@@ -19,5 +19,5 @@ npx wrangler dev --test-scheduled
 #       curl "http://localhost:8787/cdn-cgi/local/scheduled?format=json&cron=0+15+*+*+TUE,WED"
 #
 # Dense ticks: Thu–Mon UTC every 2 min + Tue 00:00–07:59 UTC (late MNF).
-# Midweek: refresh-only cron, no 2-minute wakes.
+# Midweek: Tue/Wed 15:00 UTC always refreshes the slate, no 2-minute wakes.
 ```

@@ -5,9 +5,13 @@ const DEFAULTS = {
   githubRepo: "nfl-missed-kick-bot",
   githubEventType: "nfl-poll",
   preKickoffMin: 30,
-  postKickoffMin: 285,
+  // 6h after scheduled kickoff: a delayed or overtime game can still be in progress
+  // past the old 4h45m cutoff, and GitHub's own cron is not a reliable backup.
+  postKickoffMin: 360,
   dispatchCooldownMin: 5,
-  slateMaxAgeHours: 168,
+  // Dense ticks resync at least every 48h while future kickoffs remain (flex moves).
+  // The Tue/Wed cron always refreshes, even when the slate is younger than this.
+  slateMaxAgeHours: 48,
   refreshMinIntervalHours: 6,
   lookaheadDays: 16,
   userAgent:
