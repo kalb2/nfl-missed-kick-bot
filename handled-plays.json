@@ -1523,6 +1523,28 @@
         "matchup": "DET @ MIA",
         "playText": " Z.Gonzalez 38 yard field goal is No Good, Hit Right Upright, Center-T.Addington, Holder-B.Pinion."
       }
+    },
+    "401873045:4018730452147": {
+      "playId": "4018730452147",
+      "eventId": "401873045",
+      "status": "posting",
+      "at": "2026-11-08T19:31:50.463Z",
+      "snapshot": {
+        "playId": "4018730452147",
+        "eventId": "401873045",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Jason Sanders",
+        "teamAbbr": "NYJ",
+        "quarter": "Q2",
+        "clock": "0:37",
+        "awayAbbr": "NYJ",
+        "homeAbbr": "KC",
+        "awayScore": 12,
+        "homeScore": 14,
+        "matchup": "NYJ @ KC",
+        "playText": "J.Sanders 53 yard field goal is No Good, Wide Left, Center-T.Hennessy, Holder-A.McNamara."
+      }
     }
   },
   "pending": {},
@@ -1533,5 +1555,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-08T19:19:55.472Z"
+  "updatedAt": "2026-11-08T19:31:50.463Z"
 }
