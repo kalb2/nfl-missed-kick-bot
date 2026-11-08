@@ -1546,6 +1546,28 @@
         "matchup": "NYJ @ KC",
         "playText": "J.Sanders 53 yard field goal is No Good, Wide Left, Center-T.Hennessy, Holder-A.McNamara."
       }
+    },
+    "401873045:4018730452264": {
+      "playId": "4018730452264",
+      "eventId": "401873045",
+      "status": "posting",
+      "at": "2026-11-08T19:37:54.162Z",
+      "snapshot": {
+        "playId": "4018730452264",
+        "eventId": "401873045",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Harrison Butker",
+        "teamAbbr": "KC",
+        "quarter": "Q2",
+        "clock": "0:02",
+        "awayAbbr": "NYJ",
+        "homeAbbr": "KC",
+        "awayScore": 12,
+        "homeScore": 14,
+        "matchup": "NYJ @ KC",
+        "playText": " H.Butker 51 yard field goal is No Good, Wide Right, Center-J.Winchester, Holder-M.Araiza."
+      }
     }
   },
   "pending": {},
@@ -1556,5 +1578,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-08T19:31:51.807Z"
+  "updatedAt": "2026-11-08T19:37:54.162Z"
 }
