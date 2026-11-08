@@ -1454,6 +1454,28 @@
         "matchup": "CIN VS ATL",
         "playText": "N.Folk 38 yard field goal is No Good, Wide Left, Center-L.McCullough, Holder-J.Bailey."
       }
+    },
+    "401873039:401873039881": {
+      "playId": "401873039881",
+      "eventId": "401873039",
+      "status": "posting",
+      "at": "2026-11-08T18:37:55.010Z",
+      "snapshot": {
+        "playId": "401873039881",
+        "eventId": "401873039",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Charlie Smyth",
+        "teamAbbr": "NO",
+        "quarter": "Q1",
+        "clock": "0:12",
+        "awayAbbr": "CLE",
+        "homeAbbr": "NO",
+        "awayScore": 0,
+        "homeScore": 3,
+        "matchup": "CLE @ NO",
+        "playText": "C.Smyth 52 yard field goal is No Good, Wide Right, Center-Z.Wood, Holder-R.Wright."
+      }
     }
   },
   "pending": {},
@@ -1464,5 +1486,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-08T17:01:52.408Z"
+  "updatedAt": "2026-11-08T18:37:55.010Z"
 }
