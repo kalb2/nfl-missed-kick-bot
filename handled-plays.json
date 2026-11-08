@@ -1431,6 +1431,28 @@
         "matchup": "CHI @ SEA",
         "playText": "J.Myers 33 yard field goal is BLOCKED (A.Booker), Center-C.Stoll, Holder-M.Dickson."
       }
+    },
+    "401873038:4018730383317": {
+      "playId": "4018730383317",
+      "eventId": "401873038",
+      "status": "posting",
+      "at": "2026-11-08T17:01:50.933Z",
+      "snapshot": {
+        "playId": "4018730383317",
+        "eventId": "401873038",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Nick Folk",
+        "teamAbbr": "ATL",
+        "quarter": "Q4",
+        "clock": "11:31",
+        "awayAbbr": "CIN",
+        "homeAbbr": "ATL",
+        "awayScore": 31,
+        "homeScore": 17,
+        "matchup": "CIN VS ATL",
+        "playText": "N.Folk 38 yard field goal is No Good, Wide Left, Center-L.McCullough, Holder-J.Bailey."
+      }
     }
   },
   "pending": {},
@@ -1441,5 +1463,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-03T03:35:31.555Z"
+  "updatedAt": "2026-11-08T17:01:50.933Z"
 }
