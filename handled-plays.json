@@ -1569,6 +1569,28 @@
         "matchup": "NYJ @ KC",
         "playText": " H.Butker 51 yard field goal is No Good, Wide Right, Center-J.Winchester, Holder-M.Araiza."
       }
+    },
+    "401873040:4018730404418": {
+      "playId": "4018730404418",
+      "eventId": "401873040",
+      "status": "posting",
+      "at": "2026-11-08T21:13:55.722Z",
+      "snapshot": {
+        "playId": "4018730404418",
+        "eventId": "401873040",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Brandon Aubrey",
+        "teamAbbr": "DAL",
+        "quarter": "Q4",
+        "clock": "3:34",
+        "awayAbbr": "DAL",
+        "homeAbbr": "IND",
+        "awayScore": 20,
+        "homeScore": 20,
+        "matchup": "DAL @ IND",
+        "playText": "B.Aubrey 50 yard field goal is No Good, Wide Left, Center-T.Sieg, Holder-B.Anger."
+      }
     }
   },
   "pending": {},
@@ -1579,5 +1601,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-08T19:37:55.703Z"
+  "updatedAt": "2026-11-08T21:13:55.722Z"
 }
