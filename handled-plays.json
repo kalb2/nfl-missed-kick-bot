@@ -1477,6 +1477,28 @@
         "matchup": "CLE @ NO",
         "playText": "C.Smyth 52 yard field goal is No Good, Wide Right, Center-Z.Wood, Holder-R.Wright."
       }
+    },
+    "401873041:4018730411368": {
+      "playId": "4018730411368",
+      "eventId": "401873041",
+      "status": "posting",
+      "at": "2026-11-08T18:55:50.955Z",
+      "snapshot": {
+        "playId": "4018730411368",
+        "eventId": "401873041",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Ryan Fitzgerald",
+        "teamAbbr": "CAR",
+        "quarter": "Q2",
+        "clock": "11:49",
+        "awayAbbr": "DEN",
+        "homeAbbr": "CAR",
+        "awayScore": 10,
+        "homeScore": 0,
+        "matchup": "DEN @ CAR",
+        "playText": "R.Fitzgerald 43 yard field goal is No Good, Wide Right, Center-J.Jansen, Holder-S.Martin."
+      }
     }
   },
   "pending": {},
@@ -1487,5 +1509,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-08T18:37:56.293Z"
+  "updatedAt": "2026-11-08T18:55:50.955Z"
 }
