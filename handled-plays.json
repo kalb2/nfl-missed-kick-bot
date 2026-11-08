@@ -1500,6 +1500,28 @@
         "matchup": "DEN @ CAR",
         "playText": "R.Fitzgerald 43 yard field goal is No Good, Wide Right, Center-J.Jansen, Holder-S.Martin."
       }
+    },
+    "401873042:4018730421975": {
+      "playId": "4018730421975",
+      "eventId": "401873042",
+      "status": "posting",
+      "at": "2026-11-08T19:19:53.986Z",
+      "snapshot": {
+        "playId": "4018730421975",
+        "eventId": "401873042",
+        "kickType": "FG",
+        "result": "Hit Right Upright",
+        "kicker": "Zane Gonzalez",
+        "teamAbbr": "MIA",
+        "quarter": "Q2",
+        "clock": "0:03",
+        "awayAbbr": "DET",
+        "homeAbbr": "MIA",
+        "awayScore": 6,
+        "homeScore": 3,
+        "matchup": "DET @ MIA",
+        "playText": " Z.Gonzalez 38 yard field goal is No Good, Hit Right Upright, Center-T.Addington, Holder-B.Pinion."
+      }
     }
   },
   "pending": {},
@@ -1510,5 +1532,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-08T18:55:52.142Z"
+  "updatedAt": "2026-11-08T19:19:53.987Z"
 }
