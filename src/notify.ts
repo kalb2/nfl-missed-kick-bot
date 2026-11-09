@@ -1,4 +1,5 @@
 import { missAlert, type AlertPayload, type AlertReason } from "./alerts.js";
+import { formatCorrectionIssueSection } from "./correction.js";
 import type { MissedKick } from "./types.js";
 
 export const UNKNOWN_KICKER = "Unknown kicker";
@@ -90,17 +91,21 @@ const NEXT_STEPS: Partial<Record<AlertReason, string[]>> = {
     "- The bot does **not** retry: the request may have reached X. Check the account; if the tweet is missing, post it by hand and close this issue.",
   ],
   posted_miss_erased: [
-    "- The bot did **not** delete the tweet. Decide whether to delete it or post a correction, then close this issue.",
-    "- The play is no longer counted in season tallies.",
+    "- The bot did **not** delete the tweet and will not post a correction.",
+    "- Reply with exactly one of: `leave it`, `delete tweet`, or `post correction`, then close this issue.",
   ],
 };
 
 export function alertIssueBody(payload: AlertPayload): string {
   const steps = NEXT_STEPS[payload.reason];
+  const correction = payload.reason === "posted_miss_erased" && payload.correction
+    ? ["", ...formatCorrectionIssueSection(payload.correction)]
+    : [];
   return [
     payload.message,
     "",
     ...alertFieldLines(payload),
+    ...correction,
     ...(steps ? ["", "What happens next:", ...steps] : []),
     "",
     `<!-- missed-kick-bot ${payload.reason}${payload.playId ? ` ${issueMarker(payload.playId)}` : ""} -->`,

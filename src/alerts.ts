@@ -1,5 +1,6 @@
 import type { IssueRef, MissNotifier, StateAlerter } from "./notify.js";
 import type { MissedKick } from "./types.js";
+import type { CorrectionReport } from "./correction.js";
 
 export type AlertReason =
   | "needs_manual_post"
@@ -24,6 +25,8 @@ export interface AlertPayload {
   score: string | null;
   tweetUrl: string | null;
   rawTexts: string[];
+  /** Filled for posted_miss_erased so the issue can recommend a reply. */
+  correction?: CorrectionReport;
 }
 
 /** Fields of a miss kept in bot-state so a later "posted miss erased" alert can describe it. */

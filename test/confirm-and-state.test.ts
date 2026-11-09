@@ -324,6 +324,8 @@ describe("posted misses stay watched until the window closes", () => {
     expect(alert.message).toMatch(/penalty/);
     expect(alert.rawTexts.join(" ")).toMatch(/No Play/);
     expect(store.alertRecord("posted_miss_erased", MYERS_PLAY, MYERS_EVENT)?.via).toBe("log");
+    expect(alert.correction?.recommendation).toBe("delete tweet");
+    expect(alert.correction?.intentUrl).toContain("in_reply_to=1");
     expect(posted).toHaveLength(1);
   });
 
