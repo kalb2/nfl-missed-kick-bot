@@ -1,11 +1,25 @@
 name: Season miss leaders board
 
-# Manual only. Builds the season-miss-leaders PNG and uploads it as an
-# artifact. It does not post to X, does not call the poll workflow, and
-# does not read any credentials. The owner downloads the artifact and
-# uploads the image.
+# Builds the season-miss-leaders PNG and uploads it as an artifact.
+# It does not post to X, does not call the poll workflow, and does not
+# read any credentials (no X keys, no DRY_RUN posting path). The owner
+# downloads the artifact and uploads the image.
+#
+# Tuesday 9:17 AM America/Denver, after Monday Night Football.
+# GitHub cron is UTC and does not follow DST, so both offsets are
+# scheduled. The job runs from the one that is 9:17 AM Denver that day
+# and skips the other.
+#
+#   MDT (UTC−6, second Sunday in March through the first Sunday in November): 15:17 UTC
+#   MST (UTC−7, the rest of the year): 16:17 UTC
+#
+# Manual Run workflow still works any day. This is the only leaderboard
+# implementation: `bash board/regenerate.sh`. There is no tweet command.
 
 on:
+  schedule:
+    - cron: "17 15 * * 2"
+    - cron: "17 16 * * 2"
   workflow_dispatch:
     inputs:
       max_week:
@@ -30,13 +44,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Skip the Denver offset that is not 9:17 AM
+        id: window
+        if: github.event_name == 'schedule'
+        run: |
+          offset=$(TZ=America/Denver date +%z)
+          schedule="${{ github.event.schedule }}"
+          if [ "$offset" = "-0600" ] && [ "$schedule" = "17 15 * * 2" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ "$offset" = "-0700" ] && [ "$schedule" = "17 16 * * 2" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Denver offset $offset does not match schedule '$schedule'; skipping."
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.window.outputs.run != 'false'
 
       - uses: actions/setup-python@v5
+        if: steps.window.outputs.run != 'false'
         with:
           python-version: "3.12"
 
       - name: Install Chrome and the board font
+        if: steps.window.outputs.run != 'false'
         run: |
           sudo apt-get update
           sudo apt-get install -y fonts-liberation wget ca-certificates
@@ -44,14 +76,16 @@ jobs:
           sudo apt-get install -y /tmp/chrome.deb
 
       - name: Render the board
+        if: steps.window.outputs.run != 'false'
         env:
           RESCAN_MAX_WEEK: ${{ inputs.max_week }}
-          SHOW_PCT: ${{ inputs.show_pct && '1' || '0' }}
+          SHOW_PCT: ${{ github.event_name == 'workflow_dispatch' && inputs.show_pct == false && '0' || '1' }}
         run: |
           if [ -z "$RESCAN_MAX_WEEK" ]; then unset RESCAN_MAX_WEEK; fi
           bash board/regenerate.sh
 
       - name: Upload the PNG, summary, and suggested post
+        if: steps.window.outputs.run != 'false'
         uses: actions/upload-artifact@v4
         with:
           name: season-miss-leaders

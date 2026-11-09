@@ -88,7 +88,7 @@ If `summary.drives` is empty or the site summary fails, it unwraps `gamepackageJ
 bash board/regenerate.sh
 ```
 
-Run it by hand, or use **Actions → Season miss leaders board** (`workflow_dispatch` only). That workflow uploads the PNG as an artifact. It does not tweet and it does not touch the poll. See [`board/README.md`](board/README.md).
+Run it by hand, or use **Actions → Season miss leaders board**. It also runs every Tuesday at 9:17 AM America/Denver (15:17 UTC during MDT, 16:17 UTC during MST) and you can still **Run workflow** any day. The job uploads the PNG, JSON, and a suggested caption as an artifact. It does not tweet, does not read X secrets, and does not touch the poll. Download the artifact and upload the image yourself. See [`board/README.md`](board/README.md).
 
 ## Setup
 
@@ -332,12 +332,13 @@ Workers free tier is enough: 2-minute ticks only Thu–Mon plus 8 hours Tuesday 
 
 ## GitHub Actions
 
-Three workflows:
+Four workflows:
 
 | Workflow | When | What |
 | --- | --- | --- |
 | `ci.yml` | pull request | root tests + Worker tests + coverage + `wrangler deploy --dry-run` |
 | `poll.yml` | **cron (primary)** + optional Worker `repository_dispatch` (`nfl-poll`) + manual | one poll; handled plays on the `bot-state` branch, tally cache in `.state/tallies.json` |
+| `season-miss-leaders.yml` | Tuesday 9:17 AM America/Denver + manual | render `board/regenerate.sh` and upload the PNG/JSON/caption artifact; never tweets |
 | `deploy-worker.yml` | **manual** (Actions → Deploy Cloudflare Worker → Run workflow) | `wrangler deploy` + set Worker secret `GITHUB_TOKEN` from `WORKER_GITHUB_PAT` |
 
 `poll.yml` dense-polls every **5 minutes** Thursday–Monday UTC, plus Tuesday 00:00–07:59 UTC for late MNF (Monday evening America/Denver). That is the live wake until a Cloudflare Worker is deployed. `repository_dispatch` type `nfl-poll` remains so the Worker can still wake it later.
