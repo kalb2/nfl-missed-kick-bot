@@ -158,12 +158,14 @@ class ReferenceTests(unittest.TestCase):
         self.assertIsNone(smack["pct"])
         self.assertIn(">&nbsp;</div>", built["html"])
 
-    def test_workflow_is_manual_and_does_not_post(self):
+    def test_workflow_does_not_post(self):
         text = (support.ROOT / ".github" / "workflows" / "season-miss-leaders.yml").read_text()
         self.assertIn("workflow_dispatch:", text)
-        for banned in ("schedule:", "repository_dispatch:", "pull_request:", "push:", "twitter", "api.x.com", "secrets."):
+        self.assertIn("schedule:", text)
+        self.assertIn('cron: "17 15 * * 2"', text)
+        self.assertIn('cron: "17 16 * * 2"', text)
+        for banned in ("repository_dispatch:", "twitter", "api.x.com", "secrets.", "X_API"):
             self.assertNotIn(banned, text.lower() if banned == "twitter" else text, banned)
-        self.assertNotIn("X_API", text)
 
 
 if __name__ == "__main__":

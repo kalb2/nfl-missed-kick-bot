@@ -42,4 +42,4 @@ Fixtures in `fixtures/` are the 2026-11-03 scan (`rescan-report.json`, `rescan-a
 
 ## GitHub Actions
 
-**Actions → Season miss leaders board → Run workflow.** `workflow_dispatch` only. The job uploads the PNG, the JSON summary, and the suggested post as the `season-miss-leaders` artifact. It does not tweet and it does not wake `poll.yml`.
+**Actions → Season miss leaders board.** It runs every Tuesday at 9:17 AM America/Denver and you can also **Run workflow**. The job uploads the PNG, the JSON summary, and the suggested post as the `season-miss-leaders` artifact. It does not tweet, does not read X secrets, and it does not wake `poll.yml`.
