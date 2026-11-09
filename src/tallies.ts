@@ -183,6 +183,13 @@ export class SeasonTallyIndex {
     return this.games.has(eventId);
   }
 
+  hasPlayId(playId: string): boolean {
+    for (const game of this.games.values()) {
+      if (game.misses.some((miss) => miss.playId === playId)) return true;
+    }
+    return false;
+  }
+
   async load(): Promise<void> {
     if (!this.filePath) return;
     try {

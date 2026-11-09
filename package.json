@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "test:board": "python3 -m unittest discover -s board/tests -v",
     "board": "bash board/regenerate.sh",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "recheck-erased": "tsx src/recheck-erased.ts"
   },
   "license": "MIT",
   "dependencies": {

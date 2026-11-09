@@ -10,15 +10,15 @@ import {
   enrichKickerNames,
   initialLastCompact,
   missesNeedWinProbability,
-  nullifiedReason,
 } from "./detect.js";
+import { evaluateErasedPostedMiss, whyNotAMiss } from "./correction.js";
 import { REGULAR_SEASON_TYPE, contextFromEvent, isWatchableGame, mapPool, type EspnClient } from "./espn.js";
 import { UNKNOWN_KICKER, type IssueRef, type MissNotifier, LogNotifier, LogStateAlerter } from "./notify.js";
 import { Overrides } from "./overrides.js";
 import type { HandledEntry, SeenStore } from "./store.js";
 import { SeasonTallyIndex } from "./tallies.js";
 import type { TweetPoster } from "./twitter.js";
-import type { GameContext, GameSummary, MissedKick, Play, PollOptions, PollResult, ScoreboardEvent } from "./types.js";
+import type { GameContext, GameSummary, MissedKick, PollOptions, PollResult, ScoreboardEvent } from "./types.js";
 
 export interface PollDeps {
   espn: EspnClient;
@@ -150,22 +150,6 @@ async function saveIfDirty(deps: PollDeps, options: PollOptions, message: string
     console.error("STATE WRITE FAILED: %s", messageText);
     return messageText;
   }
-}
-
-function playTexts(play?: Play): string[] {
-  if (!play) return [];
-  return [play.text, play.shortText, ...(play.altTexts ?? [])].filter((t): t is string => Boolean(t));
-}
-
-/** Why a play that used to be a miss isn't one in this summary. */
-function whyNotAMiss(summary: GameSummary, playId: string): { why: string; play?: Play } {
-  const play = collectPlays(summary).find((p) => String(p.id) === playId);
-  if (!play) return { why: "the play is no longer in ESPN's play-by-play" };
-  const scoringIds = Array.isArray(summary.scoringPlays)
-    ? new Set(summary.scoringPlays.map((p) => String(p?.id ?? "")).filter(Boolean))
-    : undefined;
-  const reason = nullifiedReason(play, scoringIds);
-  return { why: reason ? `ESPN now shows it as ${reason}` : "ESPN no longer classifies it as a missed kick", play };
 }
 
 export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<PollResult> {
@@ -319,13 +303,19 @@ export async function pollOnce(deps: PollDeps, options: PollOptions): Promise<Po
       for (const entry of suspects) {
         if (again.has(entry.playId)) continue; // transient: it's a miss again
         const snap = entry.snapshot!;
-        const { why, play } = whyNotAMiss(summary, entry.playId);
+        const report = evaluateErasedPostedMiss({
+          snapshot: snap,
+          tweetId: entry.tweetId,
+          summary,
+          tallyIncludesPlay: tallies.hasPlayId(entry.playId),
+        });
         const payload = missAlert(
           "posted_miss_erased",
           snap,
-          `The tweeted ${snap.kickType} miss by ${snap.kicker} (${snap.teamAbbr}) at ${snap.quarter} ${snap.clock} in ${snap.matchup} is no longer a miss: ${why}. The tweet was not deleted.`,
-          { tweetId: entry.tweetId, rawTexts: [...playTexts(play), snap.playText, ...(snap.altPlayTexts ?? [])] },
+          `The tweeted ${snap.kickType} miss by ${snap.kicker} (${snap.teamAbbr}) at ${snap.quarter} ${snap.clock} in ${snap.matchup} is no longer a miss: ${report.flaggedWhy}. The tweet was not deleted.`,
+          { tweetId: entry.tweetId, rawTexts: report.rawTexts },
         );
+        payload.correction = report;
         const delivery = await alerts.send(payload);
         if (delivery.via !== "failed") {
           deps.store.recordAlert("posted_miss_erased", entry.playId, entry.eventId, {

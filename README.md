@@ -412,7 +412,14 @@ MIT
 
 **Posting delay.** Polls come from the Worker: a `*/2` cron with a 5-minute dispatch cooldown, which Actions run history shows as one poll every **~6 minutes** during games (median 6.0, worst 7.0 across Oct 6–16, 2026). The `*/5` Actions cron fires only every 1–4 hours. A miss is therefore tweeted **about 60–65 seconds after the poll that first sees it** (the wait plus one re-fetch), i.e. roughly 1–8 minutes after ESPN publishes it, depending on where it lands in the 6-minute poll cycle. Because the check happens inside the same run, a miss on the last play of a game posts even if no later poll comes.
 
-**Posted misses stay watched.** Every poll re-checks the misses it already tweeted for any game still in its watch window (kickoff + 6h, and any game ESPN still marks in progress). If one is no longer a miss, the run waits for the same recheck. If it is still gone, the bot opens one `posted_miss_erased` alert issue. It never deletes the tweet.
+**Posted misses stay watched.** Every poll re-checks the misses it already tweeted for any game still in its watch window (kickoff + 6h, and any game ESPN still marks in progress). If one is no longer a miss, the run waits for the same recheck. If it is still gone, the bot opens one `posted_miss_erased` alert issue. The issue is a correction report: the tweet link, current ESPN texts, why it looked erased, whether current rules still count it (a flag on the touchdown does not wipe a recorded PAT), the effect on season tallies, and a recommended reply of `leave it`, `delete tweet`, or `post correction`. A `post correction` recommendation includes ready-to-post text and an `x.com/intent/post` link that replies to the original tweet. The bot never deletes the tweet and never posts the correction itself.
+
+To re-check an existing alert against current rules without writing anything:
+
+```bash
+npm run recheck-erased -- <playId>
+npm run recheck-erased -- --issue 17
+```
 
 **Alerts are GitHub issues.** Every alert is one deduplicated issue labelled **`bot-alert`**, plus a reason label. The title reads `[bot-alert] <what happened>: <matchup> <quarter> <clock> [play <id>]`. The body lists reason, game, kicker, team, kick/result, quarter/clock, score, tweet URL, ESPN link, play id and raw ESPN texts. Dedupe is per play + reason in bot-state (`alerts`), plus a title search so a rebuilt state doesn't re-open. No new secrets are needed: the workflow's `GITHUB_TOKEN` has `issues: write`.
 
