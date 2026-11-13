@@ -1592,6 +1592,28 @@
         "matchup": "DAL @ IND",
         "playText": "B.Aubrey 50 yard field goal is No Good, Wide Left, Center-T.Sieg, Holder-B.Anger."
       }
+    },
+    "401873052:401873052643": {
+      "playId": "401873052643",
+      "eventId": "401873052",
+      "status": "posting",
+      "at": "2026-11-13T01:41:56.888Z",
+      "snapshot": {
+        "playId": "401873052643",
+        "eventId": "401873052",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Dominic Zvada",
+        "teamAbbr": "NYG",
+        "quarter": "Q1",
+        "clock": "4:08",
+        "awayAbbr": "WSH",
+        "homeAbbr": "NYG",
+        "awayScore": 0,
+        "homeScore": 0,
+        "matchup": "WSH @ NYG",
+        "playText": "D.Zvada 33 yard field goal is No Good, Wide Left, Center-B.Mann, Holder-J.Stout."
+      }
     }
   },
   "pending": {},
@@ -1602,5 +1624,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-08T21:13:57.078Z"
+  "updatedAt": "2026-11-13T01:41:56.888Z"
 }
