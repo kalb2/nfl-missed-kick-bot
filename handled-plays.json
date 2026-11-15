@@ -1684,6 +1684,31 @@
         "matchup": "CAR @ NO",
         "playText": "R.Fitzgerald 48 yard field goal is No Good, Wide Left, Center-J.Jansen, Holder-S.Martin."
       }
+    },
+    "401873059:4018730592604": {
+      "playId": "4018730592604",
+      "eventId": "401873059",
+      "status": "posting",
+      "at": "2026-11-15T20:13:52.503Z",
+      "snapshot": {
+        "playId": "4018730592604",
+        "eventId": "401873059",
+        "kickType": "PAT",
+        "result": "Wide Left",
+        "kicker": "Zane Gonzalez",
+        "teamAbbr": "MIA",
+        "quarter": "Q3",
+        "clock": "8:52",
+        "awayAbbr": "MIA",
+        "homeAbbr": "IND",
+        "awayScore": 16,
+        "homeScore": 21,
+        "matchup": "MIA @ IND",
+        "playText": "D.Jones pass short right intended for A.Ogletree INTERCEPTED by C.Johnson at MIA 41. C.Johnson for 59 yards, TOUCHDOWN. Z.Gonzalez extra point is No Good, Wide Left, Center-T.Addington, Holder-B.Pinion.",
+        "altPlayTexts": [
+          "Chris Johnson 59 Yd Interception Return (Zane Gonzalez PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
@@ -1694,5 +1719,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-15T18:43:56.759Z"
+  "updatedAt": "2026-11-15T20:13:52.503Z"
 }
