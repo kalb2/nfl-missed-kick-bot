@@ -1661,6 +1661,28 @@
         "matchup": "MIA @ IND",
         "playText": "Z.Gonzalez 47 yard field goal is No Good, Wide Left, Center-T.Addington, Holder-B.Pinion."
       }
+    },
+    "401873055:4018730551080": {
+      "playId": "4018730551080",
+      "eventId": "401873055",
+      "status": "posting",
+      "at": "2026-11-15T18:43:55.239Z",
+      "snapshot": {
+        "playId": "4018730551080",
+        "eventId": "401873055",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Ryan Fitzgerald",
+        "teamAbbr": "CAR",
+        "quarter": "Q2",
+        "clock": "13:35",
+        "awayAbbr": "CAR",
+        "homeAbbr": "NO",
+        "awayScore": 0,
+        "homeScore": 0,
+        "matchup": "CAR @ NO",
+        "playText": "R.Fitzgerald 48 yard field goal is No Good, Wide Left, Center-J.Jansen, Holder-S.Martin."
+      }
     }
   },
   "pending": {},
@@ -1671,5 +1693,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-15T18:31:52.065Z"
+  "updatedAt": "2026-11-15T18:43:55.240Z"
 }
