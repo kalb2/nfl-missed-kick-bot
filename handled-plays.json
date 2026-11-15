@@ -1710,6 +1710,28 @@
           "Chris Johnson 59 Yd Interception Return (Zane Gonzalez PAT Failed)"
         ]
       }
+    },
+    "401873056:4018730563362": {
+      "playId": "4018730563362",
+      "eventId": "401873056",
+      "status": "posting",
+      "at": "2026-11-15T20:31:54.538Z",
+      "snapshot": {
+        "playId": "4018730563362",
+        "eventId": "401873056",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Andre Szmyt",
+        "teamAbbr": "CLE",
+        "quarter": "Q4",
+        "clock": "11:07",
+        "awayAbbr": "HOU",
+        "homeAbbr": "CLE",
+        "awayScore": 17,
+        "homeScore": 20,
+        "matchup": "HOU @ CLE",
+        "playText": "A.Szmyt 54 yard field goal is No Good, Wide Left, Center-R.Sunahara, Holder-C.Bojorquez."
+      }
     }
   },
   "pending": {},
@@ -1720,5 +1742,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-15T20:13:53.625Z"
+  "updatedAt": "2026-11-15T20:31:54.538Z"
 }
