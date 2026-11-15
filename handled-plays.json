@@ -1782,6 +1782,28 @@
           "George Pickens 39 Yd pass from Dak Prescott (Brandon Aubrey PAT Failed)"
         ]
       }
+    },
+    "401873062:4018730623204": {
+      "playId": "4018730623204",
+      "eventId": "401873062",
+      "status": "posting",
+      "at": "2026-11-15T23:37:53.676Z",
+      "snapshot": {
+        "playId": "4018730623204",
+        "eventId": "401873062",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Jason Myers",
+        "teamAbbr": "SEA",
+        "quarter": "Q4",
+        "clock": "7:05",
+        "awayAbbr": "SEA",
+        "homeAbbr": "LV",
+        "awayScore": 21,
+        "homeScore": 10,
+        "matchup": "SEA @ LV",
+        "playText": "J.Myers 44 yard field goal is No Good, Wide Right, Center-C.Stoll, Holder-M.Dickson."
+      }
     }
   },
   "pending": {},
@@ -1792,5 +1814,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-15T22:31:57.852Z"
+  "updatedAt": "2026-11-15T23:37:53.676Z"
 }
