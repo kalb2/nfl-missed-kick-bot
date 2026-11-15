@@ -1638,6 +1638,28 @@
         "matchup": "MIN @ GB",
         "playText": "T.Smack 53 yard field goal is No Good, Wide Right, Center-M.Orzech, Holder-D.Whelan."
       }
+    },
+    "401873059:401873059695": {
+      "playId": "401873059695",
+      "eventId": "401873059",
+      "status": "posting",
+      "at": "2026-11-15T18:31:50.766Z",
+      "snapshot": {
+        "playId": "401873059695",
+        "eventId": "401873059",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Zane Gonzalez",
+        "teamAbbr": "MIA",
+        "quarter": "Q1",
+        "clock": "6:44",
+        "awayAbbr": "MIA",
+        "homeAbbr": "IND",
+        "awayScore": 0,
+        "homeScore": 0,
+        "matchup": "MIA @ IND",
+        "playText": "Z.Gonzalez 47 yard field goal is No Good, Wide Left, Center-T.Addington, Holder-B.Pinion."
+      }
     }
   },
   "pending": {},
@@ -1648,5 +1670,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-15T18:25:52.671Z"
+  "updatedAt": "2026-11-15T18:31:50.766Z"
 }
