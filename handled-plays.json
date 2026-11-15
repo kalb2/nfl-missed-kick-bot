@@ -1615,6 +1615,28 @@
         "matchup": "WSH @ NYG",
         "playText": "D.Zvada 33 yard field goal is No Good, Wide Left, Center-B.Mann, Holder-J.Stout."
       }
+    },
+    "401873060:401873060541": {
+      "playId": "401873060541",
+      "eventId": "401873060",
+      "status": "posting",
+      "at": "2026-11-15T18:25:51.320Z",
+      "snapshot": {
+        "playId": "401873060541",
+        "eventId": "401873060",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Trey Smack",
+        "teamAbbr": "GB",
+        "quarter": "Q1",
+        "clock": "6:06",
+        "awayAbbr": "MIN",
+        "homeAbbr": "GB",
+        "awayScore": 3,
+        "homeScore": 0,
+        "matchup": "MIN @ GB",
+        "playText": "T.Smack 53 yard field goal is No Good, Wide Right, Center-M.Orzech, Holder-D.Whelan."
+      }
     }
   },
   "pending": {},
@@ -1625,5 +1647,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-13T01:41:58.358Z"
+  "updatedAt": "2026-11-15T18:25:51.321Z"
 }
