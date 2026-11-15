@@ -1733,6 +1733,28 @@
         "matchup": "HOU @ CLE",
         "playText": "A.Szmyt 54 yard field goal is No Good, Wide Left, Center-R.Sunahara, Holder-C.Bojorquez."
       }
+    },
+    "401873059:4018730593649": {
+      "playId": "4018730593649",
+      "eventId": "401873059",
+      "status": "posting",
+      "at": "2026-11-15T20:49:58.423Z",
+      "snapshot": {
+        "playId": "4018730593649",
+        "eventId": "401873059",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Zane Gonzalez",
+        "teamAbbr": "MIA",
+        "quarter": "Q4",
+        "clock": "9:54",
+        "awayAbbr": "MIA",
+        "homeAbbr": "IND",
+        "awayScore": 22,
+        "homeScore": 24,
+        "matchup": "MIA @ IND",
+        "playText": " Z.Gonzalez 51 yard field goal is No Good, Wide Left, Center-T.Addington, Holder-B.Pinion."
+      }
     }
   },
   "pending": {},
@@ -1743,5 +1765,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-15T20:31:55.885Z"
+  "updatedAt": "2026-11-15T20:49:58.423Z"
 }
