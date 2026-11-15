@@ -1756,6 +1756,31 @@
         "matchup": "MIA @ IND",
         "playText": " Z.Gonzalez 51 yard field goal is No Good, Wide Left, Center-T.Addington, Holder-B.Pinion."
       }
+    },
+    "401873063:4018730631746": {
+      "playId": "4018730631746",
+      "eventId": "401873063",
+      "status": "posting",
+      "at": "2026-11-15T22:31:56.039Z",
+      "snapshot": {
+        "playId": "4018730631746",
+        "eventId": "401873063",
+        "kickType": "PAT",
+        "result": "Wide Left",
+        "kicker": "Brandon Aubrey",
+        "teamAbbr": "DAL",
+        "quarter": "Q2",
+        "clock": "4:08",
+        "awayAbbr": "SF",
+        "homeAbbr": "DAL",
+        "awayScore": 10,
+        "homeScore": 16,
+        "matchup": "SF @ DAL",
+        "playText": "(Shotgun) D.Prescott pass short left to G.Pickens for 39 yards, TOUCHDOWN. B.Aubrey extra point is No Good, Wide Left, Center-T.Sieg, Holder-B.Anger.",
+        "altPlayTexts": [
+          "George Pickens 39 Yd pass from Dak Prescott (Brandon Aubrey PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
@@ -1766,5 +1791,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-15T20:49:59.734Z"
+  "updatedAt": "2026-11-15T22:31:56.039Z"
 }
