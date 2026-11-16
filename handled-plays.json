@@ -1805,6 +1805,28 @@
         "matchup": "SEA @ LV",
         "playText": "J.Myers 44 yard field goal is No Good, Wide Right, Center-C.Stoll, Holder-M.Dickson."
       }
+    },
+    "401873064:4018730641328": {
+      "playId": "4018730641328",
+      "eventId": "401873064",
+      "status": "posting",
+      "at": "2026-11-16T02:19:55.478Z",
+      "snapshot": {
+        "playId": "4018730641328",
+        "eventId": "401873064",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Evan McPherson",
+        "teamAbbr": "CIN",
+        "quarter": "Q2",
+        "clock": "9:56",
+        "awayAbbr": "PIT",
+        "homeAbbr": "CIN",
+        "awayScore": 0,
+        "homeScore": 10,
+        "matchup": "PIT @ CIN",
+        "playText": "E.McPherson 43 yard field goal is No Good, Wide Right, Center-W.Wagner, Holder-R.Rehkow."
+      }
     }
   },
   "pending": {},
@@ -1815,5 +1837,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-15T23:37:54.922Z"
+  "updatedAt": "2026-11-16T02:19:55.478Z"
 }
