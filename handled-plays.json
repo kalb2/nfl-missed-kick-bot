@@ -1828,6 +1828,28 @@
         "matchup": "PIT @ CIN",
         "playText": "E.McPherson 43 yard field goal is No Good, Wide Right, Center-W.Wagner, Holder-R.Rehkow."
       }
+    },
+    "401873066:401873066759": {
+      "playId": "401873066759",
+      "eventId": "401873066",
+      "status": "posting",
+      "at": "2026-11-20T01:47:53.067Z",
+      "snapshot": {
+        "playId": "401873066759",
+        "eventId": "401873066",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Spencer Shrader",
+        "teamAbbr": "IND",
+        "quarter": "Q1",
+        "clock": "3:44",
+        "awayAbbr": "IND",
+        "homeAbbr": "HOU",
+        "awayScore": 3,
+        "homeScore": 0,
+        "matchup": "IND @ HOU",
+        "playText": "S.Shrader 56 yard field goal is No Good, Wide Left, Center-L.Rhodes, Holder-R.Sanchez."
+      }
     }
   },
   "pending": {},
@@ -1838,5 +1860,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-16T02:19:56.658Z"
+  "updatedAt": "2026-11-20T01:47:53.067Z"
 }
