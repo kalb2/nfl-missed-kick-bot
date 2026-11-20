@@ -1851,6 +1851,28 @@
         "matchup": "IND @ HOU",
         "playText": "S.Shrader 56 yard field goal is No Good, Wide Left, Center-L.Rhodes, Holder-R.Sanchez."
       }
+    },
+    "401873066:4018730661807": {
+      "playId": "4018730661807",
+      "eventId": "401873066",
+      "status": "posting",
+      "at": "2026-11-20T02:35:53.924Z",
+      "snapshot": {
+        "playId": "4018730661807",
+        "eventId": "401873066",
+        "kickType": "FG",
+        "result": "Blocked",
+        "kicker": "Spencer Shrader",
+        "teamAbbr": "IND",
+        "quarter": "Q2",
+        "clock": "2:49",
+        "awayAbbr": "IND",
+        "homeAbbr": "HOU",
+        "awayScore": 3,
+        "homeScore": 14,
+        "matchup": "IND @ HOU",
+        "playText": "S.Shrader 62 yard field goal is BLOCKED (L.Hall), Center-L.Rhodes, Holder-R.Sanchez."
+      }
     }
   },
   "pending": {},
@@ -1861,5 +1883,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-20T01:47:55.004Z"
+  "updatedAt": "2026-11-20T02:35:53.924Z"
 }
