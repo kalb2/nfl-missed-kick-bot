@@ -1969,6 +1969,28 @@
         "matchup": "MIA @ BUF",
         "playText": "T.Bass 54 yard field goal is No Good, Wide Left, Center-R.Ferguson, Holder-T.Doman."
       }
+    },
+    "401873069:4018730692681": {
+      "playId": "4018730692681",
+      "eventId": "401873069",
+      "status": "posting",
+      "at": "2026-11-22T23:25:58.257Z",
+      "snapshot": {
+        "playId": "4018730692681",
+        "eventId": "401873069",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Dominic Zvada",
+        "teamAbbr": "NYG",
+        "quarter": "Q3",
+        "clock": "10:15",
+        "awayAbbr": "JAX",
+        "homeAbbr": "NYG",
+        "awayScore": 6,
+        "homeScore": 20,
+        "matchup": "JAX @ NYG",
+        "playText": "D.Zvada 32 yard field goal is No Good, Wide Left, Center-B.Mann, Holder-J.Stout."
+      }
     }
   },
   "pending": {},
@@ -1979,5 +2001,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-22T20:07:54.214Z"
+  "updatedAt": "2026-11-22T23:25:58.257Z"
 }
