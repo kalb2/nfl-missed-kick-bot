@@ -1923,6 +1923,28 @@
           "Colston Loveland 15 Yd pass from Caleb Williams (Cairo Santos PAT Failed)"
         ]
       }
+    },
+    "401873071:4018730711920": {
+      "playId": "4018730711920",
+      "eventId": "401873071",
+      "status": "posting",
+      "at": "2026-11-22T19:25:52.729Z",
+      "snapshot": {
+        "playId": "4018730711920",
+        "eventId": "401873071",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Charlie Smyth",
+        "teamAbbr": "NO",
+        "quarter": "Q2",
+        "clock": "1:56",
+        "awayAbbr": "NO",
+        "homeAbbr": "CHI",
+        "awayScore": 7,
+        "homeScore": 16,
+        "matchup": "NO @ CHI",
+        "playText": "C.Smyth 47 yard field goal is No Good, Wide Right, Center-Z.Wood, Holder-R.Wright."
+      }
     }
   },
   "pending": {},
@@ -1933,5 +1955,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-22T19:07:58.229Z"
+  "updatedAt": "2026-11-22T19:25:52.729Z"
 }
