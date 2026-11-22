@@ -1946,6 +1946,28 @@
         "matchup": "NO @ CHI",
         "playText": "C.Smyth 47 yard field goal is No Good, Wide Right, Center-Z.Wood, Holder-R.Wright."
       }
+    },
+    "401873070:4018730702894": {
+      "playId": "4018730702894",
+      "eventId": "401873070",
+      "status": "posting",
+      "at": "2026-11-22T20:07:52.758Z",
+      "snapshot": {
+        "playId": "4018730702894",
+        "eventId": "401873070",
+        "kickType": "FG",
+        "result": "Wide Left",
+        "kicker": "Tyler Bass",
+        "teamAbbr": "BUF",
+        "quarter": "Q3",
+        "clock": "7:37",
+        "awayAbbr": "MIA",
+        "homeAbbr": "BUF",
+        "awayScore": 9,
+        "homeScore": 20,
+        "matchup": "MIA @ BUF",
+        "playText": "T.Bass 54 yard field goal is No Good, Wide Left, Center-R.Ferguson, Holder-T.Doman."
+      }
     }
   },
   "pending": {},
@@ -1956,5 +1978,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-22T19:25:54.057Z"
+  "updatedAt": "2026-11-22T20:07:52.758Z"
 }
