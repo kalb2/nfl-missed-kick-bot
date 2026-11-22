@@ -1874,6 +1874,28 @@
         "matchup": "IND @ HOU",
         "playText": "S.Shrader 62 yard field goal is BLOCKED (L.Hall), Center-L.Rhodes, Holder-R.Sanchez."
       }
+    },
+    "401873072:401873072298": {
+      "playId": "401873072298",
+      "eventId": "401873072",
+      "status": "posting",
+      "at": "2026-11-22T18:19:51.949Z",
+      "snapshot": {
+        "playId": "401873072298",
+        "eventId": "401873072",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Jake Bates",
+        "teamAbbr": "DET",
+        "quarter": "Q1",
+        "clock": "11:09",
+        "awayAbbr": "TB",
+        "homeAbbr": "DET",
+        "awayScore": 0,
+        "homeScore": 0,
+        "matchup": "TB @ DET",
+        "playText": "J.Bates 53 yard field goal is No Good, Wide Right, Center-H.Hatten, Holder-J.Fox."
+      }
     }
   },
   "pending": {},
@@ -1884,5 +1906,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-20T02:35:55.235Z"
+  "updatedAt": "2026-11-22T18:19:51.950Z"
 }
