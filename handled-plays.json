@@ -1897,6 +1897,31 @@
         "matchup": "TB @ DET",
         "playText": "J.Bates 53 yard field goal is No Good, Wide Right, Center-H.Hatten, Holder-J.Fox."
       }
+    },
+    "401873071:4018730711480": {
+      "playId": "4018730711480",
+      "eventId": "401873071",
+      "status": "posting",
+      "at": "2026-11-22T19:07:56.831Z",
+      "snapshot": {
+        "playId": "4018730711480",
+        "eventId": "401873071",
+        "kickType": "PAT",
+        "result": "Wide Right",
+        "kicker": "Cairo Santos",
+        "teamAbbr": "CHI",
+        "quarter": "Q2",
+        "clock": "7:21",
+        "awayAbbr": "NO",
+        "homeAbbr": "CHI",
+        "awayScore": 0,
+        "homeScore": 16,
+        "matchup": "NO @ CHI",
+        "playText": "C.Williams pass short right to C.Loveland for 15 yards, TOUCHDOWN. C.Santos extra point is No Good, Wide Right, Center-S.Daly, Holder-T.Taylor.",
+        "altPlayTexts": [
+          "Colston Loveland 15 Yd pass from Caleb Williams (Cairo Santos PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
@@ -1907,5 +1932,5 @@
       "issue": 17
     }
   },
-  "updatedAt": "2026-11-22T18:19:53.318Z"
+  "updatedAt": "2026-11-22T19:07:56.831Z"
 }
