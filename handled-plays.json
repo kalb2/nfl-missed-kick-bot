@@ -2015,6 +2015,31 @@
         "matchup": "MIN VS SF",
         "playText": " W.Reichard 55 yard field goal is No Good, Wide Left, Center-A.DePaola, Holder-B.Thorson."
       }
+    },
+    "401873081:4018730813777": {
+      "playId": "4018730813777",
+      "eventId": "401873081",
+      "status": "posting",
+      "at": "2026-11-26T20:55:50.908Z",
+      "snapshot": {
+        "playId": "4018730813777",
+        "eventId": "401873081",
+        "kickType": "PAT",
+        "result": "Wide Left",
+        "kicker": "Jake Bates",
+        "teamAbbr": "DET",
+        "quarter": "Q4",
+        "clock": "8:20",
+        "awayAbbr": "CHI",
+        "homeAbbr": "DET",
+        "awayScore": 24,
+        "homeScore": 35,
+        "matchup": "CHI @ DET",
+        "playText": "J.Gibbs left tackle for 70 yards, TOUCHDOWN.PENALTY on DET-C.Mahogany, Taunting, 15 yards, enforced between downs. J.Bates extra point is No Good, Wide Left, Center-H.Hatten, Holder-J.Fox.",
+        "altPlayTexts": [
+          "Jahmyr Gibbs 70 Yd Rush (Jake Bates PAT Failed)"
+        ]
+      }
     }
   },
   "pending": {},
@@ -2033,5 +2058,5 @@
       "issue": 22
     }
   },
-  "updatedAt": "2026-11-23T03:07:53.369Z"
+  "updatedAt": "2026-11-26T20:55:50.908Z"
 }
