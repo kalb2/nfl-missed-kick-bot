@@ -2087,6 +2087,28 @@
         "matchup": "KC @ BUF",
         "playText": " H.Butker 46 yard field goal is No Good, Wide Right, Center-J.Winchester, Holder-M.Araiza."
       }
+    },
+    "401873083:4018730833002": {
+      "playId": "4018730833002",
+      "eventId": "401873083",
+      "status": "posting",
+      "at": "2026-11-27T22:19:53.033Z",
+      "snapshot": {
+        "playId": "4018730833002",
+        "eventId": "401873083",
+        "kickType": "FG",
+        "result": "Short",
+        "kicker": "Wil Lutz",
+        "teamAbbr": "DEN",
+        "quarter": "Q4",
+        "clock": "15:00",
+        "awayAbbr": "DEN",
+        "homeAbbr": "PIT",
+        "awayScore": 5,
+        "homeScore": 24,
+        "matchup": "DEN @ PIT",
+        "playText": "W.Lutz 53 yard field goal is No Good, Short, Center-M.Fraboni, Holder-J.Crawshaw."
+      }
     }
   },
   "pending": {},
@@ -2105,5 +2127,5 @@
       "issue": 22
     }
   },
-  "updatedAt": "2026-11-27T04:01:51.641Z"
+  "updatedAt": "2026-11-27T22:19:53.033Z"
 }
