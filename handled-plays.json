@@ -2064,6 +2064,28 @@
         "matchup": "PHI @ DAL",
         "playText": " B.Aubrey 40 yard field goal is No Good, Wide Left, Center-T.Sieg, Holder-B.Anger."
       }
+    },
+    "401873082:4018730823315": {
+      "playId": "4018730823315",
+      "eventId": "401873082",
+      "status": "posting",
+      "at": "2026-11-27T04:01:50.355Z",
+      "snapshot": {
+        "playId": "4018730823315",
+        "eventId": "401873082",
+        "kickType": "FG",
+        "result": "Wide Right",
+        "kicker": "Harrison Butker",
+        "teamAbbr": "KC",
+        "quarter": "Q4",
+        "clock": "6:01",
+        "awayAbbr": "KC",
+        "homeAbbr": "BUF",
+        "awayScore": 10,
+        "homeScore": 10,
+        "matchup": "KC @ BUF",
+        "playText": " H.Butker 46 yard field goal is No Good, Wide Right, Center-J.Winchester, Holder-M.Araiza."
+      }
     }
   },
   "pending": {},
@@ -2082,5 +2104,5 @@
       "issue": 22
     }
   },
-  "updatedAt": "2026-11-27T01:13:51.991Z"
+  "updatedAt": "2026-11-27T04:01:50.356Z"
 }
